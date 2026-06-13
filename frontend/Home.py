@@ -1,0 +1,84 @@
+"""
+HIPNUS COSMÉTICOS — Vitrine (entrypoint Streamlit).
+
+Página inicial da vitrine: hero da marca, indicadores do portfólio,
+destaques (kits e linha Ouro) e atalhos para o catálogo completo.
+
+Executar:  streamlit run frontend/Home.py
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import streamlit as st  # noqa: E402
+
+from lib import api, ui  # noqa: E402
+from lib.config import BRAND  # noqa: E402
+
+st.set_page_config(page_title="HIPNUS COSMÉTICOS", page_icon="💜", layout="wide")
+ui.inject_theme()
+
+# ----------------------------------------------------------------- sidebar
+ui.brand_header()
+ui.api_status_badge(api.api_online())
+st.sidebar.markdown("Navegue pela vitrine usando o menu acima.")
+ui.sidebar_cart_summary()
+
+products = api.get_products()
+lines = api.list_lines()
+cats = api.list_categories()
+
+# -------------------------------------------------------------------- hero
+st.markdown(
+    f"""
+    <div class="hip-hero">
+      <span class="kicker">Marketplace oficial da marca</span>
+      <h1>{BRAND['tagline']}</h1>
+      <p>{BRAND['promise']}</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------- indicadores
+c1, c2, c3, c4 = st.columns(4)
+kits = sum(1 for p in products if p.get("is_kit"))
+for col, v, l in [
+    (c1, len(products), "Produtos"),
+    (c2, len(lines), "Linhas da marca"),
+    (c3, len(cats), "Categorias"),
+    (c4, kits, "Kits & combos"),
+]:
+    col.markdown(f'<div class="hip-stat"><div class="v">{v}</div><div class="l">{l}</div></div>',
+                 unsafe_allow_html=True)
+
+st.markdown("")
+st.page_link("pages/1_🛍️_Catálogo.py", label="Explorar catálogo completo", icon="🛍️")
+
+# ------------------------------------------------------------------ linhas
+st.markdown('<div class="hip-section-title">Linhas da marca</div>', unsafe_allow_html=True)
+st.markdown('<div class="hip-section-sub">Coleções desenvolvidas para cada necessidade capilar.</div>',
+            unsafe_allow_html=True)
+line_html = "".join(f'<span class="hip-badge">{ln}</span>' for ln in lines)
+st.markdown(line_html, unsafe_allow_html=True)
+
+# ---------------------------------------------------------------- destaques
+st.markdown("")
+st.markdown('<div class="hip-section-title">Destaques</div>', unsafe_allow_html=True)
+st.markdown('<div class="hip-section-sub">Kits de tratamento e itens premium da linha Ouro.</div>',
+            unsafe_allow_html=True)
+
+featured = [p for p in products if p.get("is_kit")][:4]
+if len(featured) < 4:
+    featured += [p for p in products if (p.get("line") or "").lower() == "ouro"][: 4 - len(featured)]
+featured = featured[:4] or products[:4]
+
+cols = st.columns(4)
+for col, p in zip(cols, featured):
+    with col:
+        ui.product_card(p, key_prefix="home")
+
+st.markdown("---")
+st.caption("HIPNUS COSMÉTICOS · vitrine para consumidor final e profissional. "
+           "Preços de varejo são sugestões; cada parceiro define o preço final em sua loja.")

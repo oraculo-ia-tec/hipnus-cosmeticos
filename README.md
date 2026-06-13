@@ -40,7 +40,14 @@ python -m scripts.seed_catalog
 # 4. Subir a API
 uvicorn app.main:app --reload
 # Docs interativas: http://localhost:8000/docs
+
+# 5. Subir a vitrine (frontend Streamlit)
+streamlit run frontend/Home.py
+# Vitrine: http://localhost:8501
 ```
+
+> A vitrine funciona mesmo sem o backend no ar (modo demonstração com catálogo
+> local). Detalhes em [`frontend/README.md`](frontend/README.md).
 
 ## Testes
 
@@ -57,6 +64,7 @@ app/
 ├── domains/       catalog · partners · stores · orders · payments
 ├── integrations/  asaas (client + service de split)
 └── mcp/           ferramentas FastAPI MCP (futuro)
+frontend/          vitrine Streamlit (Home + páginas + lib)
 data/              catalog_seed.json + banco SQLite local
 docs/              ARCHITECTURE.md
 scripts/           seed_catalog.py
@@ -68,6 +76,7 @@ roadmap em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Status
 
-✅ Estrutura base: arquitetura, domínios, modelos, integração Asaas (contratos),
+✅ Backend: arquitetura, domínios, modelos, integração Asaas (contratos),
 catálogo carregado, regras de preço/split testadas.
-🔜 Próximo: checkout/pedidos, auth, frontend Streamlit, MCP, migrations.
+✅ Frontend: vitrine Streamlit (home, catálogo, linhas, loja do parceiro, carrinho).
+🔜 Próximo: checkout/pedidos com split Asaas, auth, MCP, migrations (Alembic).
