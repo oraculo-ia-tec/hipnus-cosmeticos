@@ -1,0 +1,1315 @@
+{
+  "brand": "HIPNUS COSMÉTICOS",
+  "year": 2026,
+  "currency": "BRL",
+  "pricing_model": "floor_price=tabela distribuidor (piso); parceiro define preço de venda >= piso",
+  "total_products": 127,
+  "lines": [
+    "Alinhamento Capilar",
+    "Ampolas",
+    "Banana e Mel",
+    "Barber",
+    "Cachos",
+    "Coffee Milk",
+    "Cronograma Capilar",
+    "Cupuaçu",
+    "Desmaia Cabelo",
+    "Detox",
+    "Diamond",
+    "Impact",
+    "Manga Rosa",
+    "Matizadora",
+    "Misturinha",
+    "Monofort",
+    "Máscaras Color",
+    "Nutri Coco",
+    "Ouro",
+    "Perfume Capilar",
+    "Teia de Aranha",
+    "Turmalina"
+  ],
+  "categories": [
+    "Diversos",
+    "Encapsulados",
+    "Home Care",
+    "Linha Masculina",
+    "Mascara Liquida",
+    "Mascaras Avulsas",
+    "Mascaras Matizadoras",
+    "Matizadores",
+    "Quimicas",
+    "Tratamento Obrigatorio"
+  ],
+  "products": [
+    {
+      "sku": "HIP-001-MASCARA-LIQUIDA",
+      "name": "MÁSCARA LÍQUIDA",
+      "category": "Mascara Liquida",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-002-KIT-TRATAMENTO-OBRIGATORIO",
+      "name": "KIT TRATAMENTO OBRIGATÓRIO",
+      "category": "Mascara Liquida",
+      "line": null,
+      "is_kit": true,
+      "floor_price": 79.9,
+      "suggested_retail_price": 149.8,
+      "active": true
+    },
+    {
+      "sku": "HIP-003-TRATAMENTO-OBRIGATORIO-260ML",
+      "name": "TRATAMENTO OBRIGATÓRIO 260ML",
+      "category": "Mascara Liquida",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-004-SHAMPOO-TRATAMENTO-OBRIGATORIO-500ML",
+      "name": "SHAMPOO TRATAMENTO OBRIGATÓRIO 500ML",
+      "category": "Mascara Liquida",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 42.9,
+      "suggested_retail_price": 49.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-005-TRATAMENTO-OBRIGATORIO-OURO-260ML",
+      "name": "TRATAMENTO OBRIGATÓRIO OURO 260ML",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-006-TRATAMENTO-OBRIGATORIO-BLOND-260ML",
+      "name": "TRATAMENTO OBRIGATÓRIO BLOND 260ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-007-KIT-OURO-VEGANO",
+      "name": "KIT OURO VEGANO",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": true,
+      "floor_price": 122.7,
+      "suggested_retail_price": 249.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-008-SHAMPOO-OURO-VEGANO-1L",
+      "name": "SHAMPOO OURO VEGANO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-009-CONDICIONADOR-OURO-VEGANO-1L",
+      "name": "CONDICIONADOR OURO VEGANO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-010-MASCARA-OURO-VEGANO-1L",
+      "name": "MÁSCARA OURO VEGANO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 42.9,
+      "suggested_retail_price": 89.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-011-KIT-TURMALINA-VEGANO",
+      "name": "KIT TURMALINA VEGANO",
+      "category": "Tratamento Obrigatorio",
+      "line": "Turmalina",
+      "is_kit": true,
+      "floor_price": 122.7,
+      "suggested_retail_price": 249.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-012-SHAMPOO-TURMALINA-VEGANO-1L",
+      "name": "SHAMPOO TURMALINA VEGANO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Turmalina",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-013-CONDICIONADOR-TURMALINA-VEGANO-1L",
+      "name": "CONDICIONADOR TURMALINA VEGANO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Turmalina",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-014-MASCARA-TURMALINA-VEGANO-1L",
+      "name": "MÁSCARA TURMALINA VEGANO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Turmalina",
+      "is_kit": false,
+      "floor_price": 42.9,
+      "suggested_retail_price": 89.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-015-KIT-RECONSTRUTOR-CAPILAR-TEIA-PROFISSION",
+      "name": "KIT RECONSTRUTOR CAPILAR TEIA PROFISSIONAL",
+      "category": "Tratamento Obrigatorio",
+      "line": "Teia de Aranha",
+      "is_kit": true,
+      "floor_price": 142.6,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-016-SHAMPOO-TEIA-1L",
+      "name": "SHAMPOO TEIA 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-017-CONDICIONADOR-TEIA-1L",
+      "name": "CONDICIONADOR TEIA 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-018-MASCARA-TEIA-1KG",
+      "name": "MÁSCARA TEIA 1KG",
+      "category": "Tratamento Obrigatorio",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 89.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-019-LEAVE-IN-TEIA-500G",
+      "name": "LEAVIN-IN TEIA 500G",
+      "category": "Tratamento Obrigatorio",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-020-KIT-RECONSTRUTOR-CAPILAR-DE-OURO-PROFISS",
+      "name": "KIT RECOSNTRUTOR CAPILAR DE OURO PROFISSIONAL",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": true,
+      "floor_price": 142.6,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-021-SHAMPOO-OURO-1L",
+      "name": "SHAMPOO OURO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-022-CONDICIONADOR-OURO-1L",
+      "name": "CONDICIONADOR OURO 1L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 37.9,
+      "suggested_retail_price": 79.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-023-MASCARA-OURO-1KG",
+      "name": "MÁSCARA OURO 1KG",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 89.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-024-LEAVE-IN-OURO-500ML",
+      "name": "LEAVI-IN OURO 500L",
+      "category": "Tratamento Obrigatorio",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-025-KIT-CUPUACU",
+      "name": "KIT CUPUAÇÚ",
+      "category": "Tratamento Obrigatorio",
+      "line": "Cupuaçu",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-026-SHAMPOO-320ML",
+      "name": "SHAMPOO 320ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-027-CONDICIONADOR-320ML",
+      "name": "CONDICIONADOR 320ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 16.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-028-MASCARA-300",
+      "name": "MÁSCARA 300",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-029-KIT-CRONOGRAMA-CAPILAR",
+      "name": "KIT CRONOGRAMA CAPILAR",
+      "category": "Tratamento Obrigatorio",
+      "line": "Cronograma Capilar",
+      "is_kit": true,
+      "floor_price": 91.6,
+      "suggested_retail_price": 180.0,
+      "active": true
+    },
+    {
+      "sku": "HIP-030-SHAMPOO-500ML",
+      "name": "SHAMPOO 500ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-031-MASCARA-HIDRATACAO-500ML",
+      "name": "MÁSCARA HIDRATAÇÃO 500ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-032-MASCARA-RECONSTRUCAO-500ML",
+      "name": "MÁSCARA RECONSTRUÇÃO 500ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-033-MASCARA-NUTRICAO-500ML",
+      "name": "MÁSCARA NUTRIÇÃO 500ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-034-KIT-MONOFORT-500ML",
+      "name": "KIT MONOFORT 500ML",
+      "category": "Tratamento Obrigatorio",
+      "line": "Monofort",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": 129.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-035-SHAMPOO-MONOFORT-500ML",
+      "name": "SHAMPOO MONOFORT 500ML",
+      "category": "Tratamento Obrigatorio",
+      "line": "Monofort",
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": 129.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-036-MASCARA-MONOFORT-500G",
+      "name": "MÁSCARA MONOFORT 500G",
+      "category": "Tratamento Obrigatorio",
+      "line": "Monofort",
+      "is_kit": false,
+      "floor_price": 17.1,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-037-TONICO-CAPILAR-30ML",
+      "name": "TÔNICO CAPILAR 30ML",
+      "category": "Tratamento Obrigatorio",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-038-KIT-RECONSTRUTOR-CAPILAR-DE-OURO-HOME-CA",
+      "name": "KIT RECONSTRUTOR CAPILAR DE OURO HOME CARE",
+      "category": "Home Care",
+      "line": "Ouro",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-039-SHAMPOO-OURO-350ML",
+      "name": "SHAMPOO OURO 350ML",
+      "category": "Home Care",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 32.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-040-CONDICIONADOR-OURO-350ML",
+      "name": "CONDICIONADOR OURO 350ML",
+      "category": "Home Care",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-041-MASCARA-OURO-300G",
+      "name": "MÁSCARA OURO 300G",
+      "category": "Home Care",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-042-LEAVE-IN-OURO-350ML",
+      "name": "LEAVI-IN OURO 350ML",
+      "category": "Home Care",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-043-KIT-TEIA-HOME-CARE",
+      "name": "KIT TEIA HOME CARE",
+      "category": "Home Care",
+      "line": "Teia de Aranha",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-044-SHAMPOO-TEIA-350ML",
+      "name": "SHAMPOO TEIA 350ML",
+      "category": "Home Care",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 32.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-045-CONDICIONADOR-TEIA-350ML",
+      "name": "CONDICIONADOR TEIA 350ML",
+      "category": "Home Care",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-046-MASCARA-TEIA-300G",
+      "name": "MÁSCARA TEIA 300G",
+      "category": "Home Care",
+      "line": "Teia de Aranha",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-047-LEAVE-IN-350ML",
+      "name": "LEAVI-IN 350ML",
+      "category": "Home Care",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-048-KIT-DESMAIA-CABELO-HOME-CARE",
+      "name": "KIT DESMAIA CABELO HOME CARE",
+      "category": "Home Care",
+      "line": "Desmaia Cabelo",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-049-SHAMPOO-DESMAIA-CABELO-350ML",
+      "name": "SHAMPOO DESMAIA CABELO 350ML",
+      "category": "Home Care",
+      "line": "Desmaia Cabelo",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 32.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-050-CONDICIONADOR-DESMAIA-CABELO-350ML",
+      "name": "CONDICIONADOR DESMAIA CABELO 350ML",
+      "category": "Home Care",
+      "line": "Desmaia Cabelo",
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-051-MASCARA-DESMAIA-CABELO-300G",
+      "name": "MÁSCARA DESMAIA CABELO 300G",
+      "category": "Home Care",
+      "line": "Desmaia Cabelo",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-052-LEAVE-IN-DESMAIA-CABELO-350ML",
+      "name": "LEAVE IN DESMAIA CABELO 350ML",
+      "category": "Home Care",
+      "line": "Desmaia Cabelo",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-053-KIT-NUTRICOCO-HOME-CARE",
+      "name": "KIT NUTRICOCO HOME CARE",
+      "category": "Home Care",
+      "line": "Nutri Coco",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-054-SHAMPOO-NUTRI-COCO-350ML",
+      "name": "SHAMPOO NUTRI COCO 350ML",
+      "category": "Home Care",
+      "line": "Nutri Coco",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 32.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-055-CONDICIONADOR-NUTRI-COCO-350ML",
+      "name": "CONDICIONADOR NUTRI COCO 350ML",
+      "category": "Home Care",
+      "line": "Nutri Coco",
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-056-MASCARA-NUTRI-COCO-300G",
+      "name": "MÁSCARA NUTRI COCO 300G",
+      "category": "Home Care",
+      "line": "Nutri Coco",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-057-LEAVE-IN-NUTRI-COCO-350ML",
+      "name": "LEAVE IN NUTRI COCO 350ML",
+      "category": "Home Care",
+      "line": "Nutri Coco",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-058-KIT-CAFE-COM-LEITE-HOME-CARE",
+      "name": "KIT CAFÉ COM LEITE HOME CARE",
+      "category": "Home Care",
+      "line": "Coffee Milk",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-059-SHAMPOO-CAFE-COM-LEITE-350ML",
+      "name": "SHAMPOO CAFÉ COM LEITE 350ML",
+      "category": "Home Care",
+      "line": "Coffee Milk",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 32.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-060-CONDICIONADOR-CAFE-COM-LEITE-350ML",
+      "name": "CONDICIONADOR CAFÉ COM LEITE 350ML",
+      "category": "Home Care",
+      "line": "Coffee Milk",
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-061-MASCARA-CAFE-COM-LEITE-300G",
+      "name": "MÁSCARA CAFÉ COM LEITE 300G",
+      "category": "Home Care",
+      "line": "Coffee Milk",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-062-LEAVE-IN-CAFE-COM-LEITE-350ML",
+      "name": "LEAVE IN CAFÉ COM LEITE 350ML",
+      "category": "Home Care",
+      "line": "Coffee Milk",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-063-KIT-CACHOS-HOME-CARE",
+      "name": "KIT CACHOS HOME CARE",
+      "category": "Home Care",
+      "line": "Cachos",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-064-SHAMPOO-CACHOS-350ML",
+      "name": "SHAMPOO CACHOS 350ML",
+      "category": "Home Care",
+      "line": "Cachos",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 32.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-065-CONDICIONADOR-CACHOS-350ML",
+      "name": "CONDICIONADOR CACHOS 350ML",
+      "category": "Home Care",
+      "line": "Cachos",
+      "is_kit": false,
+      "floor_price": 12.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-066-MASCARA-CACHOS-300G",
+      "name": "MÁSCARA CACHOS 300G",
+      "category": "Home Care",
+      "line": "Cachos",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-067-ATIVADOR-DE-CACHOS-350ML",
+      "name": "ATIVADOR DE CACHOS 350ML",
+      "category": "Home Care",
+      "line": "Cachos",
+      "is_kit": false,
+      "floor_price": 11.9,
+      "suggested_retail_price": 28.7,
+      "active": true
+    },
+    {
+      "sku": "HIP-068-KIT-DETOX",
+      "name": "KIT DETOX",
+      "category": "Home Care",
+      "line": "Detox",
+      "is_kit": true,
+      "floor_price": 39.8,
+      "suggested_retail_price": 89.8,
+      "active": true
+    },
+    {
+      "sku": "HIP-069-CONDICIONADOR-500ML",
+      "name": "CONDICIONADOR 500ML",
+      "category": "Home Care",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-070-KIT-CACHOS-MISTURINHA",
+      "name": "KIT CACHOS MISTURINHA",
+      "category": "Home Care",
+      "line": "Misturinha",
+      "is_kit": true,
+      "floor_price": 39.8,
+      "suggested_retail_price": 89.8,
+      "active": true
+    },
+    {
+      "sku": "HIP-071-GELATINA-500ML",
+      "name": "GELATINA 500ML",
+      "category": "Home Care",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": 44.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-072-ATIVADOR-DE-CACHOS-500ML",
+      "name": "ATIVADOR DE CACHOS 500ML",
+      "category": "Home Care",
+      "line": "Cachos",
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": 44.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-073-BOTOX-CREME-ALINHAMENTO-CAPILAR-C-F-1KG",
+      "name": "BOTOX CREME ALINHAMENTO CAPILAR C/F 1KG",
+      "category": "Quimicas",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-074-BOTOX-CREME-ALINHAMENTO-CAPILAR-C-MATIZA",
+      "name": "BOTOX CREME ALINHAMENTO CAPILAR C/MATIZADOR 1KG",
+      "category": "Quimicas",
+      "line": "Matizadora",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-075-SELAGEM-CAPILAR-S-F-1KG",
+      "name": "SELAGEM CAPILAR S/F 1KG",
+      "category": "Quimicas",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-076-PROGRESSIVA-CREME-REALINHAMENTO-CAPILAR-",
+      "name": "PROGRESSIVA CREME REALINHAMENTO CAPILAR C/F 1LITRO",
+      "category": "Quimicas",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-077-PROGRESSIVA-GLOSS-GEL-REALINHAMENTO-CAPI",
+      "name": "PROGRESSIVA GLOSS GEL REALINHAMENTO CAPILAR C/F 1LITRO",
+      "category": "Quimicas",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-078-PROGRESSIVA-EM-CREME-S-F-1LITRO",
+      "name": "PROGRESSIVA EM CREME S/F 1LITRO",
+      "category": "Quimicas",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 89.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-079-PROGRESSIVA-EM-GEL-DE-OURO-C-F-1L",
+      "name": "PROGRESSIVA EM GEL DE OURO C/F 1L",
+      "category": "Quimicas",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-080-PROGRESSIVA-EM-GEL-DE-PRATA-C-F-1L",
+      "name": "PROGRESSIVA EM GEL DE PRATA C/F 1L",
+      "category": "Quimicas",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 75.0,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-081-PROGRESSIVA-DE-OURO-EM-GEL-SEM-FORMOL-1L",
+      "name": "PROGRESSIVA DE OURO EM GEL SEM FORMOL 1L",
+      "category": "Quimicas",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 89.0,
+      "suggested_retail_price": 260.0,
+      "active": true
+    },
+    {
+      "sku": "HIP-082-CACHOS-REDUCE-1L",
+      "name": "CACHOS REDUCE 1L",
+      "category": "Quimicas",
+      "line": "Cachos",
+      "is_kit": false,
+      "floor_price": 89.0,
+      "suggested_retail_price": 260.0,
+      "active": true
+    },
+    {
+      "sku": "HIP-083-MASCARA-DESMAIA-CABELO-1KG",
+      "name": "MÁSCARA DESMAIA CABELO 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Desmaia Cabelo",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-084-MASCARA-DIAMANTE-1KG",
+      "name": "MÁSCARA DIAMANTE 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Diamond",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-085-MASCARA-NUTRI-COCO-1KG",
+      "name": "MÁSCARA NUTRI COCO 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Nutri Coco",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-086-MASCARA-NEUTRALIZANTE-UNIVERSAL-1KG",
+      "name": "MÁSCARA NEUTRALIZANTE UNIVERSAL 1KG",
+      "category": "Mascaras Avulsas",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-087-MASCARA-BANANA-E-MEL-1KG",
+      "name": "MÁSCARA BANANA E MEL 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Banana e Mel",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-088-MASCARA-CAFE-COM-LEITE-1KG",
+      "name": "MÁSCARA CAFÉ COM LEITE 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Coffee Milk",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-089-MASCARA-IMPACT-1KG",
+      "name": "MÁSCARA IMPACT 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Impact",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-090-MASCARA-KERA-PRIME-1KG",
+      "name": "MÁSCARA KERA PRIME 1KG",
+      "category": "Mascaras Avulsas",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-091-GELATINA-CAPILAR-1KG",
+      "name": "GELATINA CAPILAR 1KG",
+      "category": "Mascaras Avulsas",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-092-MASCARA-MANGA-ROSA-1KG",
+      "name": "MÁSCARA MANGA ROSA 1KG",
+      "category": "Mascaras Avulsas",
+      "line": "Manga Rosa",
+      "is_kit": false,
+      "floor_price": 39.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-093-MASCARAS-500G-TODAS",
+      "name": "MÁSCARAS 500G TODAS",
+      "category": "Mascaras Avulsas",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-094-HIPNUS-PLEXX",
+      "name": "HIPNUS PLEXX",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-095-AMPOLA-FIOS-DE-OURO-CAIXA-C-12-15ML",
+      "name": "AMPOLA FIOS DE OURO CAIXA C/12 15ML",
+      "category": "Diversos",
+      "line": "Ouro",
+      "is_kit": false,
+      "floor_price": 72.0,
+      "suggested_retail_price": 180.0,
+      "active": true
+    },
+    {
+      "sku": "HIP-096-AMPOLA-MATIZANTE-BLOND-CAIXA-C-12-15ML",
+      "name": "AMPOLA MATIZANTE BLOND CAIXA C/12 15ML",
+      "category": "Diversos",
+      "line": "Ampolas",
+      "is_kit": false,
+      "floor_price": 72.0,
+      "suggested_retail_price": 180.0,
+      "active": true
+    },
+    {
+      "sku": "HIP-097-QUERATINA-GEL-1L",
+      "name": "QUERATINA GEL 1L",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 45.0,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-098-ARGILA-MICRONIZADA-110G",
+      "name": "ARGILA MICRONIZADA 110G",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 4.9,
+      "suggested_retail_price": 9.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-099-BOTOX-CAPILAR-LIQUIDO-HIDRATANTE-120ML",
+      "name": "BOTOX CAPILAR LIQUIDO HIDRATANTE 120ML",
+      "category": "Diversos",
+      "line": "Alinhamento Capilar",
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-100-LEAVE-IN-500ML",
+      "name": "LEAVE-IN 500ML",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-101-REPARADOR-DE-PONTAS-120ML",
+      "name": "REPARADOR DE PONTAS 120ML",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-102-REPARADOR-DE-PONTAS-60ML",
+      "name": "REPARADOR DE PONTAS 60ML",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": 39.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-103-SHAMPOO-ANTI-RESIDUOS-1L",
+      "name": "SHAMPOO ANTI-RESÍDUOS 1L",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 35.9,
+      "suggested_retail_price": 89.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-104-SHAMPOO-GALAO-5L",
+      "name": "SHAMPOO GALÃO 5L",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-105-CONDICIONADOR-GALAO-5L",
+      "name": "CONDICIONADOR GALÃO 5L",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": 99.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-106-PERFUME-CAPILAR",
+      "name": "PERFUME CAPILAR",
+      "category": "Diversos",
+      "line": "Perfume Capilar",
+      "is_kit": false,
+      "floor_price": 69.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-107-SABONETE-LIQUIDO-500ML",
+      "name": "SABONETE LIQUÍDO 500ML",
+      "category": "Diversos",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 8.9,
+      "suggested_retail_price": 15.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-108-KIT-MATIZADOR-HOME-CARE",
+      "name": "KIT MATIZADOR HOME CARE",
+      "category": "Matizadores",
+      "line": "Matizadora",
+      "is_kit": true,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-109-SHAMPOO-MATIZADOR-350ML",
+      "name": "SHAMPOO MATIZADOR 350ML",
+      "category": "Matizadores",
+      "line": "Matizadora",
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-110-CONDICIONADOR-MATIZADOR-350ML",
+      "name": "CONDICIONADOR MATIZADOR 350ML",
+      "category": "Matizadores",
+      "line": "Matizadora",
+      "is_kit": false,
+      "floor_price": 16.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-111-MASCARA-MATIZADORA-300G",
+      "name": "MÁSCARA MATIZADORA 300G",
+      "category": "Matizadores",
+      "line": "Matizadora",
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-112-MASCARA-PIGMENTADORA-BLACK-COLLORY-300G",
+      "name": "MÁSCARA PIGMENTADORA BLACK COLLORY 300G",
+      "category": "Mascaras Matizadoras",
+      "line": "Máscaras Color",
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": 39.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-113-MASCARA-PIGMENTADORA-RED-COLLORY-300G",
+      "name": "MÁSCARA PIGMENTADORA RED COLLORY 300G",
+      "category": "Mascaras Matizadoras",
+      "line": "Máscaras Color",
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": 39.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-114-MASCARA-PIGMENTADORA-MARSALA-300G",
+      "name": "MÁSCARA PIGMENTADORA MARSALA 300G",
+      "category": "Mascaras Matizadoras",
+      "line": "Máscaras Color",
+      "is_kit": false,
+      "floor_price": 22.9,
+      "suggested_retail_price": 39.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-115-MASCARA-PIGMENTADORA-BLACK-COLLORY-500G",
+      "name": "MÁSCARA PIGMENTADORA BLACK COLLORY 500G",
+      "category": "Mascaras Matizadoras",
+      "line": "Máscaras Color",
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-116-MASCARA-PIGMENTADORA-RED-COLLORY-500G",
+      "name": "MÁSCARA PIGMENTADORA RED COLLORY 500G",
+      "category": "Mascaras Matizadoras",
+      "line": "Máscaras Color",
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-117-MASCARA-PIGMENTADORA-MARSALA-500G",
+      "name": "MÁSCARA PIGMENTADORA MARSALA 500G",
+      "category": "Mascaras Matizadoras",
+      "line": "Máscaras Color",
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": 59.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-118-KIT-MASCULINO-BARBER",
+      "name": "KIT MASCULINO BARBER",
+      "category": "Linha Masculina",
+      "line": "Barber",
+      "is_kit": true,
+      "floor_price": 105.4,
+      "suggested_retail_price": 167.4,
+      "active": true
+    },
+    {
+      "sku": "HIP-119-SHAMPOO-3-EM-1-300ML",
+      "name": "SHAMPOO 3 EM 1 300ML",
+      "category": "Linha Masculina",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 17.9,
+      "suggested_retail_price": 29.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-120-BALM-HIDRATANTE-300ML",
+      "name": "BALM HIDRATANTE 300ML",
+      "category": "Linha Masculina",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 17.9,
+      "suggested_retail_price": 29.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-121-SHAVING-GEL-PARA-BARBEAR-500G",
+      "name": "SHAVING GEL PARA BARBEAR 500G",
+      "category": "Linha Masculina",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 19.9,
+      "suggested_retail_price": 29.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-122-POMADA-BLACK-100G",
+      "name": "POMADA BLACK 100G",
+      "category": "Linha Masculina",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 25.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-123-POMADA-CLASSIC-100G",
+      "name": "POMADA CLASSIC 100G",
+      "category": "Linha Masculina",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 15.9,
+      "suggested_retail_price": 25.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-124-OLEO-FINALIZADOR-PARA-BARBA-30ML",
+      "name": "ÓLEO FINALIZADOR PARA BARBA 30ML",
+      "category": "Linha Masculina",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 17.9,
+      "suggested_retail_price": 25.9,
+      "active": true
+    },
+    {
+      "sku": "HIP-125-CABELO-PELE-E-UNHA-60-CP",
+      "name": "CABELO PELE E UNHA  60 CP",
+      "category": "Encapsulados",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-126-SLIM-POWER-60-CP",
+      "name": "SLIM POWER 60 CP",
+      "category": "Encapsulados",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 49.9,
+      "suggested_retail_price": null,
+      "active": true
+    },
+    {
+      "sku": "HIP-127-POLI-VITAMINICO-60-CP",
+      "name": "POLI VITAMÍNICO 60 CP",
+      "category": "Encapsulados",
+      "line": null,
+      "is_kit": false,
+      "floor_price": 29.9,
+      "suggested_retail_price": null,
+      "active": true
+    }
+  ]
+}
