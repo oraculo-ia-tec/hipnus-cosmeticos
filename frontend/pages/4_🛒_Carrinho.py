@@ -2,7 +2,10 @@
 Página de Carrinho — itens selecionados pelo cliente.
 
 Permite revisar itens, ajustar quantidades, remover e ver o total.
-O botão de checkout agora está ativo e redireciona para a página de pagamento.
+O botão de checkout redireciona para a página de pagamento.
+
+Navegação usa os wrappers registrados em pages/ (raiz),
+não os caminhos com emoji de frontend/pages/.
 """
 import sys
 from pathlib import Path
@@ -12,12 +15,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import streamlit as st  # noqa: E402
 
 from lib import api, ui  # noqa: E402
+from lib.auth import require_auth, sidebar_user_info  # noqa: E402
 
 st.set_page_config(page_title="Carrinho · HIPNUS", page_icon="🛒", layout="wide")
 ui.inject_theme()
 
+require_auth()
+
 ui.brand_header()
 ui.api_status_badge(api.api_online())
+sidebar_user_info()
+ui.sidebar_cart_summary()
 
 st.markdown('<div class="hip-section-title">Seu carrinho</div>', unsafe_allow_html=True)
 
@@ -25,7 +33,7 @@ cart = st.session_state.get("cart", {})
 
 if not cart:
     st.info("Seu carrinho está vazio. Visite o catálogo para adicionar produtos.")
-    st.page_link("pages/1_🛍️_Catálogo.py", label="Ir para o catálogo", icon="🛍️")
+    st.page_link("pages/2_Catalogo.py", label="Ir para o catálogo", icon="🛍️")
 else:
     # Cabeçalho da tabela
     h = st.columns([4, 1.4, 1.4, 1.6, 1])
@@ -52,9 +60,8 @@ else:
     left, right = st.columns([3, 1.4])
     with right:
         st.markdown(f"### Total: {ui.brl(ui.cart_total())}")
-        # Checkout agora ativo — redireciona para a página de pagamento
         if st.button("Finalizar compra 💳", type="primary", use_container_width=True):
-            st.switch_page("pages/5_💳_Checkout.py")
+            st.switch_page("pages/6_Checkout.py")
         if st.button("Limpar carrinho", use_container_width=True):
             ui.clear_cart()
             st.rerun()
