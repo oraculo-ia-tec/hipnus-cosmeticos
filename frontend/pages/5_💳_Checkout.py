@@ -10,6 +10,9 @@ Etapas:
   4. Confirmação e chamada ao CheckoutService.
   5. Exibição do resultado: QR Code Pix ou link de boleto.
 
+Navegação usa os wrappers registrados em pages/ (raiz),
+não os caminhos com emoji de frontend/pages/.
+
 Requisitos no Streamlit Secrets (ou .env local):
   ASAAS_API_KEY       = "$aact_..."   # chave da conta raiz Hipnus
   ASAAS_BASE_URL      = "https://api-sandbox.asaas.com/v3"  # sandbox ou produção
@@ -25,11 +28,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
 from lib import ui
+from lib.auth import require_auth, sidebar_user_info
 from lib.checkout_service import CheckoutService, AsaasError
 
 st.set_page_config(page_title="Checkout · HIPNUS", page_icon="💳", layout="centered")
 ui.inject_theme()
+
+require_auth()
+
 ui.brand_header()
+sidebar_user_info()
+ui.sidebar_cart_summary()
 
 st.markdown('<div class="hip-section-title">Finalizar Compra</div>', unsafe_allow_html=True)
 
@@ -38,7 +47,7 @@ cart = st.session_state.get("cart", {})
 # ---------------------------------------------------------------- carrinho vazio
 if not cart:
     st.info("Seu carrinho está vazio.")
-    st.page_link("pages/1_🛍️_Catálogo.py", label="Ir para o catálogo", icon="🛍️")
+    st.page_link("pages/2_Catalogo.py", label="Ir para o catálogo", icon="🛍️")
     st.stop()
 
 # ---------------------------------------------------------------- resumo
@@ -61,10 +70,10 @@ st.divider()
 st.subheader("👤 Seus dados")
 
 with st.form("form_checkout"):
-    nome = st.text_input("Nome completo *", placeholder="Ex: Maria da Silva")
+    nome     = st.text_input("Nome completo *", placeholder="Ex: Maria da Silva")
     cpf_cnpj = st.text_input("CPF ou CNPJ * (somente números)", placeholder="00000000000")
-    email = st.text_input("E-mail *", placeholder="maria@email.com")
-    fone = st.text_input("Telefone (opcional)", placeholder="31999999999")
+    email    = st.text_input("E-mail *", placeholder="maria@email.com")
+    fone     = st.text_input("Telefone (opcional)", placeholder="31999999999")
 
     st.divider()
     st.subheader("💰 Forma de pagamento")
@@ -85,7 +94,6 @@ with st.form("form_checkout"):
 
 # ---------------------------------------------------------------- processamento
 if confirmar:
-    # Validações
     erros = []
     if not nome.strip():
         erros.append("Nome é obrigatório.")
@@ -116,7 +124,6 @@ if confirmar:
                 descricao="Pedido HIPNUS COSMÉTICOS",
             )
 
-            # -------------------------------------------- sucesso
             st.success(f"🎉 Pedido criado! Referência: `{resultado['external_ref']}`")
             st.caption(f"ID Asaas: `{resultado['payment_id']}` | Status: **{resultado['status']}**")
 
@@ -126,11 +133,7 @@ if confirmar:
                     img_bytes = base64.b64decode(resultado["pix_qrcode"])
                     st.image(img_bytes, caption="QR Code PIX", width=280)
                 if resultado["pix_payload"]:
-                    st.text_area(
-                        "Copia e cola PIX:",
-                        value=resultado["pix_payload"],
-                        height=80,
-                    )
+                    st.text_area("Copia e cola PIX:", value=resultado["pix_payload"], height=80)
                 else:
                     st.info("O QR Code Pix estará disponível em instantes. "
                             "Use o link abaixo para acessar a cobrança.")
@@ -142,7 +145,6 @@ if confirmar:
                     use_container_width=True,
                 )
 
-            # Limpa o carrinho após pedido criado
             ui.clear_cart()
             st.session_state["ultimo_pedido"] = resultado
 
