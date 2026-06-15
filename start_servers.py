@@ -6,7 +6,7 @@ Inicia todo o ambiente local com um único comando:
   1. Valida o ambiente virtual e dependências instaladas.
   2. Carrega variáveis de ambiente do arquivo .env (se existir).
   3. Executa o seed do catálogo (scripts/seed_catalog.py) se o banco
-     ainda não existir ou se for a primeira execução do dia.
+     ainda não existir.
   4. Sobe os dois servidores em paralelo:
        • Backend  → uvicorn app.main:app --reload   (http://localhost:8000)
        • Frontend → streamlit run frontend/Home.py  (http://localhost:8501)
@@ -36,14 +36,18 @@ import argparse
 from pathlib import Path
 
 # ─── Constantes de cor ANSI ───────────────────────────────────────────────────
-RESET  = "\033[0m"
-BOLD   = "\033[1m"
-GREEN  = "\033[92m"
-CYAN   = "\033[96m"
-MAGENTA= "\033[95m"
-YELLOW = "\033[93m"
-RED    = "\033[91m"
-GRAY   = "\033[90m"
+RESET   = "\033[0m"
+BOLD    = "\033[1m"
+GREEN   = "\033[92m"
+CYAN    = "\033[96m"
+MAGENTA = "\033[95m"
+YELLOW  = "\033[93m"
+RED     = "\033[91m"
+GRAY    = "\033[90m"
+
+# Linhas separadoras pré-computadas (evita backslash dentro de f-string — Python 3.11)
+LINE_DOUBLE = "\u2550" * 57
+LINE_SINGLE = "\u2500" * 57
 
 # ─── Raiz do projeto ──────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent
@@ -75,48 +79,47 @@ SERVERS = [
 ]
 
 # ─── Estado global ────────────────────────────────────────────────────────────
-processes: list[subprocess.Popen] = []
+processes: list = []
 
 
 # ─── Helpers de output ────────────────────────────────────────────────────────
-def log(msg: str, color: str = GREEN) -> None:
-    print(f"{color}{BOLD}[HIPNUS]{RESET} {msg}")
+def log(msg, color=GREEN):
+    print(color + BOLD + "[HIPNUS]" + RESET + " " + msg)
 
 
-def prefix(name: str, color: str) -> str:
-    return f"{color}{BOLD}[{name}]{RESET} "
+def prefix(name, color):
+    return color + BOLD + "[" + name + "]" + RESET + " "
 
 
-def stream_output(proc: subprocess.Popen, name: str, color: str) -> None:
+def stream_output(proc, name, color):
     """Lê stdout do processo linha a linha e imprime com prefixo colorido."""
     for line in iter(proc.stdout.readline, b""):
         print(prefix(name, color) + line.decode("utf-8", errors="replace"), end="")
     proc.stdout.close()
 
 
-def stream_errors(proc: subprocess.Popen, name: str, color: str) -> None:
+def stream_errors(proc, name, color):
     """Lê stderr do processo linha a linha e imprime com prefixo colorido."""
     for line in iter(proc.stderr.readline, b""):
         decoded = line.decode("utf-8", errors="replace")
-        # Não pinta de vermelho linhas informativas do uvicorn/streamlit
-        cor = RED if "error" in decoded.lower() or "exception" in decoded.lower() else color
+        cor = RED if ("error" in decoded.lower() or "exception" in decoded.lower()) else color
         print(prefix(name, cor) + decoded, end="")
     proc.stderr.close()
 
 
 # ─── Pré-checagens ────────────────────────────────────────────────────────────
-def check_venv() -> None:
+def check_venv():
     """Avisa se não estiver rodando dentro de um ambiente virtual."""
     in_venv = (
         hasattr(sys, "real_prefix")
         or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
     )
     if not in_venv:
-        print(f"{YELLOW}{BOLD}[AVISO]{RESET} Você não está dentro de um venv.")
-        print(f"{GRAY}         Ative com: source .venv/bin/activate{RESET}\n")
+        print(YELLOW + BOLD + "[AVISO]" + RESET + " Você não está dentro de um venv.")
+        print(GRAY + "         Ative com: source .venv/bin/activate" + RESET + "\n")
 
 
-def check_dependencies() -> None:
+def check_dependencies():
     """Verifica se as dependências críticas estão instaladas."""
     deps = ["fastapi", "uvicorn", "streamlit", "sqlalchemy", "httpx"]
     faltando = []
@@ -126,17 +129,17 @@ def check_dependencies() -> None:
         except ImportError:
             faltando.append(dep)
     if faltando:
-        print(f"{RED}{BOLD}[ERRO]{RESET} Dependências não instaladas: {', '.join(faltando)}")
-        print(f"{GRAY}       Execute: pip install -r requirements.txt{RESET}")
+        print(RED + BOLD + "[ERRO]" + RESET + " Dependências não instaladas: " + ", ".join(faltando))
+        print(GRAY + "       Execute: pip install -r requirements.txt" + RESET)
         sys.exit(1)
 
 
-def load_dotenv() -> None:
+def load_dotenv():
     """Carrega o .env manualmente sem dependência extra."""
     env_file = ROOT / ".env"
     if not env_file.exists():
-        print(f"{YELLOW}{BOLD}[AVISO]{RESET} Arquivo .env não encontrado.")
-        print(f"{GRAY}         Copie o exemplo: cp .env.example .env{RESET}\n")
+        print(YELLOW + BOLD + "[AVISO]" + RESET + " Arquivo .env não encontrado.")
+        print(GRAY + "         Copie o exemplo: cp .env.example .env" + RESET + "\n")
         return
     with open(env_file, encoding="utf-8") as f:
         for line in f:
@@ -148,7 +151,7 @@ def load_dotenv() -> None:
     log(".env carregado.", GRAY)
 
 
-def run_seed() -> None:
+def run_seed():
     """
     Executa o seed do catálogo se o banco SQLite ainda não existir.
     Usa o arquivo data/hipnus.db como flag de controle.
@@ -157,7 +160,6 @@ def run_seed() -> None:
     if db_path.exists():
         log("Banco já existente — seed ignorado.", GRAY)
         return
-
     log("Executando seed do catálogo Hipnus...", YELLOW)
     result = subprocess.run(
         [sys.executable, "-m", "scripts.seed_catalog"],
@@ -168,21 +170,20 @@ def run_seed() -> None:
     if result.returncode == 0:
         log("Seed concluído com sucesso.", GREEN)
     else:
-        print(f"{RED}{BOLD}[ERRO no seed]{RESET}\n{result.stderr}")
-        print(f"{YELLOW}Continuando sem seed — a API criará as tabelas no startup.{RESET}\n")
+        print(RED + BOLD + "[ERRO no seed]" + RESET + "\n" + result.stderr)
+        print(YELLOW + "Continuando sem seed — a API criará as tabelas no startup." + RESET + "\n")
 
 
 # ─── Encerramento ─────────────────────────────────────────────────────────────
-def shutdown(signum=None, frame=None) -> None:
+def shutdown(signum=None, frame=None):
     """Encerra todos os processos filhos com segurança."""
-    print(f"\n{YELLOW}{BOLD}[HIPNUS] Encerrando servidores...{RESET}")
+    print("\n" + YELLOW + BOLD + "[HIPNUS] Encerrando servidores..." + RESET)
     for proc in processes:
         try:
             if proc.poll() is None:
                 proc.terminate()
         except Exception:
             pass
-
     deadline = time.time() + 5
     for proc in processes:
         try:
@@ -192,14 +193,13 @@ def shutdown(signum=None, frame=None) -> None:
                 proc.kill()
         except Exception:
             pass
-
-    print(f"{RED}{BOLD}[HIPNUS] Todos os servidores encerrados.{RESET}\n")
+    print(RED + BOLD + "[HIPNUS] Todos os servidores encerrados." + RESET + "\n")
     sys.exit(0)
 
 
 # ─── Lógica principal ─────────────────────────────────────────────────────────
-def main() -> None:
-    parser = argparse.ArgumentParser(description="HIPNUS COSMÉTICOS — Starter")
+def main():
+    parser = argparse.ArgumentParser(description="HIPNUS COSMETICOS - Starter")
     parser.add_argument("--no-seed",    action="store_true", help="Pula o seed do catálogo")
     parser.add_argument("--no-backend", action="store_true", help="Sobe apenas o Streamlit")
     args = parser.parse_args()
@@ -207,9 +207,9 @@ def main() -> None:
     signal.signal(signal.SIGINT,  shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
-    print(f"\n{GREEN}{BOLD}{'\u2550' * 57}")
-    print(f"  HIPNUS COSMÉTICOS — Iniciando ambiente local")
-    print(f"{'\u2550' * 57}{RESET}\n")
+    print("\n" + GREEN + BOLD + LINE_DOUBLE)
+    print("  HIPNUS COSMÉTICOS — Iniciando ambiente local")
+    print(LINE_DOUBLE + RESET + "\n")
 
     # 1. Pré-checagens
     check_venv()
@@ -229,8 +229,9 @@ def main() -> None:
     ]
 
     for server in servidores_ativos:
-        print(f"  {server['color']}{BOLD}\u25b6  {server['name']}{RESET}")
-        print(f"  {GRAY}   {' '.join(server['cmd'])}{RESET}\n")
+        cmd_str = " ".join(server["cmd"])
+        print("  " + server["color"] + BOLD + "\u25b6  " + server["name"] + RESET)
+        print("  " + GRAY + "   " + cmd_str + RESET + "\n")
 
         proc = subprocess.Popen(
             server["cmd"],
@@ -251,14 +252,14 @@ def main() -> None:
             daemon=True,
         ).start()
 
-    print(f"\n{GREEN}{BOLD}{'\u2500' * 57}")
+    print("\n" + GREEN + BOLD + LINE_SINGLE)
     if not args.no_backend:
-        print(f"  API FastAPI  \u2192  http://localhost:8000")
-        print(f"  Swagger Docs \u2192  http://localhost:8000/docs")
-    print(f"  Frontend     \u2192  http://localhost:8501")
-    print(f"  Checkout     \u2192  http://localhost:8501  (pág. Checkout)")
-    print(f"{'\u2500' * 57}{RESET}")
-    print(f"{YELLOW}  Ctrl+C para encerrar todos os servidores.{RESET}\n")
+        print("  API FastAPI  \u2192  http://localhost:8000")
+        print("  Swagger Docs \u2192  http://localhost:8000/docs")
+    print("  Frontend     \u2192  http://localhost:8501")
+    print("  Checkout     \u2192  http://localhost:8501  (pág. Checkout)")
+    print(LINE_SINGLE + RESET)
+    print(YELLOW + "  Ctrl+C para encerrar todos os servidores." + RESET + "\n")
 
     # 5. Loop de monitoramento
     try:
@@ -268,10 +269,10 @@ def main() -> None:
                     name = servidores_ativos[i]["name"]
                     code = proc.returncode
                     print(
-                        f"{RED}{BOLD}[HIPNUS] ATENÇÃO: {name} encerrou "
-                        f"inesperadamente (código {code}).{RESET}"
+                        RED + BOLD + "[HIPNUS] ATEN\u00c7\u00c3O: " + name +
+                        " encerrou inesperadamente (c\u00f3digo " + str(code) + ")." + RESET
                     )
-                    print(f"{GRAY}  Reinicie com: python start_servers.py{RESET}")
+                    print(GRAY + "  Reinicie com: python start_servers.py" + RESET)
             time.sleep(2)
     except KeyboardInterrupt:
         shutdown()
