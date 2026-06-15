@@ -3,18 +3,10 @@ auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação para páginas protegidas.
 
-Nota sobre switch_page no Streamlit Cloud:
-  O entrypoint é streamlit_app.py na raiz do projeto.
-  Todos os caminhos para switch_page devem partir da raiz:
-  "frontend/Login.py"
-  "frontend/pages/0_🏠_Home.py"
+No Streamlit Cloud, o Login é o próprio streamlit_app.py (raiz).
+Por isso require_auth() e logout() redirecionam para "streamlit_app.py".
 
-Fluxo:
-  - Se o backend estiver online: login via API (/auth/login) com JWT real.
-  - Se o backend estiver offline: fallback para usuários locais de demo.
-
-Roles:
-  super_admin, admin, b2b, b2c, demo
+Roles: super_admin, admin, b2b, b2c, demo
 """
 from __future__ import annotations
 
@@ -95,18 +87,20 @@ def fazer_login(username: str, password: str) -> tuple[bool, str]:
         return True, f"Bem-vindo(a), {user['name']}!"
 
     if _login_offline(username, password):
-        return True, f"Bem-vindo(a), {USUARIOS_DEMO[username.lower()]['nome']}!"
+        nome = USUARIOS_DEMO[username.strip().lower()]["nome"]
+        return True, f"Bem-vindo(a), {nome}!"
 
     return False, "Usuário ou senha incorretos."
 
 
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     """
-    Verifica autenticação. Redireciona para Login se não autenticado.
+    Verifica autenticação. Redireciona para Login (streamlit_app.py) se não autenticado.
     Bloqueia perfis não autorizados se perfis_permitidos for informado.
+    Retorna dicionário com dados do usuário logado.
     """
     if not st.session_state.get("autenticado"):
-        st.switch_page("frontend/Login.py")
+        st.switch_page("streamlit_app.py")
 
     usuario = {
         "login":        st.session_state.get("usuario", ""),
@@ -126,10 +120,10 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
 
 
 def logout() -> None:
-    """Encerra a sessão e redireciona para Login."""
+    """Encerra a sessão e redireciona para Login (raiz do app)."""
     for key in ["autenticado", "usuario", "perfil", "nome", "display_name", "email", "token", "via_api"]:
         st.session_state.pop(key, None)
-    st.switch_page("frontend/Login.py")
+    st.switch_page("streamlit_app.py")
 
 
 def sidebar_user_info() -> None:
