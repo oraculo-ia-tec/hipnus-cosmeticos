@@ -2,8 +2,7 @@
 Página de Carrinho — itens selecionados pelo cliente.
 
 Permite revisar itens, ajustar quantidades, remover e ver o total.
-O checkout com pagamento (split Asaas) será habilitado no próximo ciclo —
-o botão fica visível e desativado, sinalizando o roadmap.
+O botão de checkout agora está ativo e redireciona para a página de pagamento.
 """
 import sys
 from pathlib import Path
@@ -53,12 +52,14 @@ else:
     left, right = st.columns([3, 1.4])
     with right:
         st.markdown(f"### Total: {ui.brl(ui.cart_total())}")
-        st.button("Finalizar compra", type="primary", use_container_width=True, disabled=True,
-                  help="Checkout com pagamento (split Asaas) será habilitado no próximo ciclo.")
+        # Checkout agora ativo — redireciona para a página de pagamento
+        if st.button("Finalizar compra 💳", type="primary", use_container_width=True):
+            st.switch_page("pages/5_💳_Checkout.py")
         if st.button("Limpar carrinho", use_container_width=True):
             ui.clear_cart()
             st.rerun()
     with left:
-        st.caption("O pagamento online com split automático via Asaas será habilitado no "
-                   "próximo ciclo de desenvolvimento (módulo de pedidos/checkout). "
-                   "Cada item será dividido entre a Hipnus (piso) e o parceiro (margem).")
+        st.caption(
+            "O pagamento é processado via **Asaas** com split automático: "
+            "o piso (floor_price) fica na Hipnus e a margem é repassada ao parceiro."
+        )
