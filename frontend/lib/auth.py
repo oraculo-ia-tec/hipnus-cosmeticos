@@ -3,16 +3,18 @@ auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação para páginas protegidas.
 
+Nota sobre switch_page no Streamlit Cloud:
+  O entrypoint é streamlit_app.py na raiz do projeto.
+  Todos os caminhos para switch_page devem partir da raiz:
+  "frontend/Login.py"
+  "frontend/pages/0_🏠_Home.py"
+
 Fluxo:
   - Se o backend estiver online: login via API (/auth/login) com JWT real.
   - Se o backend estiver offline: fallback para usuários locais de demo.
 
-Roles (mapeados do campo `role` do JWT):
-  super_admin — acesso total
-  admin       — administrador operacional  
-  b2b         — profissional / salão / distribuidor
-  b2c         — consumidor final
-  demo        — visitante sem login (somente leitura)
+Roles:
+  super_admin, admin, b2b, b2c, demo
 """
 from __future__ import annotations
 
@@ -20,18 +22,11 @@ import httpx
 import streamlit as st
 from lib.config import API_V1
 
-
-# ─── Roles privilegiados ─────────────────────────────────────────────
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
 
-# ─── Autenticação via API ───────────────────────────────────────────
 def login_via_api(username: str, password: str) -> dict | None:
-    """
-    Autentica o usuário via API FastAPI.
-    Retorna o dicionário com `token` e `user` se bem-sucedido, None se falhar.
-    """
     try:
         r = httpx.post(
             f"{API_V1}/auth/login",
@@ -45,7 +40,6 @@ def login_via_api(username: str, password: str) -> dict | None:
     return None
 
 
-# ─── Fallback offline ───────────────────────────────────────────────
 USUARIOS_DEMO = {
     "william": {"senha": "hipnus@2026", "role": "super_admin", "nome": "William Eustáquio",
                 "display_name": "Desenvolvedor de IA", "email": "programador.descpro@gmail.com"},
@@ -59,7 +53,6 @@ USUARIOS_DEMO = {
 
 
 def _login_offline(username: str, password: str) -> bool:
-    """Fallback: autentica contra usuários locais quando a API está offline."""
     u = USUARIOS_DEMO.get(username.strip().lower())
     if not u or password != u["senha"]:
         return False
@@ -75,7 +68,6 @@ def _login_offline(username: str, password: str) -> bool:
     return True
 
 
-# ─── Sessão ──────────────────────────────────────────────────────────────
 def _gravar_sessao(nome, username, role, display_name, email, token, via_api):
     st.session_state["autenticado"]   = True
     st.session_state["usuario"]       = username
@@ -88,10 +80,6 @@ def _gravar_sessao(nome, username, role, display_name, email, token, via_api):
 
 
 def fazer_login(username: str, password: str) -> tuple[bool, str]:
-    """
-    Tenta autenticar via API; se offline, usa fallback local.
-    Retorna (sucesso: bool, mensagem: str).
-    """
     resultado = login_via_api(username, password)
     if resultado:
         user = resultado["user"]
@@ -106,22 +94,19 @@ def fazer_login(username: str, password: str) -> tuple[bool, str]:
         )
         return True, f"Bem-vindo(a), {user['name']}!"
 
-    # Fallback offline
     if _login_offline(username, password):
-        return True, "Login offline (modo demonstração)."
+        return True, f"Bem-vindo(a), {USUARIOS_DEMO[username.lower()]['nome']}!"
 
     return False, "Usuário ou senha incorretos."
 
 
-# ─── Guards ──────────────────────────────────────────────────────────────
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     """
     Verifica autenticação. Redireciona para Login se não autenticado.
     Bloqueia perfis não autorizados se perfis_permitidos for informado.
-    Retorna dicionário com dados do usuário logado.
     """
     if not st.session_state.get("autenticado"):
-        st.switch_page("Login.py")
+        st.switch_page("frontend/Login.py")
 
     usuario = {
         "login":        st.session_state.get("usuario", ""),
@@ -144,7 +129,7 @@ def logout() -> None:
     """Encerra a sessão e redireciona para Login."""
     for key in ["autenticado", "usuario", "perfil", "nome", "display_name", "email", "token", "via_api"]:
         st.session_state.pop(key, None)
-    st.switch_page("Login.py")
+    st.switch_page("frontend/Login.py")
 
 
 def sidebar_user_info() -> None:
@@ -163,8 +148,8 @@ def sidebar_user_info() -> None:
     }.get(perfil, "👤")
 
     fonte = "🔗 API" if via_api else "📴 offline"
-
     label = display_name if display_name else nome
+
     st.sidebar.markdown(
         f"**{icone} {label}**  \n"
         f"<span style='font-size:0.78rem; color:#6B6580;'>"

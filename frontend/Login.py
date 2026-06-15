@@ -9,8 +9,10 @@ Fluxo:
   3. Se a API estiver offline, usa fallback com usuários locais de demo.
   4. Credenciais válidas → grava sessão e redireciona para Home.
 
-Botão Demo:
-  Acessa a vitrine como visitante (role: demo) sem credenciais.
+Nota sobre switch_page no Streamlit Cloud:
+  O entrypoint é streamlit_app.py na raiz do projeto.
+  Os caminhos para switch_page devem partir da raiz:
+  "frontend/pages/0_🏠_Home.py"
 """
 import sys
 from pathlib import Path
@@ -38,25 +40,16 @@ st.markdown(
     #MainMenu { visibility: hidden; }
     header    { visibility: hidden; }
 
-    /* Limita o bloco de botões à largura do card (420px) e centraliza */
     div[data-testid="stHorizontalBlock"] {
         max-width: 420px !important;
         margin: 0 auto !important;
     }
-    /* Remove o stretch padrão dos botões — eles ficam pelo tamanho do col */
-    div[data-testid="stHorizontalBlock"] button {
-        width: 100%;
-    }
-    /* Inputs também respeitam a largura do card */
+    div[data-testid="stHorizontalBlock"] button { width: 100%; }
     div[data-testid="stTextInputRootElement"] {
         max-width: 420px !important;
         margin: 0 auto !important;
     }
-    /* Título do formulário centralizado no card */
-    .login-title {
-        max-width: 420px;
-        margin: 0 auto 0.5rem auto;
-    }
+    .login-title { max-width: 420px; margin: 0 auto 0.5rem auto; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -64,7 +57,7 @@ st.markdown(
 
 # Se já autenticado, vai direto para Home
 if st.session_state.get("autenticado"):
-    st.switch_page("pages/0_🏠_Home.py")
+    st.switch_page("frontend/pages/0_🏠_Home.py")
 
 # ─── Cabeçalho da marca ─────────────────────────────────────────────
 st.markdown(
@@ -92,14 +85,14 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ─── Campos de input (centralizados via CSS) ─────────────────────────
+# ─── Campos de input ───────────────────────────────────────────────────
 login_input = st.text_input("Usuário", placeholder="seu.usuario", key="_login")
 senha_input = st.text_input("Senha",   placeholder="\u2022" * 8,
                              type="password", key="_senha")
 
 st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
 
-# ─── Botões com proporção 2:1 dentro do bloco de 420px ───────────────
+# ─── Botões ─────────────────────────────────────────────────────────────
 col1, col2 = st.columns([2, 1])
 with col1:
     btn_entrar = st.button("→ Entrar", use_container_width=True, type="primary")
@@ -115,7 +108,7 @@ if btn_entrar:
         ok, msg = fazer_login(login_input.strip(), senha_input)
         if ok:
             st.success(msg)
-            st.switch_page("pages/0_🏠_Home.py")
+            st.switch_page("frontend/pages/0_🏠_Home.py")
         else:
             st.error("❌ " + msg)
 
@@ -128,7 +121,7 @@ if btn_demo:
     st.session_state["email"]        = ""
     st.session_state["token"]        = None
     st.session_state["via_api"]      = False
-    st.switch_page("pages/0_🏠_Home.py")
+    st.switch_page("frontend/pages/0_🏠_Home.py")
 
 # ─── Rodapé ──────────────────────────────────────────────────────────
 st.markdown(
