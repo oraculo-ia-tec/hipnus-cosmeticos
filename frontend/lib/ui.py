@@ -7,6 +7,19 @@ Centraliza:
 - cabeçalho da marca e barra de status da API
 - card de produto e badges
 - estado e operações do carrinho (em st.session_state)
+
+REGRA DE NAVEGAÇÃO (Streamlit Cloud):
+  Usar SEMPRE os wrappers de pages/ (raiz), nunca os caminhos com emoji.
+  Mapa completo:
+    Login          → "streamlit_app.py"
+    Home           → "pages/1_Home.py"
+    Catálogo       → "pages/2_Catalogo.py"
+    Linhas         → "pages/3_Linhas.py"
+    Loja Parceiro  → "pages/4_Loja_Parceiro.py"
+    Carrinho       → "pages/5_Carrinho.py"
+    Checkout       → "pages/6_Checkout.py"
+    Convites       → "pages/7_Convites.py"
+    Cadastro       → "pages/8_Cadastro_Parceiro.py"
 """
 from __future__ import annotations
 
@@ -237,10 +250,14 @@ def clear_cart() -> None:
 
 
 def sidebar_cart_summary() -> None:
-    """Resumo compacto do carrinho na sidebar."""
+    """Resumo compacto do carrinho na sidebar.
+
+    IMPORTANTE: usa o wrapper pages/5_Carrinho.py (sem emoji no path),
+    que é o caminho registrado pelo Streamlit Cloud.
+    """
     count = cart_count()
     st.sidebar.markdown("---")
     st.sidebar.markdown(f"🛒 **Carrinho:** {count} item(ns)")
     if count:
         st.sidebar.markdown(f"**Total:** {brl(cart_total())}")
-        st.sidebar.page_link("pages/4_🛒_Carrinho.py", label="Ver carrinho", icon="➡️")
+        st.sidebar.page_link("pages/5_Carrinho.py", label="Ver carrinho", icon="➡️")
