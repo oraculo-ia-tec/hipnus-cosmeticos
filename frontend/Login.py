@@ -3,16 +3,10 @@ Login.py — HIPNUS COSMÉTICOS
 ==============================
 Porta de entrada obrigatória da plataforma.
 
-Fluxo:
-  1. Usuário não autenticado → exibe formulário de login.
-  2. Tenta autenticar via API FastAPI (/auth/login) com JWT real.
-  3. Se a API estiver offline, usa fallback com usuários locais de demo.
-  4. Credenciais válidas → grava sessão e redireciona para Home.
-
-Nota sobre switch_page no Streamlit Cloud:
-  O entrypoint é streamlit_app.py na raiz do projeto.
-  Os caminhos para switch_page devem partir da raiz:
-  "frontend/pages/0_🏠_Home.py"
+Fluxo pós-login:
+  - Usamos st.rerun() após gravar a sessão.
+  - O streamlit_app.py detecta a sessão ativa e encaminha para Home.
+  - Isso evita o erro de switch_page dentro de exec().
 """
 import sys
 from pathlib import Path
@@ -55,7 +49,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Se já autenticado, vai direto para Home
+# Se já autenticado, redireciona para Home
 if st.session_state.get("autenticado"):
     st.switch_page("frontend/pages/0_🏠_Home.py")
 
