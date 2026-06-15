@@ -1,68 +1,49 @@
 """
-Configuração central da aplicação HIPNUS COSMÉTICOS.
-
-Carrega variáveis de ambiente via Pydantic Settings. Centraliza todos os
-parâmetros de infraestrutura, integrações externas (Asaas, SMTP Hostinger,
-Groq) e regras de negócio globais.
-
-Uso:
-    from app.core.config import settings
-    settings.ASAAS_API_KEY
+config.py — HIPNUS COSMÉTICOS
+================================
+Configurações globais da aplicação via Pydantic Settings.
+Todas as variáveis são lidas do ambiente (.env) com valores padrão para dev.
 """
-from functools import lru_cache
-from typing import Literal
+from __future__ import annotations
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # ------------------------------------------------------------------ App
-    APP_NAME: str = "HIPNUS COSMÉTICOS"
-    APP_ENV: Literal["local", "staging", "production"] = "local"
-    DEBUG: bool = True
-    API_V1_PREFIX: str = "/api/v1"
-    SECRET_KEY: str = Field(default="change-me-in-production")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+    # App
+    app_name:    str = "HIPNUS COSMÉTICOS"
+    app_version: str = "0.1.0"
+    debug:       bool = True
 
-    # ------------------------------------------------------------- Database
-    # Local: SQLite | Produção: MySQL (Hostinger)
-    DATABASE_URL: str = "sqlite:///./data/hipnus.db"
+    # JWT
+    secret_key:        str = "hipnus-dev-secret-change-in-production"
+    access_token_minutes: int = 480  # 8 horas
 
-    # ----------------------------------------------------------- Asaas API
-    # Integração oficial Asaas para criação de parceiros (subcontas/wallets),
-    # split de pagamento, cobranças e webhooks.
-    ASAAS_API_KEY: str = Field(default="")
-    ASAAS_BASE_URL: str = "https://api-sandbox.asaas.com/v3"  # produção: https://api.asaas.com/v3
-    ASAAS_WEBHOOK_TOKEN: str = Field(default="")
-    # Percentual de comissão da Hipnus sobre o que excede o piso (configurável).
-    HIPNUS_PLATFORM_FEE_PERCENT: float = 0.0
+    # Banco de dados
+    database_url: str = "sqlite:///./data/hipnus.db"
 
-    # --------------------------------------------------------- SMTP Hostinger
-    SMTP_HOST: str = "smtp.hostinger.com"
-    SMTP_PORT: int = 465
-    SMTP_USER: str = Field(default="")
-    SMTP_PASSWORD: str = Field(default="")
-    SMTP_FROM: str = "no-reply@hipnuscosmeticos.com.br"
+    # Admin padrão (criado no startup se não existir)
+    admin_username: str = "william"
+    admin_name:     str = "William Eustáquio"
+    admin_email:    str = "programador.descpro@gmail.com"
+    admin_password: str = "hipnus@2026"
 
-    # --------------------------------------------------------------- Groq AI
-    GROQ_API_KEY: str = Field(default="")
-    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    # Asaas
+    asaas_api_key:  str = ""
+    asaas_base_url: str = "https://api-sandbox.asaas.com/v3"
+    partner_wallet_id: str = ""
 
-    # -------------------------------------------------------------- Frontend
-    FRONTEND_BASE_URL: str = "http://localhost:8501"
-    BACKEND_BASE_URL: str = "http://localhost:8000"
+    # SMTP Hostinger
+    smtp_host:     str = ""
+    smtp_port:     int = 587
+    smtp_user:     str = ""
+    smtp_password: str = ""
+    smtp_from:     str = "noreply@hipnuscosmeticos.com.br"
+
+    # Frontend
+    hipnus_api_url: str = "http://localhost:8000"
 
 
-@lru_cache
-def get_settings() -> Settings:
-    """Retorna instância singleton de Settings (cacheada)."""
-    return Settings()
-
-
-settings = get_settings()
+settings = Settings()

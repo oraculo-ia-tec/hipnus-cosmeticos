@@ -1,35 +1,50 @@
 """
-Aplicação FastAPI — HIPNUS COSMÉTICOS (marketplace de parceiros).
+main.py — HIPNUS COSMÉTICOS
+==============================
+Entrypoint da API FastAPI.
 
-Monta a API modular por domínios:
-- /api/v1/catalog   -> produtos oficiais Hipnus
-- /api/v1/partners  -> onboarding de parceiros + subconta Asaas
-- /api/v1/stores    -> lojas e ofertas dos parceiros
-- /api/v1/payments  -> webhooks Asaas
+Startup:
+  1. Cria todas as tabelas no banco (create_all).
+  2. Executa seed_super_admin para garantir que o admin padrão exista.
 
-Tratamento de erros de domínio mapeado para respostas HTTP coerentes.
+Rotas registradas:
+  /health          — healthcheck público
+  /api/v1/auth     — autenticação e usuários
+  /api/v1/catalog  — catálogo de produtos
+  /api/v1/orders   — pedidos
+  /api/v1/stores   — lojas parceiras
+  /api/v1/payments — pagamentos Asaas
 """
-from fastapi import FastAPI, Request
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.core.exceptions import DomainError
-from app.db import registry  # noqa: F401  (registra models)
-from app.db.base import Base, engine
-from app.domains.catalog.routers.products import router as catalog_router
-from app.domains.partners.routers.partners import router as partners_router
-from app.domains.payments.routers.webhooks import router as payments_router
-from app.domains.stores.routers.stores import router as stores_router
+from app.db.base import Base, engine, SessionLocal
+from app.db.registry import import_all_models
+from app.domains.users.service import seed_super_admin
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Importa todos os modelos antes de criar as tabelas
+    import_all_models()
+    Base.metadata.create_all(bind=engine)
+
+    # Seed do super_admin
+    with SessionLocal() as db:
+        seed_super_admin(db)
+
+    yield
+
 
 app = FastAPI(
-    title=settings.APP_NAME,
-    version="1.0.0",
-    description=(
-        "Marketplace proprietário Hipnus Cosméticos. Cada parceiro possui uma "
-        "loja com os produtos oficiais da marca, com split de pagamento via "
-        "API oficial do Asaas."
-    ),
+    title=settings.app_name,
+    version=settings.app_version,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -41,26 +56,37 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def on_startup() -> None:
-    """Cria as tabelas no startup (SQLite local). Em produção, usar migrations."""
-    Base.metadata.create_all(bind=engine)
+@app.get("/health", tags=["System"])
+def health():
+    """Healthcheck público. Usado pelo frontend para verificar se a API está no ar."""
+    return {"status": "ok", "app": settings.app_name}
 
 
-@app.exception_handler(DomainError)
-async def domain_error_handler(_: Request, exc: DomainError) -> JSONResponse:
-    """Converte erros de domínio em respostas HTTP coerentes."""
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+# ─── Routers ────────────────────────────────────────────────────────────
+from app.domains.users.router import router as auth_router
 
+app.include_router(auth_router, prefix="/api/v1")
 
-@app.get("/health", tags=["Infra"])
-def health() -> dict:
-    """Healthcheck simples para monitoramento/infra."""
-    return {"status": "ok", "app": settings.APP_NAME, "env": settings.APP_ENV}
+try:
+    from app.domains.catalog.router import router as catalog_router
+    app.include_router(catalog_router, prefix="/api/v1")
+except ImportError:
+    pass
 
+try:
+    from app.domains.orders.router import router as orders_router
+    app.include_router(orders_router, prefix="/api/v1")
+except ImportError:
+    pass
 
-P = settings.API_V1_PREFIX
-app.include_router(catalog_router, prefix=P)
-app.include_router(partners_router, prefix=P)
-app.include_router(stores_router, prefix=P)
-app.include_router(payments_router, prefix=P)
+try:
+    from app.domains.stores.router import router as stores_router
+    app.include_router(stores_router, prefix="/api/v1")
+except ImportError:
+    pass
+
+try:
+    from app.domains.payments.router import router as payments_router
+    app.include_router(payments_router, prefix="/api/v1")
+except ImportError:
+    pass
