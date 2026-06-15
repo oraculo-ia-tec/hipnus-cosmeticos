@@ -60,7 +60,7 @@ for col, v, l in [
     )
 
 st.markdown("")
-st.page_link("pages/1_🛙️_Catálogo.py", label="Explorar catálogo completo", icon="🛙️")
+st.page_link("pages/2_Catalogo.py", label="Explorar catálogo completo", icon="🛍️")
 
 # ─── Linhas da marca ──────────────────────────────────────────────────────
 st.markdown('<div class="hip-section-title">Linhas da marca</div>', unsafe_allow_html=True)
