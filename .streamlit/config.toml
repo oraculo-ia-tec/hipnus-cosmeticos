@@ -1,0 +1,20 @@
+# .streamlit/config.toml — HIPNUS COSMÉTICOS
+# Configurações do servidor Streamlit para produção (Streamlit Cloud)
+# e desenvolvimento local.
+
+[server]
+headless = true
+enableCORS = false
+enableXsrfProtection = true
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#7C3AED"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F6F4FB"
+textColor = "#1A1430"
+font = "sans serif"
