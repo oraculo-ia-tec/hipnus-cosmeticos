@@ -29,14 +29,34 @@ st.set_page_config(
 )
 ui.inject_theme()
 
-# Oculta sidebar e menu na página de login
+# ─── Oculta sidebar/menu e controla largura dos botões ──────────────
 st.markdown(
     """
     <style>
-    [data-testid="stSidebar"]       { display: none !important; }
+    [data-testid="stSidebar"]        { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
     #MainMenu { visibility: hidden; }
     header    { visibility: hidden; }
+
+    /* Limita o bloco de botões à largura do card (420px) e centraliza */
+    div[data-testid="stHorizontalBlock"] {
+        max-width: 420px !important;
+        margin: 0 auto !important;
+    }
+    /* Remove o stretch padrão dos botões — eles ficam pelo tamanho do col */
+    div[data-testid="stHorizontalBlock"] button {
+        width: 100%;
+    }
+    /* Inputs também respeitam a largura do card */
+    div[data-testid="stTextInputRootElement"] {
+        max-width: 420px !important;
+        margin: 0 auto !important;
+    }
+    /* Título do formulário centralizado no card */
+    .login-title {
+        max-width: 420px;
+        margin: 0 auto 0.5rem auto;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -66,19 +86,20 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ─── Card de login ────────────────────────────────────────────────
+# ─── Título do card ──────────────────────────────────────────────────
 st.markdown(
-    f'<div style="background:{COLORS["surface"]}; border:1px solid {COLORS["border"]};'
-    'border-radius:12px; padding:2rem 2.5rem; max-width:420px; margin:0 auto;">',
+    "<div class='login-title'><h4 style='margin-bottom:0.5rem;'>Entrar na plataforma</h4></div>",
     unsafe_allow_html=True,
 )
-st.markdown("#### Entrar na plataforma")
-st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
 
-login_input = st.text_input("Usuário", placeholder="seu.usuario",   key="_login")
+# ─── Campos de input (centralizados via CSS) ─────────────────────────
+login_input = st.text_input("Usuário", placeholder="seu.usuario", key="_login")
 senha_input = st.text_input("Senha",   placeholder="\u2022" * 8,
                              type="password", key="_senha")
 
+st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
+
+# ─── Botões com proporção 2:1 dentro do bloco de 420px ───────────────
 col1, col2 = st.columns([2, 1])
 with col1:
     btn_entrar = st.button("→ Entrar", use_container_width=True, type="primary")
@@ -86,9 +107,7 @@ with col2:
     btn_demo = st.button("Demo", use_container_width=True,
                          help="Acessa a vitrine sem login")
 
-st.markdown("</div>", unsafe_allow_html=True)
-
-# ─── Lógica ──────────────────────────────────────────────────────────────
+# ─── Lógica ──────────────────────────────────────────────────────────
 if btn_entrar:
     if not login_input or not senha_input:
         st.warning("⚠️ Preencha usuário e senha.")
@@ -111,7 +130,7 @@ if btn_demo:
     st.session_state["via_api"]      = False
     st.switch_page("pages/0_🏠_Home.py")
 
-# ─── Rodapé ──────────────────────────────────────────────────────────────
+# ─── Rodapé ──────────────────────────────────────────────────────────
 st.markdown(
     f"<div style='text-align:center; margin-top:2rem; font-size:0.78rem; color:{COLORS['muted']};'>"
     "HIPNUS COSMÉTICOS &copy; 2026 — Plataforma exclusiva da marca."
