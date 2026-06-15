@@ -1,21 +1,15 @@
 """
 streamlit_app.py — HIPNUS COSMÉTICOS
 ======================================
-Entrypoint do Streamlit Cloud — esta é a página de Login.
+Entrypoint do Streamlit Cloud — página de Login.
 
-No Streamlit Cloud, o arquivo raiz (streamlit_app.py) é a primeira página
-exibida. Não é possível usar st.switch_page() nele antes de renderizar.
-A solução correta é: este arquivo É o Login.
+As páginas são registradas em pages/ (raiz) como wrappers
+que carregam o código real de frontend/pages/.
 
-As páginas internas ficam em frontend/pages/ e são registradas
-automaticamente pelo Streamlit Cloud como páginas do menu.
-
-Fluxo de navegação:
-  streamlit_app.py  (Login)
-        ↓ login bem-sucedido
-  frontend/pages/0_Home.py
-        ↓ require_auth() falha
-  st.switch_page("streamlit_app.py")  ← volta para o Login
+Navegação:
+  Login bem-sucedido  →  st.switch_page("pages/1_Home.py")
+  require_auth() fail →  st.switch_page("streamlit_app.py")
+  logout()            →  st.switch_page("streamlit_app.py")
 """
 import sys
 from pathlib import Path
@@ -37,7 +31,6 @@ st.set_page_config(
 )
 ui.inject_theme()
 
-# ─── Oculta sidebar/menu e controla largura dos botões ──────────────
 st.markdown(
     """
     <style>
@@ -60,22 +53,16 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Se já autenticado, vai direto para Home
 if st.session_state.get("autenticado"):
-    st.switch_page("frontend/pages/0_🏠_Home.py")
+    st.switch_page("pages/1_Home.py")
 
-# ─── Cabeçalho da marca ─────────────────────────────────────────────
 st.markdown(
     f"""
     <div style="text-align:center; padding:2.5rem 0 1.5rem 0;">
         <div style="font-size:2.8rem; font-weight:800;
-                    color:{COLORS['primary']}; letter-spacing:-1px;">
-            HIPNUS
-        </div>
+                    color:{COLORS['primary']}; letter-spacing:-1px;">HIPNUS</div>
         <div style="font-size:1rem; color:{COLORS['muted']};
-                    margin-top:0.2rem; letter-spacing:2px;">
-            COSMÉTICOS
-        </div>
+                    margin-top:0.2rem; letter-spacing:2px;">COSMÉTICOS</div>
         <div style="margin-top:0.8rem; font-size:0.92rem; color:{COLORS['muted']};">
             {BRAND['tagline']}
         </div>
@@ -90,17 +77,14 @@ st.markdown(
 )
 
 login_input = st.text_input("Usuário", placeholder="seu.usuario", key="_login")
-senha_input = st.text_input("Senha",   placeholder="\u2022" * 8,
-                             type="password", key="_senha")
-
+senha_input = st.text_input("Senha", placeholder="\u2022" * 8, type="password", key="_senha")
 st.markdown("<div style='height:0.4rem'></div>", unsafe_allow_html=True)
 
 col1, col2 = st.columns([2, 1])
 with col1:
     btn_entrar = st.button("→ Entrar", use_container_width=True, type="primary")
 with col2:
-    btn_demo = st.button("Demo", use_container_width=True,
-                         help="Acessa a vitrine sem login")
+    btn_demo = st.button("Demo", use_container_width=True, help="Acessa a vitrine sem login")
 
 if btn_entrar:
     if not login_input or not senha_input:
@@ -108,24 +92,20 @@ if btn_entrar:
     else:
         ok, msg = fazer_login(login_input.strip(), senha_input)
         if ok:
-            st.switch_page("frontend/pages/0_🏠_Home.py")
+            st.switch_page("pages/1_Home.py")
         else:
             st.error("❌ " + msg)
 
 if btn_demo:
-    st.session_state["autenticado"]  = True
-    st.session_state["usuario"]      = "demo"
-    st.session_state["perfil"]       = "demo"
-    st.session_state["nome"]         = "Visitante"
-    st.session_state["display_name"] = "Modo demonstração"
-    st.session_state["email"]        = ""
-    st.session_state["token"]        = None
-    st.session_state["via_api"]      = False
-    st.switch_page("frontend/pages/0_🏠_Home.py")
+    st.session_state.update({
+        "autenticado": True, "usuario": "demo", "perfil": "demo",
+        "nome": "Visitante", "display_name": "Modo demonstração",
+        "email": "", "token": None, "via_api": False,
+    })
+    st.switch_page("pages/1_Home.py")
 
 st.markdown(
     f"<div style='text-align:center; margin-top:2rem; font-size:0.78rem; color:{COLORS['muted']};'>"
-    "HIPNUS COSMÉTICOS &copy; 2026 — Plataforma exclusiva da marca."
-    "</div>",
+    "HIPNUS COSMÉTICOS &copy; 2026 — Plataforma exclusiva da marca.</div>",
     unsafe_allow_html=True,
 )
