@@ -5,14 +5,6 @@ Página inicial da vitrine (pós-login).
 Hero da marca, indicadores do portfólio, destaques e atalhos.
 
 Acesso: qualquer perfil autenticado (admin, b2b, b2c, demo).
-
-Ordem da sidebar:
-  1. brand_header()
-  2. sidebar_user_info()      ← ACIMA do menu
-  3. [menu nativo]
-  4. api_status_badge()
-  5. sidebar_cart_summary()
-  6. sidebar_logout_button()  ← ABAIXO do menu
 """
 import sys
 from pathlib import Path
@@ -26,23 +18,22 @@ from lib.config import BRAND
 st.set_page_config(page_title="HIPNUS COSMÉTICOS", page_icon="💜", layout="wide")
 ui.inject_theme()
 
-# ─── Guarda de autenticação ───────────────────────────────────────
+# ─ Guarda de autenticação ───────────────────────────────────
 require_auth()
 
-# ─── Sidebar ─────────────────────────────────────────────
-ui.brand_header()                       # 1. Logo
-sidebar_user_info()                     # 2. Usuário (ACIMA do menu)
-# --- [menu nativo Streamlit aqui] ---
-ui.api_status_badge(api.api_online())   # 4. Status API
-ui.sidebar_cart_summary()               # 5. Carrinho
-sidebar_logout_button()                 # 6. SAIR (ABAIXO do menu)
+# ─ Sidebar ──────────────────────────────────────────
+ui.brand_header()
+sidebar_user_info()
+ui.api_status_badge(api.api_online())
+ui.sidebar_cart_summary()
+sidebar_logout_button()
 
-# ─── Dados ─────────────────────────────────────────────────
+# ─ Dados ────────────────────────────────────────────────
 products = api.get_products()
 lines    = api.list_lines()
 cats     = api.list_categories()
 
-# ─── Hero ──────────────────────────────────────────────────
+# ─ Hero ─────────────────────────────────────────────────
 st.markdown(
     f"""
     <div class="hip-hero">
@@ -54,7 +45,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ─── Indicadores ───────────────────────────────────────────────
+# ─ Indicadores ──────────────────────────────────────────
 c1, c2, c3, c4 = st.columns(4)
 kits = sum(1 for p in products if p.get("is_kit"))
 for col, v, l in [
@@ -69,9 +60,10 @@ for col, v, l in [
     )
 
 st.markdown("")
-st.page_link("pages/2_Catalogo.py", label="Explorar catálogo completo", icon="🛘️")
+# Atalho para o catálogo ─ usando page_link com emoji válido
+st.page_link("pages/1_🛒️_Catálogo.py", label="🛒 Explorar catálogo completo")
 
-# ─── Linhas da marca ────────────────────────────────────────────────
+# ─ Linhas da marca ────────────────────────────────────────
 st.markdown('<div class="hip-section-title">Linhas da marca</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="hip-section-sub">Coleções desenvolvidas para cada necessidade capilar.</div>',
@@ -80,7 +72,7 @@ st.markdown(
 line_html = "".join(f'<span class="hip-badge">{ln}</span>' for ln in lines)
 st.markdown(line_html, unsafe_allow_html=True)
 
-# ─── Destaques ──────────────────────────────────────────────────
+# ─ Destaques ───────────────────────────────────────────
 st.markdown("")
 st.markdown('<div class="hip-section-title">Destaques</div>', unsafe_allow_html=True)
 st.markdown(
