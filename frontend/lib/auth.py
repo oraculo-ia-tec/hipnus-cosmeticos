@@ -3,9 +3,9 @@ auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação.
 
-Navegação (caminhos registrados pelo Streamlit Cloud):
-  Login     → "streamlit_app.py"
-  Home      → "pages/1_Home.py"
+Navegação (caminhos reais do Streamlit Cloud):
+  Login     →  "Login.py"            ← entrypoint real (frontend/Login.py)
+  Home      →  "pages/0_🏠_Home.py"
 
 Roles: super_admin, admin, b2b, b2c, demo
 
@@ -25,6 +25,10 @@ from lib.config import API_V1
 
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
+
+# Entrypoint real do Streamlit Cloud
+_LOGIN_PAGE = "Login.py"
+_HOME_PAGE  = "pages/0_🏠_Home.py"
 
 
 def login_via_api(username: str, password: str) -> dict | None:
@@ -91,8 +95,13 @@ def fazer_login(username: str, password: str) -> tuple[bool, str]:
 
 
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
+    """Protege a página exigindo autenticação.
+
+    Se não autenticado, redireciona para Login.py (entrypoint real).
+    Se perfis_permitidos for informado, bloqueia perfis não autorizados.
+    """
     if not st.session_state.get("autenticado"):
-        st.switch_page("streamlit_app.py")
+        st.switch_page(_LOGIN_PAGE)
 
     usuario = {
         "login":        st.session_state.get("usuario", ""),
@@ -112,9 +121,10 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
 
 
 def logout() -> None:
+    """Limpa a sessão e redireciona para o login."""
     for key in ["autenticado", "usuario", "perfil", "nome", "display_name", "email", "token", "via_api"]:
         st.session_state.pop(key, None)
-    st.switch_page("streamlit_app.py")
+    st.switch_page(_LOGIN_PAGE)
 
 
 def sidebar_user_info() -> None:
@@ -130,7 +140,7 @@ def sidebar_user_info() -> None:
     perfil       = st.session_state.get("perfil", "demo")
     via_api      = st.session_state.get("via_api", False)
 
-    icone = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎪", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
+    icone = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
     fonte = "🔗 API" if via_api else "📴 offline"
     label = display_name if display_name else nome
 
@@ -158,9 +168,9 @@ def sidebar_user_info() -> None:
 def sidebar_logout_button() -> None:
     """Botão SAIR da sidebar.
 
-    Deve ser a Última chamada de sidebar em cada página,
+    Deve ser a última chamada de sidebar em cada página,
     posicionado abaixo do menu nativo de navegação.
     """
     st.sidebar.markdown("---")
-    if st.sidebar.button("🚪 Sair", use_container_width=True, key="btn_logout_global"):
+    if st.sidebar.button("🚶 Sair", use_container_width=True, key="btn_logout_global"):
         logout()
