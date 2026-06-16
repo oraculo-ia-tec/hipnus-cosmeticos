@@ -30,7 +30,6 @@ def _load_seed() -> dict:
 
 def _seed_products() -> list[dict]:
     products = _load_seed()["products"]
-    # Normaliza para o mesmo formato do backend (inclui id sintético).
     return [
         {**p, "id": i + 1, "_source": "seed"}
         for i, p in enumerate(products)
@@ -54,7 +53,6 @@ def api_online() -> bool:
 def get_products() -> list[dict]:
     """
     Retorna todos os produtos ativos do catálogo.
-
     Tenta a API; em falha, usa o seed. O resultado é cacheado por 60s.
     """
     try:
@@ -102,6 +100,45 @@ def get_store_listings(store_id: int) -> list[dict]:
     """Retorna as ofertas (produto + preço de venda) de uma loja, via API."""
     try:
         r = httpx.get(f"{API_V1}/stores/{store_id}/listings", timeout=4.0)
+        if r.status_code == 200:
+            return r.json()
+    except Exception:
+        pass
+    return []
+
+
+# ------------------------------------------------------------------ convites
+def send_invite(
+    email: str,
+    nome: str | None = None,
+    mensagem: str | None = None,
+    token: str | None = None,
+) -> dict:
+    """
+    Envia um convite de parceiro via API.
+    Retorna o dict do convite criado: {id, email, token, link, created_at}.
+    Lança Exception se a API não estiver disponível.
+    """
+    payload = {"email": email}
+    if nome:
+        payload["nome"] = nome
+    if mensagem:
+        payload["mensagem"] = mensagem
+    if token:
+        payload["token"] = token
+
+    r = httpx.post(f"{API_V1}/invites", json=payload, timeout=6.0)
+    r.raise_for_status()
+    return r.json()
+
+
+def list_invites() -> list[dict]:
+    """
+    Lista todos os convites enviados (apenas via API).
+    Retorna lista vazia em caso de falha.
+    """
+    try:
+        r = httpx.get(f"{API_V1}/invites", timeout=4.0)
         if r.status_code == 200:
             return r.json()
     except Exception:

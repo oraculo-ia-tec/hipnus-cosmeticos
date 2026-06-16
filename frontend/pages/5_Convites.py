@@ -1,95 +1,235 @@
 """
 5_Convites.py — HIPNUS COSMÉTICOS
 ====================================
-Página de Convites — envio e gestão de convites para novos parceiros.
+Página de Convites: envio por e-mail e geração de link de convite.
 
 Acesso restrito: admin e super_admin.
 
-Ordem da sidebar:
-  1. brand_header()
-  2. sidebar_user_info()      ← ACIMA do menu
-  3. [menu nativo]
-  4. api_status_badge()
-  5. sidebar_cart_summary()
-  6. sidebar_logout_button()  ← ABAIXO do menu
+Fluxo:
+  1. Admin preenche e-mail + nome + mensagem opcional.
+  2. Sistema gera token único para o convite.
+  3. Duas opções:
+     a) Enviar por e-mail via SMTP (Hostinger).
+     b) Copiar o link de convite para compartilhar manualmente.
+  4. Registro do convite via API (com fallback local em session_state).
 """
 import sys
 from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import secrets
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from datetime import datetime
 
 import streamlit as st
 
 from lib import api, ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+from lib.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, APP_URL
 
 st.set_page_config(page_title="Convites · HIPNUS", page_icon="📧", layout="wide")
 ui.inject_theme()
 
 require_auth(perfis_permitidos=["admin", "super_admin"])
 
-# ─── Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()                       # 1. Logo
-sidebar_user_info()                     # 2. Usuário (ACIMA do menu)
-# --- [menu nativo Streamlit aqui] ---
-ui.api_status_badge(api.api_online())   # 4. Status API
-ui.sidebar_cart_summary()               # 5. Carrinho
-sidebar_logout_button()                 # 6. SAIR (ABAIXO do menu)
+# ─ Sidebar ──────────────────────────────────────────
+ui.brand_header()
+sidebar_user_info()
+ui.api_status_badge(api.api_online())
+ui.sidebar_cart_summary()
+sidebar_logout_button()
 
+# ─ Header ───────────────────────────────────────────
 st.markdown('<div class="hip-section-title">📧 Convites de Parceiros</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="hip-section-sub">Envie convites por e-mail para novos parceiros e revendedores.</div>',
+    '<div class="hip-section-sub">Envie convites por e-mail ou gere um link para compartilhar com novos parceiros.</div>',
     unsafe_allow_html=True,
 )
 
-# ─── Formulário de envio ────────────────────────────────────────────────
-with st.form("form_convite"):
-    email_dest = st.text_input("E-mail do parceiro *", placeholder="parceiro@exemplo.com")
-    nome_dest  = st.text_input("Nome do parceiro (opcional)", placeholder="Ex.: Salão Beleza Total")
-    mensagem   = st.text_area(
-        "Mensagem personalizada (opcional)",
-        placeholder="Olá! Convidamos você a fazer parte da rede de parceiros Hipnus...",
-        height=120,
-    )
-    enviar = st.form_submit_button("📨 Enviar convite", type="primary", use_container_width=True)
+# ─ Helpers ──────────────────────────────────────────
+def _gerar_token() -> str:
+    return secrets.token_urlsafe(24)
 
+def _montar_link(token: str) -> str:
+    base = APP_URL.rstrip("/") if APP_URL else "https://hipnus-cosmeticos.streamlit.app"
+    return f"{base}/Cadastro_Parceiro?convite={token}"
+
+def _enviar_email_smtp(destinatario: str, nome: str, link: str, msg_custom: str) -> None:
+    """
+    Envia o e-mail de convite via SMTP da Hostinger.
+    Lança Exception em caso de falha de conexão/autenticação.
+    """
+    saudacao = f"Olá, {nome}!" if nome else "Olá!"
+    corpo_extra = f"<p>{msg_custom}</p>" if msg_custom else ""
+
+    html = f"""
+    <html><body style="font-family:Arial,sans-serif;color:#1a1a2e;">
+      <div style="max-width:560px;margin:0 auto;padding:32px;background:#f9f9fb;border-radius:12px;">
+        <h2 style="color:#7c3aed;">HIPNUS COSMÉTICOS</h2>
+        <p>{saudacao}</p>
+        <p>Você foi convidado(a) para fazer parte da rede de <strong>parceiros e revendedores</strong> da Hipnus Cosméticos.</p>
+        {corpo_extra}
+        <div style="text-align:center;margin:32px 0;">
+          <a href="{link}" style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:8px;
+             text-decoration:none;font-weight:bold;font-size:16px;">Aceitar Convite</a>
+        </div>
+        <p style="font-size:12px;color:#888;">Ou copie e cole este link no navegador:</p>
+        <p style="font-size:12px;color:#7c3aed;word-break:break-all;">{link}</p>
+        <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0;">
+        <p style="font-size:11px;color:#aaa;">HIPNUS COSMÉTICOS &copy; 2026 &mdash; Plataforma exclusiva da marca.</p>
+      </div>
+    </body></html>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Convite Hipnus Cosméticos — Seja um parceiro!"
+    msg["From"]    = SMTP_USER
+    msg["To"]      = destinatario
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.ehlo()
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASS)
+        server.sendmail(SMTP_USER, destinatario, msg.as_string())
+
+
+# ─ Formulário ──────────────────────────────────────────
+col_form, col_info = st.columns([2, 1])
+
+with col_form:
+    with st.form("form_convite", clear_on_submit=False):
+        email_dest = st.text_input("📧 E-mail do parceiro *", placeholder="parceiro@exemplo.com")
+        nome_dest  = st.text_input("👤 Nome do parceiro (opcional)", placeholder="Ex.: Salão Beleza Total")
+        mensagem   = st.text_area(
+            "💬 Mensagem personalizada (opcional)",
+            placeholder="Olá! Convidamos você a fazer parte da rede de parceiros Hipnus...",
+            height=100,
+        )
+        modo = st.radio(
+            "Como deseja enviar?",
+            options=["Enviar por e-mail", "Gerar link para copiar"],
+            horizontal=True,
+        )
+        enviar = st.form_submit_button("📨 Gerar Convite", type="primary", use_container_width=True)
+
+with col_info:
+    st.markdown("")
+    st.markdown("")
+    st.info(
+        "💡 **Como funciona?**\n\n"
+        "- O sistema gera um **link único** para cada convite.\n"
+        "- Você pode enviar por **e-mail automático** ou **copiar o link** para enviar pelo WhatsApp, Instagram, etc.\n"
+        "- O parceiro clica no link e já acessa o cadastro com o convite pré-preenchido."
+    )
+
+# ─ Processamento ──────────────────────────────────────────
 if enviar:
     erros = []
     if not email_dest.strip() or "@" not in email_dest:
-        erros.append("E-mail inválido.")
+        erros.append("E-mail inválido. Verifique o campo e-mail.")
+
     if erros:
         for e in erros:
-            st.error(e)
+            st.error(f"❌ {e}")
     else:
-        with st.spinner("Enviando convite..."):
+        token = _gerar_token()
+        link  = _montar_link(token)
+        nome  = nome_dest.strip() or ""
+        msg_c = mensagem.strip() or ""
+
+        # Registra na API (best-effort)
+        registrado_api = False
+        try:
+            api.send_invite(
+                email=email_dest.strip(),
+                nome=nome or None,
+                mensagem=msg_c or None,
+                token=token,
+            )
+            registrado_api = True
+        except Exception:
+            # Fallback: registra localmente em session_state
+            if "_convites_locais" not in st.session_state:
+                st.session_state["_convites_locais"] = []
+            st.session_state["_convites_locais"].append({
+                "email": email_dest.strip(),
+                "nome": nome,
+                "token": token,
+                "link": link,
+                "created_at": datetime.now().isoformat(),
+                "accepted": False,
+                "_local": True,
+            })
+
+        # Modo: enviar por e-mail
+        if modo == "Enviar por e-mail":
+            smtp_ok = False
+            smtp_err = ""
             try:
-                resultado = api.send_invite(
-                    email=email_dest.strip(),
-                    nome=nome_dest.strip() or None,
-                    mensagem=mensagem.strip() or None,
+                _enviar_email_smtp(
+                    destinatario=email_dest.strip(),
+                    nome=nome,
+                    link=link,
+                    msg_custom=msg_c,
                 )
-                st.success(f"✅ Convite enviado para **{email_dest.strip()}**!")
+                smtp_ok = True
             except Exception as exc:
+                smtp_err = str(exc)
+
+            if smtp_ok:
+                st.success(f"✅ Convite enviado por e-mail para **{email_dest.strip()}**!")
+                if not registrado_api:
+                    st.caption("📦 Registrado localmente (API offline). Será sincronizado quando o backend estiver ativo.")
+            else:
                 st.warning(
-                    f"API indisponível — convite registrado localmente. ({exc})"
+                    f"⚠️ Não foi possível enviar o e-mail (verifique configurações SMTP).\n\n"
+                    f"**Copie o link abaixo** e envie manualmente:"
                 )
+                st.code(link, language=None)
+                if smtp_err:
+                    with st.expander("Detalhes do erro SMTP"):
+                        st.text(smtp_err)
 
-# ─── Lista de convites enviados ─────────────────────────────────────────
+        # Modo: gerar link
+        else:
+            st.success(f"✅ Link de convite gerado para **{email_dest.strip()}**!")
+            st.markdown("**Copie o link abaixo e envie pelo canal de sua preferência:**")
+            st.code(link, language=None)
+            st.caption("📤 Compartilhe via WhatsApp, Instagram, e-mail ou qualquer outro canal.")
+            if not registrado_api:
+                st.caption("📦 Registrado localmente (API offline).")
+
+
+# ─ Lista de convites ────────────────────────────────────────
 st.markdown("---")
-st.markdown("### Convites enviados")
+st.markdown("### 📋 Convites enviados")
 
-try:
-    convites = api.list_invites()
-except Exception:
-    convites = []
+# Combina convites da API com os locais
+convites_api = api.list_invites()
+convites_locais = st.session_state.get("_convites_locais", [])
+todos = convites_api + [
+    c for c in convites_locais
+    if not any(x.get("email") == c["email"] and x.get("token") == c.get("token") for x in convites_api)
+]
 
-if not convites:
-    st.info("Nenhum convite enviado ainda.")
+if not todos:
+    st.info("📥 Nenhum convite enviado ainda. Use o formulário acima para convidar um parceiro.")
 else:
-    for c in convites:
+    for c in sorted(todos, key=lambda x: x.get("created_at", ""), reverse=True):
         status_icon = "✅" if c.get("accepted") else "⏳"
-        st.markdown(
-            f"{status_icon} **{c.get('email')}** "
-            f"— enviado em {c.get('created_at', '—')[:10]} "
-            f"— status: {'aceito' if c.get('accepted') else 'pendente'}"
-        )
+        local_tag   = " · *local*" if c.get("_local") else ""
+        link_convite = c.get("link") or _montar_link(c.get("token", ""))
+        data = (c.get("created_at") or "")[:10] or "—"
+
+        with st.expander(
+            f"{status_icon} {c.get('email', '?')} — {data}{local_tag}",
+            expanded=False,
+        ):
+            st.markdown(f"**Status:** {'Aceito ✅' if c.get('accepted') else 'Pendente ⏳'}")
+            if c.get("nome"):
+                st.markdown(f"**Nome:** {c['nome']}")
+            st.markdown("**Link do convite:**")
+            st.code(link_convite, language=None)
