@@ -1,16 +1,19 @@
 """
-Componentes e tema visual compartilhados da vitrine HIPNUS COSMÉTICOS.
+ui.py — HIPNUS COSMÉTICOS
+====================================
+Componentes e tema visual compartilhados da vitrine.
 
-Centraliza:
-- injeção de CSS custom (visual clean/premium institucional)
-- helpers de formatação (preço BRL)
-- cabeçalho da marca e barra de status da API
-- card de produto e badges
-- estado e operações do carrinho (em st.session_state)
+Ordem de chamada na sidebar (por convenção):
+  1. brand_header()               → logo Hipnus (topo)
+  2. auth.sidebar_user_info()     → card do usuário (ACIMA do menu)
+  3. [menu nativo Streamlit]      → renderizado automaticamente
+  4. api_status_badge()           → status da API
+  5. sidebar_cart_summary()       → resumo do carrinho
+  6. auth.sidebar_logout_button() → SAIR (ABAIXO do menu)
 
 REGRA DE NAVEGAÇÃO (Streamlit Cloud):
   Usar SEMPRE os wrappers de pages/ (raiz), nunca os caminhos com emoji.
-  Mapa completo:
+  Mapa:
     Login          → "streamlit_app.py"
     Home           → "pages/1_Home.py"
     Catálogo       → "pages/2_Catalogo.py"
@@ -39,7 +42,12 @@ def brl(value) -> str:
 
 # ----------------------------------------------------------------------- tema
 def inject_theme() -> None:
-    """Injeta o CSS global da marca. Chamar no topo de cada página."""
+    """Injeta o CSS global da marca. Chamar no topo de cada página.
+
+    Além do visual, esconde:
+    - o título automático "streamlit app" / nome do repo no topo da sidebar
+    - header/footer padrão do Streamlit
+    """
     c = COLORS
     st.markdown(
         f"""
@@ -48,8 +56,24 @@ def inject_theme() -> None:
 
         html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; }}
         .block-container {{ padding-top: 3.2rem; max-width: 1180px; }}
-        #MainMenu, footer, header[data-testid="stHeader"] {{ visibility: hidden; height: 0; }}
-        section[data-testid="stSidebar"] .block-container {{ padding-top: 2rem; }}
+
+        /* ---------- Esconde elementos padrão Streamlit ---------- */
+        #MainMenu, footer, header[data-testid="stHeader"] {{
+            visibility: hidden;
+            height: 0;
+        }}
+
+        /* Oculta o titulo "streamlit app" / nome do repo no TOPO da sidebar */
+        [data-testid="stSidebarHeader"] {{
+            display: none !important;
+        }}
+        /* Remove padding excessivo deixado pelo header oculto */
+        section[data-testid="stSidebar"] > div {{
+            padding-top: 0 !important;
+        }}
+        section[data-testid="stSidebar"] .block-container {{
+            padding-top: 0.75rem;
+        }}
 
         /* ---------- Hero / cabeçalho ---------- */
         .hip-hero {{
@@ -67,7 +91,7 @@ def inject_theme() -> None:
         }}
 
         /* ---------- Brand bar ---------- */
-        .hip-brand {{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }}
+        .hip-brand {{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }}
         .hip-logo {{
             width:40px;height:40px;border-radius:11px;
             background:linear-gradient(135deg,{c['primary']},{c['accent']});
@@ -143,14 +167,17 @@ def inject_theme() -> None:
 
 # ------------------------------------------------------------------- brand bar
 def brand_header() -> None:
-    """Renderiza a barra de marca no topo da sidebar/página."""
-    st.markdown(
-        f"""
+    """Renderiza a barra de marca no topo da sidebar.
+
+    Deve ser a PRIMEIRA chamada de sidebar em cada página.
+    """
+    st.sidebar.markdown(
+        """
         <div class="hip-brand">
           <div class="hip-logo">H</div>
           <div>
             <div class="name">HIPNUS</div>
-            <div class="sub">Cosméticos</div>
+            <div class="sub">Cosm&eacute;ticos</div>
           </div>
         </div>
         """,
@@ -185,8 +212,7 @@ def product_card(p: dict, *, key_prefix: str = "cat") -> None:
     Renderiza um card de produto com preço e botão de adicionar ao carrinho.
 
     `p` deve conter: id, name, line, category, floor_price,
-    suggested_retail_price, is_kit. O preço exibido prioriza o preço de
-    varejo sugerido; o piso é mostrado como referência.
+    suggested_retail_price, is_kit.
     """
     price = p.get("suggested_retail_price") or p.get("floor_price")
     line = p.get("line") or ""
@@ -252,8 +278,9 @@ def clear_cart() -> None:
 def sidebar_cart_summary() -> None:
     """Resumo compacto do carrinho na sidebar.
 
-    IMPORTANTE: usa o wrapper pages/5_Carrinho.py (sem emoji no path),
-    que é o caminho registrado pelo Streamlit Cloud.
+    Usa o wrapper pages/5_Carrinho.py (sem emoji) registrado pelo
+    Streamlit Cloud. Chamar após api_status_badge(),
+    antes de sidebar_logout_button().
     """
     count = cart_count()
     st.sidebar.markdown("---")

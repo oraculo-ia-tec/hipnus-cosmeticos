@@ -8,6 +8,14 @@ Navegação (caminhos registrados pelo Streamlit Cloud):
   Home      → "pages/1_Home.py"
 
 Roles: super_admin, admin, b2b, b2c, demo
+
+Ordem da sidebar (convenção entre todas as páginas):
+  1. ui.brand_header()          → logo Hipnus (topo)
+  2. sidebar_user_info()        → card do usuário logado (ACIMA do menu)
+  3. [menu nativo Streamlit]    → renderizado automaticamente
+  4. ui.api_status_badge()      → status da API
+  5. ui.sidebar_cart_summary()  → resumo do carrinho
+  6. sidebar_logout_button()    → botão SAIR (ABAIXO do menu)
 """
 from __future__ import annotations
 
@@ -110,20 +118,49 @@ def logout() -> None:
 
 
 def sidebar_user_info() -> None:
+    """Card compacto do usuário logado na sidebar.
+
+    Deve ser chamado IMEDIATAMENTE APÓS ui.brand_header(), antes do
+    conteúdo da página, para que o Streamlit o posicione acima do menu
+    nativo de navegação.
+    NÃO inclui o botão Sair — use sidebar_logout_button() no final.
+    """
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
     via_api      = st.session_state.get("via_api", False)
 
-    icone = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🏪", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
+    icone = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎪", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
     fonte = "🔗 API" if via_api else "📴 offline"
     label = display_name if display_name else nome
 
     st.sidebar.markdown(
-        f"**{icone} {label}**  \n"
-        f"<span style='font-size:0.78rem; color:#6B6580;'>Perfil: **{perfil.upper()}** &nbsp;·&nbsp; {fonte}</span>",
+        f"""
+        <div style="
+            background: linear-gradient(135deg, #f3f0ff 0%, #ede8fb 100%);
+            border: 1px solid #d9d3f5;
+            border-radius: 12px;
+            padding: 12px 14px 10px;
+            margin-bottom: 6px;
+        ">
+            <div style="font-weight:700; font-size:.95rem; color:#1a1430;">
+                {icone} {label}
+            </div>
+            <div style="font-size:.73rem; color:#6B6580; margin-top:3px;">
+                Perfil: <strong>{perfil.upper()}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;{fonte}
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
+
+
+def sidebar_logout_button() -> None:
+    """Botão SAIR da sidebar.
+
+    Deve ser a Última chamada de sidebar em cada página,
+    posicionado abaixo do menu nativo de navegação.
+    """
     st.sidebar.markdown("---")
-    if st.sidebar.button("🚪 Sair", use_container_width=True):
+    if st.sidebar.button("🚪 Sair", use_container_width=True, key="btn_logout_global"):
         logout()
