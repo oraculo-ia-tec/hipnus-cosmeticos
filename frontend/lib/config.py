@@ -7,14 +7,22 @@ a paleta/identidade visual da marca em um único lugar.
 import os
 from pathlib import Path
 
-# URL base da API FastAPI (backend). Se a API estiver offline, a camada de
-# dados faz fallback para o catálogo do seed JSON (modo demonstração).
+# URL base da API FastAPI (backend).
 API_BASE_URL = os.getenv("HIPNUS_API_URL", "http://localhost:8000")
 API_V1 = f"{API_BASE_URL}/api/v1"
 
 # Caminho do seed (fallback offline) — relativo à raiz do projeto.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SEED_PATH = PROJECT_ROOT / "data" / "catalog_seed.json"
+
+# URL pública do app Streamlit (usada para gerar links de convite).
+APP_URL = os.getenv("HIPNUS_APP_URL", "https://hipnus-cosmeticos.streamlit.app")
+
+# Configurações SMTP (Hostinger) para e-mails transacionais.
+SMTP_HOST = os.getenv("HIPNUS_SMTP_HOST", "smtp.hostinger.com")
+SMTP_PORT = int(os.getenv("HIPNUS_SMTP_PORT", "587"))
+SMTP_USER = os.getenv("HIPNUS_SMTP_USER", "")
+SMTP_PASS = os.getenv("HIPNUS_SMTP_PASS", "")
 
 BRAND = {
     "name": "HIPNUS COSMÉTICOS",
@@ -25,15 +33,15 @@ BRAND = {
 
 # Paleta da marca (clean, premium, institucional).
 COLORS = {
-    "primary": "#7C3AED",       # roxo Hipnus
+    "primary":      "#7C3AED",   # roxo Hipnus
     "primary_dark": "#5B21B6",
-    "accent": "#C4A35A",        # dourado (linha Ouro / premium)
-    "ink": "#1A1430",           # texto principal
-    "muted": "#6B6580",         # texto secundário
-    "bg": "#FFFFFF",
-    "surface": "#F6F4FB",       # fundo de cards / seções
-    "border": "#E7E3F2",
-    "success": "#16A34A",
+    "accent":       "#C4A35A",   # dourado (linha Ouro / premium)
+    "ink":          "#1A1430",   # texto principal
+    "muted":        "#6B6580",   # texto secundário
+    "bg":           "#FFFFFF",
+    "surface":      "#F6F4FB",   # fundo de cards / seções
+    "border":       "#E7E3F2",
+    "success":      "#16A34A",
 }
 
 CURRENCY = "R$"
