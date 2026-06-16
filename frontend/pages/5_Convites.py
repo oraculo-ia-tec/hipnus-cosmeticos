@@ -27,7 +27,10 @@ import streamlit as st
 
 from lib import api, ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
-from lib.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, APP_URL
+from lib.config import (
+    SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
+    SMTP_USE_TLS, SMTP_REMETENTE, APP_URL,
+)
 
 st.set_page_config(page_title="Convites · HIPNUS", page_icon="📧", layout="wide")
 ui.inject_theme()
@@ -48,52 +51,69 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # ─ Helpers ──────────────────────────────────────────
 def _gerar_token() -> str:
     return secrets.token_urlsafe(24)
 
+
 def _montar_link(token: str) -> str:
-    base = APP_URL.rstrip("/") if APP_URL else "https://hipnus-cosmeticos.streamlit.app"
+    base = (APP_URL or "https://hipnus-cosmeticos.streamlit.app").rstrip("/")
     return f"{base}/Cadastro_Parceiro?convite={token}"
 
-def _enviar_email_smtp(destinatario: str, nome: str, link: str, msg_custom: str) -> None:
+
+def _enviar_email_smtp(
+    destinatario: str,
+    nome: str,
+    link: str,
+    msg_custom: str,
+) -> None:
     """
     Envia o e-mail de convite via SMTP da Hostinger.
-    Lança Exception em caso de falha de conexão/autenticação.
+    Usa SMTP_REMETENTE como remetente (EMAIL_REMETENTE do Secrets).
+    Lança Exception em caso de falha.
     """
-    saudacao = f"Olá, {nome}!" if nome else "Olá!"
+    saudacao    = f"Olá, {nome}!" if nome else "Olá!"
     corpo_extra = f"<p>{msg_custom}</p>" if msg_custom else ""
+    remetente   = SMTP_REMETENTE or SMTP_USER
 
     html = f"""
     <html><body style="font-family:Arial,sans-serif;color:#1a1a2e;">
-      <div style="max-width:560px;margin:0 auto;padding:32px;background:#f9f9fb;border-radius:12px;">
+      <div style="max-width:560px;margin:0 auto;padding:32px;
+                  background:#f9f9fb;border-radius:12px;">
         <h2 style="color:#7c3aed;">HIPNUS COSMÉTICOS</h2>
         <p>{saudacao}</p>
-        <p>Você foi convidado(a) para fazer parte da rede de <strong>parceiros e revendedores</strong> da Hipnus Cosméticos.</p>
+        <p>Você foi convidado(a) para fazer parte da rede de
+           <strong>parceiros e revendedores</strong> da Hipnus Cosméticos.</p>
         {corpo_extra}
         <div style="text-align:center;margin:32px 0;">
-          <a href="{link}" style="background:#7c3aed;color:#fff;padding:14px 32px;border-radius:8px;
-             text-decoration:none;font-weight:bold;font-size:16px;">Aceitar Convite</a>
+          <a href="{link}" style="background:#7c3aed;color:#fff;padding:14px 32px;
+             border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">
+            Aceitar Convite
+          </a>
         </div>
         <p style="font-size:12px;color:#888;">Ou copie e cole este link no navegador:</p>
         <p style="font-size:12px;color:#7c3aed;word-break:break-all;">{link}</p>
         <hr style="border:none;border-top:1px solid #e0e0e0;margin:24px 0;">
-        <p style="font-size:11px;color:#aaa;">HIPNUS COSMÉTICOS &copy; 2026 &mdash; Plataforma exclusiva da marca.</p>
+        <p style="font-size:11px;color:#aaa;">
+          HIPNUS COSMÉTICOS &copy; 2026 &mdash; Plataforma exclusiva da marca.
+        </p>
       </div>
     </body></html>
     """
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = "Convite Hipnus Cosméticos — Seja um parceiro!"
-    msg["From"]    = SMTP_USER
+    msg["From"]    = remetente
     msg["To"]      = destinatario
     msg.attach(MIMEText(html, "html", "utf-8"))
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
         server.ehlo()
-        server.starttls()
+        if SMTP_USE_TLS:
+            server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
-        server.sendmail(SMTP_USER, destinatario, msg.as_string())
+        server.sendmail(remetente, destinatario, msg.as_string())
 
 
 # ─ Formulário ──────────────────────────────────────────
@@ -118,14 +138,20 @@ with col_form:
 with col_info:
     st.markdown("")
     st.markdown("")
+    smtp_configurado = bool(SMTP_USER and SMTP_PASS)
+    if smtp_configurado:
+        st.success("✅ SMTP configurado — envio de e-mail ativo.")
+    else:
+        st.warning("⚠️ SMTP não configurado. Use o modo **Gerar link** para compartilhar manualmente.")
     st.info(
         "💡 **Como funciona?**\n\n"
         "- O sistema gera um **link único** para cada convite.\n"
-        "- Você pode enviar por **e-mail automático** ou **copiar o link** para enviar pelo WhatsApp, Instagram, etc.\n"
-        "- O parceiro clica no link e já acessa o cadastro com o convite pré-preenchido."
+        "- Envie por **e-mail automático** ou **copie o link** para WhatsApp, Instagram, etc.\n"
+        "- O parceiro clica e já acessa o cadastro com o convite pré-preenchido."
     )
 
-# ─ Processamento ──────────────────────────────────────────
+
+# ─ Processamento ─────────────────────────────────────────
 if enviar:
     erros = []
     if not email_dest.strip() or "@" not in email_dest:
@@ -151,7 +177,6 @@ if enviar:
             )
             registrado_api = True
         except Exception:
-            # Fallback: registra localmente em session_state
             if "_convites_locais" not in st.session_state:
                 st.session_state["_convites_locais"] = []
             st.session_state["_convites_locais"].append({
@@ -164,65 +189,75 @@ if enviar:
                 "_local": True,
             })
 
-        # Modo: enviar por e-mail
+        # ─ Modo: enviar por e-mail ─
         if modo == "Enviar por e-mail":
-            smtp_ok = False
-            smtp_err = ""
-            try:
-                _enviar_email_smtp(
-                    destinatario=email_dest.strip(),
-                    nome=nome,
-                    link=link,
-                    msg_custom=msg_c,
-                )
-                smtp_ok = True
-            except Exception as exc:
-                smtp_err = str(exc)
-
-            if smtp_ok:
-                st.success(f"✅ Convite enviado por e-mail para **{email_dest.strip()}**!")
-                if not registrado_api:
-                    st.caption("📦 Registrado localmente (API offline). Será sincronizado quando o backend estiver ativo.")
-            else:
+            if not (SMTP_USER and SMTP_PASS):
                 st.warning(
-                    f"⚠️ Não foi possível enviar o e-mail (verifique configurações SMTP).\n\n"
-                    f"**Copie o link abaixo** e envie manualmente:"
+                    "⚠️ SMTP não configurado. "
+                    "Copie o link abaixo e envie manualmente:"
                 )
                 st.code(link, language=None)
-                if smtp_err:
-                    with st.expander("Detalhes do erro SMTP"):
-                        st.text(smtp_err)
+            else:
+                smtp_ok  = False
+                smtp_err = ""
+                with st.spinner("Enviando e-mail..."):
+                    try:
+                        _enviar_email_smtp(
+                            destinatario=email_dest.strip(),
+                            nome=nome,
+                            link=link,
+                            msg_custom=msg_c,
+                        )
+                        smtp_ok = True
+                    except Exception as exc:
+                        smtp_err = str(exc)
 
-        # Modo: gerar link
+                if smtp_ok:
+                    st.success(f"✅ Convite enviado por e-mail para **{email_dest.strip()}**!")
+                    if not registrado_api:
+                        st.caption("📦 Registrado localmente (API offline).")
+                else:
+                    st.warning(
+                        "⚠️ Não foi possível enviar o e-mail. "
+                        "**Copie o link abaixo** e envie manualmente:"
+                    )
+                    st.code(link, language=None)
+                    if smtp_err:
+                        with st.expander("🔍 Detalhes do erro SMTP"):
+                            st.text(smtp_err)
+
+        # ─ Modo: gerar link ─
         else:
             st.success(f"✅ Link de convite gerado para **{email_dest.strip()}**!")
             st.markdown("**Copie o link abaixo e envie pelo canal de sua preferência:**")
             st.code(link, language=None)
-            st.caption("📤 Compartilhe via WhatsApp, Instagram, e-mail ou qualquer outro canal.")
+            st.caption("📤 Compartilhe via WhatsApp, Instagram, e-mail manual ou qualquer outro canal.")
             if not registrado_api:
                 st.caption("📦 Registrado localmente (API offline).")
 
 
-# ─ Lista de convites ────────────────────────────────────────
+# ─ Lista de convites ───────────────────────────────────────
 st.markdown("---")
 st.markdown("### 📋 Convites enviados")
 
-# Combina convites da API com os locais
-convites_api = api.list_invites()
+convites_api    = api.list_invites()
 convites_locais = st.session_state.get("_convites_locais", [])
 todos = convites_api + [
     c for c in convites_locais
-    if not any(x.get("email") == c["email"] and x.get("token") == c.get("token") for x in convites_api)
+    if not any(
+        x.get("email") == c["email"] and x.get("token") == c.get("token")
+        for x in convites_api
+    )
 ]
 
 if not todos:
     st.info("📥 Nenhum convite enviado ainda. Use o formulário acima para convidar um parceiro.")
 else:
     for c in sorted(todos, key=lambda x: x.get("created_at", ""), reverse=True):
-        status_icon = "✅" if c.get("accepted") else "⏳"
-        local_tag   = " · *local*" if c.get("_local") else ""
+        status_icon  = "✅" if c.get("accepted") else "⏳"
+        local_tag    = " · *local*" if c.get("_local") else ""
         link_convite = c.get("link") or _montar_link(c.get("token", ""))
-        data = (c.get("created_at") or "")[:10] or "—"
+        data         = (c.get("created_at") or "")[:10] or "—"
 
         with st.expander(
             f"{status_icon} {c.get('email', '?')} — {data}{local_tag}",
