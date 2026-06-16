@@ -59,9 +59,9 @@ for col, v, l in [
         unsafe_allow_html=True,
     )
 
+# Atalho para catálogo — sem st.page_link para evitar erros de path
 st.markdown("")
-# Atalho para o catálogo ─ usando page_link com emoji válido
-st.page_link("pages/1_🛒️_Catálogo.py", label="🛒 Explorar catálogo completo")
+st.info("🛒 Use o menu lateral para acessar o **Catálogo** completo de produtos.")
 
 # ─ Linhas da marca ────────────────────────────────────────
 st.markdown('<div class="hip-section-title">Linhas da marca</div>', unsafe_allow_html=True)
