@@ -16,46 +16,64 @@ Ordem da sidebar:
 """
 import sys
 from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
-
 from lib import api, ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+from lib import components, commerce
 
 st.set_page_config(page_title="Linhas · HIPNUS", page_icon="✨", layout="wide")
 ui.inject_theme()
 
 require_auth()
 
-# ─── Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()                       # 1. Logo
-sidebar_user_info()                     # 2. Usuário (ACIMA do menu)
-# --- [menu nativo Streamlit aqui] ---
-ui.api_status_badge(api.api_online())   # 4. Status API
-ui.sidebar_cart_summary()               # 5. Carrinho
-sidebar_logout_button()                 # 6. SAIR (ABAIXO do menu)
+# ─ Sidebar ───────────────────────────────────────────────────────────
+ui.brand_header()
+sidebar_user_info()
+ui.api_status_badge(api.api_online())
+ui.sidebar_cart_summary()
+sidebar_logout_button()
 
+# ─ Dados ─────────────────────────────────────────────────────────────
 products = api.get_products()
 lines    = api.list_lines()
 
-st.markdown('<div class="hip-section-title">Linhas da marca</div>', unsafe_allow_html=True)
-st.markdown('<div class="hip-section-sub">Escolha uma coleção para ver seus produtos.</div>',
-            unsafe_allow_html=True)
+# ─ Cabeçalho ─────────────────────────────────────────────────────────
+components.page_header(
+    title="Linhas da marca",
+    subtitle="Explore cada coleção e os produtos que a compõem.",
+    kicker="Portfólio Hipnus",
+)
 
+# ─ Seletor de linha ───────────────────────────────────────────────────
 selected = st.selectbox("Selecione uma linha", lines)
 
 line_products = [p for p in products if p.get("line") == selected]
-st.caption(f"{len(line_products)} produto(s) na linha {selected}.")
 
-per_row = 4
-for i in range(0, len(line_products), per_row):
-    cols = st.columns(per_row)
-    for col, p in zip(cols, line_products[i : i + per_row]):
-        with col:
-            ui.product_card(p, key_prefix="line")
+st.caption(f"{len(line_products)} produto(s) na linha **{selected}**.")
 
-st.markdown("---")
-st.markdown('<div class="hip-section-sub">Produtos sem linha específica aparecem no '
-            '<b>Catálogo</b> completo.</div>', unsafe_allow_html=True)
+components.divider()
+
+# ─ Grid de produtos ───────────────────────────────────────────────────
+if not line_products:
+    components.empty_state(
+        icon="✨",
+        title="Nenhum produto nesta linha",
+        message="Esta linha ainda não possui produtos cadastrados no catálogo.",
+    )
+else:
+    per_row = 4
+    for i in range(0, len(line_products), per_row):
+        cols = st.columns(per_row)
+        for col, p in zip(cols, line_products[i : i + per_row]):
+            with col:
+                commerce.product_card(p, key_prefix="line", on_add=ui.add_to_cart)
+
+components.divider()
+
+with st.popover("ℹ️ Sobre o catálogo", use_container_width=False):
+    st.markdown(
+        "Produtos sem linha específica aparecem no **Catálogo** completo. "
+        "Use o menu lateral para navegar entre as seções."
+    )

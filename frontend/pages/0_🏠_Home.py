@@ -14,70 +14,68 @@ import streamlit as st
 from lib import api, ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
 from lib.config import BRAND
+from lib import components, commerce
 
 st.set_page_config(page_title="HIPNUS COSMÉTICOS", page_icon="💜", layout="wide")
 ui.inject_theme()
 
-# ─ Guarda de autenticação ───────────────────────────────────
+# ─ Guarda de autenticação ────────────────────────────────────────────
 require_auth()
 
-# ─ Sidebar ──────────────────────────────────────────
+# ─ Sidebar ───────────────────────────────────────────────────────────
 ui.brand_header()
 sidebar_user_info()
 ui.api_status_badge(api.api_online())
 ui.sidebar_cart_summary()
 sidebar_logout_button()
 
-# ─ Dados ────────────────────────────────────────────────
+# ─ Dados ─────────────────────────────────────────────────────────────
 products = api.get_products()
 lines    = api.list_lines()
 cats     = api.list_categories()
 
-# ─ Hero ─────────────────────────────────────────────────
-st.markdown(
-    f"""
-    <div class="hip-hero">
-      <span class="kicker">Marketplace oficial da marca</span>
-      <h1>{BRAND['tagline']}</h1>
-      <p>{BRAND['promise']}</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
+# ─ Hero ──────────────────────────────────────────────────────────────
+components.page_header(
+    title=BRAND["tagline"],
+    subtitle=BRAND["promise"],
+    kicker="Marketplace oficial da marca",
 )
 
-# ─ Indicadores ──────────────────────────────────────────
-c1, c2, c3, c4 = st.columns(4)
+# ─ Indicadores ───────────────────────────────────────────────────────
 kits = sum(1 for p in products if p.get("is_kit"))
-for col, v, l in [
+c1, c2, c3, c4 = st.columns(4)
+for col, value, label in [
     (c1, len(products), "Produtos"),
     (c2, len(lines),    "Linhas da marca"),
     (c3, len(cats),     "Categorias"),
     (c4, kits,          "Kits & combos"),
 ]:
-    col.markdown(
-        f'<div class="hip-stat"><div class="v">{v}</div><div class="l">{l}</div></div>',
-        unsafe_allow_html=True,
+    with col:
+        components.stat_card(value, label)
+
+components.divider()
+
+# ─ Orientação de navegação ───────────────────────────────────────────
+with st.popover("💡 Como navegar pela vitrine", use_container_width=False):
+    st.markdown(
+        "Use o **menu lateral** para acessar o Catálogo completo, "
+        "as Linhas da marca e a Loja do Parceiro."
     )
 
-# Atalho para catálogo — sem st.page_link para evitar erros de path
-st.markdown("")
-st.info("🛒 Use o menu lateral para acessar o **Catálogo** completo de produtos.")
-
-# ─ Linhas da marca ────────────────────────────────────────
-st.markdown('<div class="hip-section-title">Linhas da marca</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="hip-section-sub">Coleções desenvolvidas para cada necessidade capilar.</div>',
-    unsafe_allow_html=True,
+# ─ Linhas da marca ───────────────────────────────────────────────────
+components.section_title(
+    "Linhas da marca",
+    subtitle="Coleções desenvolvidas para cada necessidade capilar.",
 )
 line_html = "".join(f'<span class="hip-badge">{ln}</span>' for ln in lines)
-st.markdown(line_html, unsafe_allow_html=True)
+st.html(line_html)
 
-# ─ Destaques ───────────────────────────────────────────
-st.markdown("")
-st.markdown('<div class="hip-section-title">Destaques</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="hip-section-sub">Kits de tratamento e itens premium da linha Ouro.</div>',
-    unsafe_allow_html=True,
+components.divider()
+
+# ─ Destaques ─────────────────────────────────────────────────────────
+components.section_title(
+    "Destaques",
+    subtitle="Kits de tratamento e itens premium da linha Ouro.",
 )
 
 featured = [p for p in products if p.get("is_kit")][:4]
@@ -91,9 +89,10 @@ featured = featured[:4] or products[:4]
 cols = st.columns(4)
 for col, p in zip(cols, featured):
     with col:
-        ui.product_card(p, key_prefix="home")
+        commerce.product_card(p, key_prefix="home", on_add=ui.add_to_cart)
 
-st.markdown("---")
+components.divider()
+
 st.caption(
     "HIPNUS COSMÉTICOS · vitrine para consumidor final e profissional. "
     "Preços de varejo são sugestões; cada parceiro define o preço final em sua loja."

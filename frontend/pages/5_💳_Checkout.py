@@ -25,33 +25,46 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import streamlit as st
-
 from lib import ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
 from lib.checkout_service import CheckoutService, AsaasError
+from lib import components
 
 st.set_page_config(page_title="Checkout · HIPNUS", page_icon="💳", layout="centered")
 ui.inject_theme()
 
 require_auth()
 
-# ─── Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()                   # 1. Logo
-sidebar_user_info()                 # 2. Usuário (ACIMA do menu)
-# --- [menu nativo Streamlit aqui] ---
-ui.sidebar_cart_summary()           # 5. Carrinho
-sidebar_logout_button()             # 6. SAIR (ABAIXO do menu)
+# ─ Sidebar ───────────────────────────────────────────────────────────
+ui.brand_header()
+sidebar_user_info()
+ui.sidebar_cart_summary()
+sidebar_logout_button()
 
-st.markdown('<div class="hip-section-title">Finalizar Compra</div>', unsafe_allow_html=True)
+# ─ Cabeçalho ─────────────────────────────────────────────────────────
+components.page_header(
+    title="Finalizar Compra",
+    subtitle="Revise seu pedido e escolha a forma de pagamento.",
+    kicker="Checkout seguro",
+)
 
 cart = st.session_state.get("cart", {})
 
+# ─ Carrinho vazio ────────────────────────────────────────────────────
 if not cart:
-    st.info("Seu carrinho está vazio.")
-    st.page_link("pages/2_Catalogo.py", label="Ir para o catálogo", icon="🛍️")
+    clicked = components.empty_state(
+        icon="🛒",
+        title="Seu carrinho está vazio",
+        message="Adicione produtos antes de finalizar a compra.",
+        action_label="Ir para o catálogo",
+        action_key="checkout_empty_go_catalog",
+    )
+    if clicked:
+        st.switch_page("pages/2_Catalogo.py")
     st.stop()
 
-st.subheader("📋 Resumo do pedido")
+# ─ Resumo do pedido ──────────────────────────────────────────────────
+components.section_title("Resumo do pedido")
 
 totais = CheckoutService.calcular_totais(cart)
 
@@ -64,9 +77,10 @@ with col2:
     st.caption(f"Parte Hipnus (piso): {ui.brl(totais['floor_total'])}")
     st.caption(f"Repasse ao parceiro: {ui.brl(totais['partner_amount'])}")
 
-st.divider()
+components.divider()
 
-st.subheader("👤 Seus dados")
+# ─ Formulário de dados + pagamento ───────────────────────────────────
+components.section_title("Seus dados")
 
 with st.form("form_checkout"):
     nome     = st.text_input("Nome completo *", placeholder="Ex: Maria da Silva")
@@ -74,8 +88,8 @@ with st.form("form_checkout"):
     email    = st.text_input("E-mail *", placeholder="maria@email.com")
     fone     = st.text_input("Telefone (opcional)", placeholder="31999999999")
 
-    st.divider()
-    st.subheader("💰 Forma de pagamento")
+    components.divider()
+    components.section_title("Forma de pagamento")
 
     metodo = st.radio(
         "Escolha o método:",
@@ -84,13 +98,14 @@ with st.form("form_checkout"):
         captions=["QR Code instantâneo", "Vencimento em 3 dias"],
     )
 
-    st.divider()
+    components.divider()
     confirmar = st.form_submit_button(
         "✅ Confirmar pagamento",
         type="primary",
         use_container_width=True,
     )
 
+# ─ Processamento ─────────────────────────────────────────────────────
 if confirmar:
     erros = []
     if not nome.strip():
@@ -102,7 +117,7 @@ if confirmar:
 
     if erros:
         for e in erros:
-            st.error(e)
+            components.feedback_inline(e, kind="danger")
         st.stop()
 
     with st.spinner("Processando pagamento via Asaas..."):
@@ -120,19 +135,25 @@ if confirmar:
                 descricao="Pedido HIPNUS COSMÉTICOS",
             )
 
-            st.success(f"🎉 Pedido criado! Referência: `{resultado['external_ref']}`")
+            components.feedback_inline(
+                f"Pedido criado! Referência: {resultado['external_ref']}",
+                kind="success",
+            )
             st.caption(f"ID Asaas: `{resultado['payment_id']}` | Status: **{resultado['status']}**")
 
             if metodo == "PIX":
-                st.subheader("📱 Pague via PIX")
+                components.section_title("Pague via PIX")
                 if resultado["pix_qrcode"]:
                     img_bytes = base64.b64decode(resultado["pix_qrcode"])
                     st.image(img_bytes, caption="QR Code PIX", width=280)
                 if resultado["pix_payload"]:
                     st.text_area("Copia e cola PIX:", value=resultado["pix_payload"], height=80)
                 else:
-                    st.info("O QR Code Pix estará disponível em instantes. "
-                            "Use o link abaixo para acessar a cobrança.")
+                    with st.popover("ℹ️ QR Code em processamento", use_container_width=False):
+                        st.markdown(
+                            "O QR Code Pix estará disponível em instantes. "
+                            "Use o link abaixo para acessar a cobrança diretamente."
+                        )
 
             if resultado["invoice_url"]:
                 st.link_button(
@@ -145,6 +166,9 @@ if confirmar:
             st.session_state["ultimo_pedido"] = resultado
 
         except AsaasError as exc:
-            st.error(f"Erro na API Asaas ({exc.status_code}): {exc.payload}")
+            components.feedback_inline(
+                f"Erro na API Asaas ({exc.status_code}): {exc.payload}",
+                kind="danger",
+            )
         except Exception as exc:
-            st.error(f"Erro inesperado: {exc}")
+            components.feedback_inline(f"Erro inesperado: {exc}", kind="danger")

@@ -16,40 +16,51 @@ Ordem da sidebar:
 """
 import sys
 from pathlib import Path
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
-
 from lib import api, ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+from lib import components
 
 st.set_page_config(page_title="Cadastro Parceiro · HIPNUS", page_icon="📋", layout="centered")
 ui.inject_theme()
 
 require_auth()
 
-# ─── Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()                       # 1. Logo
-sidebar_user_info()                     # 2. Usuário (ACIMA do menu)
-# --- [menu nativo Streamlit aqui] ---
-ui.api_status_badge(api.api_online())   # 4. Status API
-ui.sidebar_cart_summary()               # 5. Carrinho
-sidebar_logout_button()                 # 6. SAIR (ABAIXO do menu)
+# ─ Sidebar ───────────────────────────────────────────────────────────
+ui.brand_header()
+sidebar_user_info()
+ui.api_status_badge(api.api_online())
+ui.sidebar_cart_summary()
+sidebar_logout_button()
 
-st.markdown('<div class="hip-section-title">📋 Cadastro de Parceiro</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="hip-section-sub">Complete seus dados para habilitar as condições B2B Hipnus.</div>',
-    unsafe_allow_html=True,
+# ─ Cabeçalho ─────────────────────────────────────────────────────────
+components.page_header(
+    title="Cadastro de Parceiro",
+    subtitle="Complete seus dados para habilitar as condições B2B Hipnus.",
+    kicker="Área do Parceiro",
 )
 
+# ─ Dica contextual ───────────────────────────────────────────────────
+with st.popover("ℹ️ Por que preencher o cadastro?", use_container_width=False):
+    st.markdown(
+        "O cadastro completo habilita as **condições comerciais B2B** da Hipnus: "
+        "preços de parceiro, lote mínimo, combos profissionais e "
+        "suporte dedicado. Nossa equipe entrará em contato após a análise."
+    )
+
+components.divider()
+
+# ─ Formulário ────────────────────────────────────────────────────────
 with st.form("form_cadastro_parceiro"):
-    st.subheader("Dados da empresa")
+    components.section_title("Dados da empresa")
     razao_social = st.text_input("Razão social / Nome do salão *")
     cnpj         = st.text_input("CNPJ (somente números)")
     ie           = st.text_input("Inscrição Estadual (opcional)")
 
-    st.subheader("Endereço")
+    components.divider()
+    components.section_title("Endereço")
     c1, c2 = st.columns([3, 1])
     rua    = c1.text_input("Rua / Avenida *")
     numero = c2.text_input("Número *")
@@ -59,20 +70,27 @@ with st.form("form_cadastro_parceiro"):
     uf     = c5.text_input("UF *", max_chars=2)
     cep    = st.text_input("CEP (somente números)")
 
-    st.subheader("Responsável")
+    components.divider()
+    components.section_title("Responsável")
     responsavel = st.text_input("Nome do responsável *")
     telefone    = st.text_input("Telefone / WhatsApp *", placeholder="31999999999")
     email       = st.text_input("E-mail de contato *")
 
-    st.subheader("Tipo de parceiro")
+    components.divider()
+    components.section_title("Tipo de parceiro")
     tipo = st.selectbox(
         "Categoria",
         ["Salão de beleza", "Barbearia", "Revendedor", "Distribuidor", "Outro"],
     )
 
-    st.divider()
-    salvar = st.form_submit_button("💾 Salvar cadastro", type="primary", use_container_width=True)
+    components.divider()
+    salvar = st.form_submit_button(
+        "💾 Salvar cadastro",
+        type="primary",
+        use_container_width=True,
+    )
 
+# ─ Processamento ─────────────────────────────────────────────────────
 if salvar:
     erros = []
     for campo, valor in [
@@ -88,7 +106,7 @@ if salvar:
 
     if erros:
         for e in erros:
-            st.error(e)
+            components.feedback_inline(e, kind="danger")
     else:
         payload = {
             "razao_social": razao_social.strip(),
@@ -107,6 +125,12 @@ if salvar:
         with st.spinner("Salvando cadastro..."):
             try:
                 api.save_partner(payload)
-                st.success("✅ Cadastro salvo com sucesso! Nossa equipe entrará em contato.")
+                components.feedback_inline(
+                    "Cadastro salvo com sucesso! Nossa equipe entrará em contato.",
+                    kind="success",
+                )
             except Exception as exc:
-                st.warning(f"API indisponível — cadastro registrado localmente. ({exc})")
+                components.feedback_inline(
+                    f"API indisponível — cadastro registrado localmente. ({exc})",
+                    kind="warning",
+                )

@@ -24,35 +24,35 @@ from email.mime.text import MIMEText
 from datetime import datetime
 
 import streamlit as st
-
 from lib import api, ui
 from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
 from lib.config import (
     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
     SMTP_USE_TLS, SMTP_REMETENTE, APP_URL,
 )
+from lib import components
 
 st.set_page_config(page_title="Convites · HIPNUS", page_icon="📧", layout="wide")
 ui.inject_theme()
 
 require_auth(perfis_permitidos=["admin", "super_admin"])
 
-# ─ Sidebar ──────────────────────────────────────────
+# ─ Sidebar ───────────────────────────────────────────────────────────
 ui.brand_header()
 sidebar_user_info()
 ui.api_status_badge(api.api_online())
 ui.sidebar_cart_summary()
 sidebar_logout_button()
 
-# ─ Header ───────────────────────────────────────────
-st.markdown('<div class="hip-section-title">📧 Convites de Parceiros</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="hip-section-sub">Envie convites por e-mail ou gere um link para compartilhar com novos parceiros.</div>',
-    unsafe_allow_html=True,
+# ─ Cabeçalho ─────────────────────────────────────────────────────────
+components.page_header(
+    title="Convites de Parceiros",
+    subtitle="Envie convites por e-mail ou gere um link para compartilhar com novos parceiros.",
+    kicker="Gestão de parceiros",
 )
 
 
-# ─ Helpers ──────────────────────────────────────────
+# ─ Helpers ───────────────────────────────────────────────────────────
 def _gerar_token() -> str:
     return secrets.token_urlsafe(24)
 
@@ -116,7 +116,7 @@ def _enviar_email_smtp(
         server.sendmail(remetente, destinatario, msg.as_string())
 
 
-# ─ Formulário ──────────────────────────────────────────
+# ─ Formulário ────────────────────────────────────────────────────────
 col_form, col_info = st.columns([2, 1])
 
 with col_form:
@@ -137,21 +137,24 @@ with col_form:
 
 with col_info:
     st.markdown("")
-    st.markdown("")
     smtp_configurado = bool(SMTP_USER and SMTP_PASS)
     if smtp_configurado:
-        st.success("✅ SMTP configurado — envio de e-mail ativo.")
+        components.feedback_inline("SMTP configurado — envio de e-mail ativo.", kind="success")
     else:
-        st.warning("⚠️ SMTP não configurado. Use o modo **Gerar link** para compartilhar manualmente.")
-    st.info(
-        "💡 **Como funciona?**\n\n"
-        "- O sistema gera um **link único** para cada convite.\n"
-        "- Envie por **e-mail automático** ou **copie o link** para WhatsApp, Instagram, etc.\n"
-        "- O parceiro clica e já acessa o cadastro com o convite pré-preenchido."
-    )
+        components.feedback_inline(
+            "SMTP não configurado. Use o modo Gerar link para compartilhar manualmente.",
+            kind="warning",
+        )
+    st.markdown("")
+    with st.popover("💡 Como funciona?", use_container_width=True):
+        st.markdown(
+            "- O sistema gera um **link único** para cada convite.\n"
+            "- Envie por **e-mail automático** ou **copie o link** para WhatsApp, Instagram, etc.\n"
+            "- O parceiro clica e já acessa o cadastro com o convite pré-preenchido."
+        )
 
 
-# ─ Processamento ─────────────────────────────────────────
+# ─ Processamento ─────────────────────────────────────────────────────
 if enviar:
     erros = []
     if not email_dest.strip() or "@" not in email_dest:
@@ -159,7 +162,7 @@ if enviar:
 
     if erros:
         for e in erros:
-            st.error(f"❌ {e}")
+            components.feedback_inline(e, kind="danger")
     else:
         token = _gerar_token()
         link  = _montar_link(token)
@@ -189,12 +192,12 @@ if enviar:
                 "_local": True,
             })
 
-        # ─ Modo: enviar por e-mail ─
+        # ─ Modo: enviar por e-mail ────────────────────────────────────
         if modo == "Enviar por e-mail":
             if not (SMTP_USER and SMTP_PASS):
-                st.warning(
-                    "⚠️ SMTP não configurado. "
-                    "Copie o link abaixo e envie manualmente:"
+                components.feedback_inline(
+                    "SMTP não configurado. Copie o link abaixo e envie manualmente:",
+                    kind="warning",
                 )
                 st.code(link, language=None)
             else:
@@ -213,22 +216,28 @@ if enviar:
                         smtp_err = str(exc)
 
                 if smtp_ok:
-                    st.success(f"✅ Convite enviado por e-mail para **{email_dest.strip()}**!")
+                    components.feedback_inline(
+                        f"Convite enviado por e-mail para {email_dest.strip()}!",
+                        kind="success",
+                    )
                     if not registrado_api:
                         st.caption("📦 Registrado localmente (API offline).")
                 else:
-                    st.warning(
-                        "⚠️ Não foi possível enviar o e-mail. "
-                        "**Copie o link abaixo** e envie manualmente:"
+                    components.feedback_inline(
+                        "Não foi possível enviar o e-mail. Copie o link abaixo e envie manualmente:",
+                        kind="warning",
                     )
                     st.code(link, language=None)
                     if smtp_err:
-                        with st.expander("🔍 Detalhes do erro SMTP"):
+                        with st.popover("🔍 Detalhes do erro SMTP", use_container_width=False):
                             st.text(smtp_err)
 
-        # ─ Modo: gerar link ─
+        # ─ Modo: gerar link ───────────────────────────────────────────
         else:
-            st.success(f"✅ Link de convite gerado para **{email_dest.strip()}**!")
+            components.feedback_inline(
+                f"Link de convite gerado para {email_dest.strip()}!",
+                kind="success",
+            )
             st.markdown("**Copie o link abaixo e envie pelo canal de sua preferência:**")
             st.code(link, language=None)
             st.caption("📤 Compartilhe via WhatsApp, Instagram, e-mail manual ou qualquer outro canal.")
@@ -236,9 +245,9 @@ if enviar:
                 st.caption("📦 Registrado localmente (API offline).")
 
 
-# ─ Lista de convites ───────────────────────────────────────
-st.markdown("---")
-st.markdown("### 📋 Convites enviados")
+# ─ Lista de convites ─────────────────────────────────────────────────
+components.divider()
+components.section_title("Convites enviados")
 
 convites_api    = api.list_invites()
 convites_locais = st.session_state.get("_convites_locais", [])
@@ -251,19 +260,24 @@ todos = convites_api + [
 ]
 
 if not todos:
-    st.info("📥 Nenhum convite enviado ainda. Use o formulário acima para convidar um parceiro.")
+    components.empty_state(
+        icon="📧",
+        title="Nenhum convite enviado ainda",
+        message="Use o formulário acima para convidar um parceiro.",
+    )
 else:
     for c in sorted(todos, key=lambda x: x.get("created_at", ""), reverse=True):
         status_icon  = "✅" if c.get("accepted") else "⏳"
         local_tag    = " · *local*" if c.get("_local") else ""
         link_convite = c.get("link") or _montar_link(c.get("token", ""))
         data         = (c.get("created_at") or "")[:10] or "—"
+        status_txt   = "Aceito" if c.get("accepted") else "Pendente"
 
-        with st.expander(
+        with st.popover(
             f"{status_icon} {c.get('email', '?')} — {data}{local_tag}",
-            expanded=False,
+            use_container_width=False,
         ):
-            st.markdown(f"**Status:** {'Aceito ✅' if c.get('accepted') else 'Pendente ⏳'}")
+            st.markdown(f"**Status:** {status_txt} {status_icon}")
             if c.get("nome"):
                 st.markdown(f"**Nome:** {c['nome']}")
             st.markdown("**Link do convite:**")
