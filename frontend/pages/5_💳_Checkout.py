@@ -1,6 +1,6 @@
 """
-Página de Checkout — HIPNUS COSMÉTICOS
-========================================
+5_Checkout.py — HIPNUS COSMÉTICOS
+====================================
 Fluxo completo de pagamento via Asaas sem passar pelo FastAPI.
 
 Etapas:
@@ -10,13 +10,12 @@ Etapas:
   4. Confirmação e chamada ao CheckoutService.
   5. Exibição do resultado: QR Code Pix ou link de boleto.
 
-Navegação usa os wrappers registrados em pages/ (raiz),
-não os caminhos com emoji de frontend/pages/.
-
-Requisitos no Streamlit Secrets (ou .env local):
-  ASAAS_API_KEY       = "$aact_..."   # chave da conta raiz Hipnus
-  ASAAS_BASE_URL      = "https://api-sandbox.asaas.com/v3"  # sandbox ou produção
-  PARTNER_WALLET_ID   = ""            # walletId da subconta; deixe vazio p/ sem split
+Ordem da sidebar:
+  1. brand_header()
+  2. sidebar_user_info()      ← ACIMA do menu
+  3. [menu nativo]
+  4. sidebar_cart_summary()
+  5. sidebar_logout_button()  ← ABAIXO do menu
 """
 import sys
 import base64
@@ -28,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
 from lib import ui
-from lib.auth import require_auth, sidebar_user_info
+from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
 from lib.checkout_service import CheckoutService, AsaasError
 
 st.set_page_config(page_title="Checkout · HIPNUS", page_icon="💳", layout="centered")
@@ -36,21 +35,22 @@ ui.inject_theme()
 
 require_auth()
 
-ui.brand_header()
-sidebar_user_info()
-ui.sidebar_cart_summary()
+# ─── Sidebar ───────────────────────────────────────────────────────────
+ui.brand_header()                   # 1. Logo
+sidebar_user_info()                 # 2. Usuário (ACIMA do menu)
+# --- [menu nativo Streamlit aqui] ---
+ui.sidebar_cart_summary()           # 5. Carrinho
+sidebar_logout_button()             # 6. SAIR (ABAIXO do menu)
 
 st.markdown('<div class="hip-section-title">Finalizar Compra</div>', unsafe_allow_html=True)
 
 cart = st.session_state.get("cart", {})
 
-# ---------------------------------------------------------------- carrinho vazio
 if not cart:
     st.info("Seu carrinho está vazio.")
     st.page_link("pages/2_Catalogo.py", label="Ir para o catálogo", icon="🛍️")
     st.stop()
 
-# ---------------------------------------------------------------- resumo
 st.subheader("📋 Resumo do pedido")
 
 totais = CheckoutService.calcular_totais(cart)
@@ -66,7 +66,6 @@ with col2:
 
 st.divider()
 
-# ---------------------------------------------------------------- dados do comprador
 st.subheader("👤 Seus dados")
 
 with st.form("form_checkout"):
@@ -92,7 +91,6 @@ with st.form("form_checkout"):
         use_container_width=True,
     )
 
-# ---------------------------------------------------------------- processamento
 if confirmar:
     erros = []
     if not nome.strip():
@@ -107,14 +105,12 @@ if confirmar:
             st.error(e)
         st.stop()
 
-    billing_map = {"PIX": "PIX", "BOLETO": "BOLETO"}
-
     with st.spinner("Processando pagamento via Asaas..."):
         try:
             svc = CheckoutService()
             resultado = svc.processar(
                 cart=cart,
-                billing_type=billing_map[metodo],
+                billing_type={"PIX": "PIX", "BOLETO": "BOLETO"}[metodo],
                 cliente={
                     "name": nome.strip(),
                     "cpfCnpj": cpf_cnpj.strip(),

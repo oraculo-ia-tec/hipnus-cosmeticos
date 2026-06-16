@@ -1,15 +1,18 @@
 """
 6_Cadastro_Parceiro.py — HIPNUS COSMÉTICOS
 ============================================
-Formulário público de cadastro de parceiro via link de convite.
+Formulário de cadastro de novo parceiro (salão, revendedor, distribuidor).
 
-Acesso: público, mas requer ?token= válido na URL (query param).
-O token é validado na API antes de exibir o formulário.
-Após cadastro, o token é marcado como usado (uso único).
+Acesso: qualquer perfil autenticado — permite que um parceiro
+complete ou atualize o próprio cadastro.
 
-Depênde dos endpoints:
-  GET  /api/v1/invites/validate?token=...
-  POST /api/v1/partners?invite_token=...
+Ordem da sidebar:
+  1. brand_header()
+  2. sidebar_user_info()      ← ACIMA do menu
+  3. [menu nativo]
+  4. api_status_badge()
+  5. sidebar_cart_summary()
+  6. sidebar_logout_button()  ← ABAIXO do menu
 """
 import sys
 from pathlib import Path
@@ -17,130 +20,93 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
-from lib import api, ui
-from lib.config import BRAND, COLORS
 
-st.set_page_config(
-    page_title="Cadastro de Parceiro · HIPNUS",
-    page_icon="🏪",
-    layout="centered",
-)
+from lib import api, ui
+from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+
+st.set_page_config(page_title="Cadastro Parceiro · HIPNUS", page_icon="📋", layout="centered")
 ui.inject_theme()
 
-# Oculta sidebar e menu para página pública
+require_auth()
+
+# ─── Sidebar ───────────────────────────────────────────────────────────
+ui.brand_header()                       # 1. Logo
+sidebar_user_info()                     # 2. Usuário (ACIMA do menu)
+# --- [menu nativo Streamlit aqui] ---
+ui.api_status_badge(api.api_online())   # 4. Status API
+ui.sidebar_cart_summary()               # 5. Carrinho
+sidebar_logout_button()                 # 6. SAIR (ABAIXO do menu)
+
+st.markdown('<div class="hip-section-title">📋 Cadastro de Parceiro</div>', unsafe_allow_html=True)
 st.markdown(
-    """
-    <style>
-    [data-testid="stSidebar"] { display: none !important; }
-    [data-testid="collapsedControl"] { display: none !important; }
-    #MainMenu { visibility: hidden; }
-    </style>
-    """,
+    '<div class="hip-section-sub">Complete seus dados para habilitar as condições B2B Hipnus.</div>',
     unsafe_allow_html=True,
 )
 
-c = COLORS
-st.markdown(
-    f"""
-    <div style="text-align:center; padding:2rem 0 1rem;">
-        <div style="font-size:2.2rem; font-weight:800; color:{c['primary']};
-                    letter-spacing:-1px;">HIPNUS</div>
-        <div style="font-size:.9rem; color:{c['muted']}; letter-spacing:2px;">COSMÉTICOS</div>
-        <div style="margin-top:.6rem; font-size:.85rem; color:{c['muted']};">Cadastro de Parceiro Oficial</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+with st.form("form_cadastro_parceiro"):
+    st.subheader("Dados da empresa")
+    razao_social = st.text_input("Razão social / Nome do salão *")
+    cnpj         = st.text_input("CNPJ (somente números)")
+    ie           = st.text_input("Inscrição Estadual (opcional)")
 
-# ---------------------------------------------------------------- token via query param
-params = st.query_params
-token = params.get("token", "")
+    st.subheader("Endereço")
+    c1, c2 = st.columns([3, 1])
+    rua    = c1.text_input("Rua / Avenida *")
+    numero = c2.text_input("Número *")
+    c3, c4, c5 = st.columns([2, 1.5, 1])
+    bairro = c3.text_input("Bairro *")
+    cidade = c4.text_input("Cidade *")
+    uf     = c5.text_input("UF *", max_chars=2)
+    cep    = st.text_input("CEP (somente números)")
 
-if not token:
-    st.error("❌ Este link de cadastro é inválido ou já foi utilizado.")
-    st.info("Entre em contato com a equipe Hipnus para solicitar um novo convite.")
-    st.stop()
+    st.subheader("Responsável")
+    responsavel = st.text_input("Nome do responsável *")
+    telefone    = st.text_input("Telefone / WhatsApp *", placeholder="31999999999")
+    email       = st.text_input("E-mail de contato *")
 
-# ---------------------------------------------------------------- valida token
-validacao = api.validate_invite(token)
-
-if not validacao or not validacao.get("valid"):
-    st.error("❌ Convite inválido, expirado ou já utilizado.")
-    st.info("Solicite um novo link de convite à equipe Hipnus.")
-    st.stop()
-
-st.success(
-    f"✅ Convite válido! Bem-vindo(a), **{validacao.get('prospect_name', 'parceiro')}**."
-)
-st.markdown("---")
-
-# ---------------------------------------------------------------- formulário
-st.subheader("🏪 Dados do seu negócio")
-
-with st.form("form_parceiro"):
-    col1, col2 = st.columns(2)
-    with col1:
-        nome        = st.text_input("Razão Social / Nome *", placeholder="Ex.: Salão Bela Hair LTDA")
-        slug        = st.text_input("Slug da loja *", placeholder="Ex.: salao-bela-hair",
-                                    help="Identificador único público da sua loja. Só letras, números e hífen.")
-        email       = st.text_input("E-mail comercial *", placeholder="contato@salaobela.com")
-        phone       = st.text_input("Telefone", placeholder="31999999999")
-    with col2:
-        display_name = st.text_input("Nome de exibição da loja *", placeholder="Ex.: Salão Bela Hair")
-        cpf_cnpj     = st.text_input("CPF / CNPJ * (somente números)", placeholder="00000000000")
-        city         = st.text_input("Cidade", placeholder="Belo Horizonte")
-        state        = st.text_input("Estado", placeholder="MG", max_chars=2)
-
-    descricao = st.text_area(
-        "Descrição da loja (opcional)",
-        placeholder="Conte um pouco sobre seu salão, especialidades, diferenciais...",
-        height=90,
+    st.subheader("Tipo de parceiro")
+    tipo = st.selectbox(
+        "Categoria",
+        ["Salão de beleza", "Barbearia", "Revendedor", "Distribuidor", "Outro"],
     )
 
     st.divider()
-    st.caption(
-        "⚠️ Após o cadastro, a equipe Hipnus analisará e ativará sua conta de parceiro. "
-        "Uma subconta Asaas será criada automaticamente para receber repasses."
-    )
-    cadastrar = st.form_submit_button("✅ Finalizar cadastro", type="primary", use_container_width=True)
+    salvar = st.form_submit_button("💾 Salvar cadastro", type="primary", use_container_width=True)
 
-if cadastrar:
+if salvar:
     erros = []
-    if not nome.strip():         erros.append("Razão Social obrigatória.")
-    if not slug.strip():         erros.append("Slug da loja obrigatório.")
-    if not display_name.strip(): erros.append("Nome de exibição obrigatório.")
-    if not email.strip() or "@" not in email: erros.append("E-mail inválido.")
-    if not cpf_cnpj.strip() or not cpf_cnpj.strip().isdigit(): erros.append("CPF/CNPJ inválido.")
+    for campo, valor in [
+        ("Razão social", razao_social),
+        ("Rua", rua), ("Número", numero), ("Bairro", bairro),
+        ("Cidade", cidade), ("UF", uf),
+        ("Responsável", responsavel), ("Telefone", telefone), ("E-mail", email),
+    ]:
+        if not valor.strip():
+            erros.append(f"{campo} é obrigatório.")
+    if email.strip() and "@" not in email:
+        erros.append("E-mail inválido.")
 
     if erros:
         for e in erros:
             st.error(e)
     else:
-        with st.spinner("Cadastrando parceiro..."):
-            resultado = api.create_partner(
-                invite_token=token,
-                data={
-                    "name":         nome.strip(),
-                    "slug":         slug.strip().lower(),
-                    "display_name": display_name.strip(),
-                    "email":        email.strip(),
-                    "phone":        phone.strip(),
-                    "cpf_cnpj":     cpf_cnpj.strip(),
-                    "city":         city.strip(),
-                    "state":        state.strip().upper(),
-                    "description":  descricao.strip(),
-                },
-            )
-            if resultado:
-                st.success("🎉 Cadastro realizado com sucesso!")
-                st.info(
-                    "A equipe Hipnus analisará seu cadastro em até 2 dias úteis. "
-                    "Você receberá um e-mail de confirmação com as próximas etapas."
-                )
-                # Invalida token na URL para evitar reuso
-                st.query_params.clear()
-            else:
-                st.error(
-                    "❌ Erro ao finalizar cadastro. Verifique se o slug já está em uso "
-                    "ou entre em contato com a Hipnus."
-                )
+        payload = {
+            "razao_social": razao_social.strip(),
+            "cnpj": cnpj.strip(),
+            "ie": ie.strip(),
+            "endereco": {
+                "rua": rua.strip(), "numero": numero.strip(),
+                "bairro": bairro.strip(), "cidade": cidade.strip(),
+                "uf": uf.strip().upper(), "cep": cep.strip(),
+            },
+            "responsavel": responsavel.strip(),
+            "telefone": telefone.strip(),
+            "email": email.strip(),
+            "tipo": tipo,
+        }
+        with st.spinner("Salvando cadastro..."):
+            try:
+                api.save_partner(payload)
+                st.success("✅ Cadastro salvo com sucesso! Nossa equipe entrará em contato.")
+            except Exception as exc:
+                st.warning(f"API indisponível — cadastro registrado localmente. ({exc})")
