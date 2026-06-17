@@ -3,14 +3,6 @@
 ===================================
 Revisão de itens, quantidades e total.
 O botão de checkout redireciona para a página de pagamento.
-
-Ordem da sidebar:
-  1. brand_header()
-  2. sidebar_user_info()      ← ACIMA do menu
-  3. [menu nativo]
-  4. api_status_badge()
-  5. sidebar_cart_summary()
-  6. sidebar_logout_button()  ← ABAIXO do menu
 """
 import sys
 from pathlib import Path
@@ -48,7 +40,7 @@ if not cart:
         action_key="empty_cart_go_catalog",
     )
     if clicked:
-        st.switch_page("pages/2_Catalogo.py")
+        st.switch_page("pages/1_🛍️_Catálogo.py")
 
 else:
     # ─ Cabeçalho da tabela ───────────────────────────────────────────
@@ -76,7 +68,7 @@ else:
             key_checkout="go_checkout",
         )
         if go_checkout:
-            st.switch_page("pages/5_💳_Checkout.py")
+            st.switch_page("pages/5_Checkout.py")
 
     with left:
         with st.popover("ℹ️ Como funciona o pagamento?", use_container_width=False):

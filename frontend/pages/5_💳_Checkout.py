@@ -9,13 +9,6 @@ Etapas:
   3. Escolha do método de pagamento (PIX | Boleto).
   4. Confirmação e chamada ao CheckoutService.
   5. Exibição do resultado: QR Code Pix ou link de boleto.
-
-Ordem da sidebar:
-  1. brand_header()
-  2. sidebar_user_info()      ← ACIMA do menu
-  3. [menu nativo]
-  4. sidebar_cart_summary()
-  5. sidebar_logout_button()  ← ABAIXO do menu
 """
 import sys
 import base64
@@ -60,7 +53,7 @@ if not cart:
         action_key="checkout_empty_go_catalog",
     )
     if clicked:
-        st.switch_page("pages/2_Catalogo.py")
+        st.switch_page("pages/1_🛍️_Catálogo.py")
     st.stop()
 
 # ─ Resumo do pedido ──────────────────────────────────────────────────
