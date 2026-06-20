@@ -4,8 +4,8 @@ auth.py — HIPNUS COSMÉTICOS
 Guarda de autenticação.
 
 Navegação (caminhos reais do Streamlit Cloud):
-  Login     →  "Login.py"            ← entrypoint real (frontend/Login.py)
-  Home      →  "pages/0_🏠_Home.py"
+  Login     →  "streamlit_app.py"      ← entrypoint real (raiz do repo)
+  Home      →  "pages/1_Home.py"
 
 Roles: super_admin, admin, b2b, b2c, demo
 
@@ -26,9 +26,11 @@ from lib.config import API_V1
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-# Entrypoint real do Streamlit Cloud
-_LOGIN_PAGE = "Login.py"
-_HOME_PAGE  = "pages/0_🏠_Home.py"
+# ─ Entrypoint real do Streamlit Cloud ────────────────────────────────
+# streamlit_app.py está na RAIZ do repo — é o entrypoint que o Streamlit
+# Cloud usa. Todos os switch_page de logout/require_auth apontam para ele.
+_LOGIN_PAGE = "streamlit_app.py"
+_HOME_PAGE  = "pages/1_Home.py"
 
 
 def login_via_api(username: str, password: str) -> dict | None:
@@ -97,7 +99,7 @@ def fazer_login(username: str, password: str) -> tuple[bool, str]:
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     """Protege a página exigindo autenticação.
 
-    Se não autenticado, redireciona para Login.py (entrypoint real).
+    Se não autenticado, redireciona para streamlit_app.py (entrypoint real).
     Se perfis_permitidos for informado, bloqueia perfis não autorizados.
     """
     if not st.session_state.get("autenticado"):
@@ -121,7 +123,7 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
 
 
 def logout() -> None:
-    """Limpa a sessão e redireciona para o login."""
+    """Limpa a sessão e redireciona para o login (streamlit_app.py)."""
     for key in ["autenticado", "usuario", "perfil", "nome", "display_name", "email", "token", "via_api"]:
         st.session_state.pop(key, None)
     st.switch_page(_LOGIN_PAGE)
