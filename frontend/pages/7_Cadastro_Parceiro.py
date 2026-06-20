@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info
 from lib import components
 from lib.config import API_V1
 
@@ -16,6 +16,7 @@ st.set_page_config(page_title="Cadastro Parceiro · HIPNUS", page_icon="🏪", l
 ui.inject_theme()
 require_auth()
 sidebar_logo()
+sidebar_user_info()
 
 components.page_header(title="Cadastro de Parceiro", subtitle="Preencha os dados da empresa para solicitar acesso à área B2B.")
 

@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info
 from lib.config import BRAND
 from lib import components, commerce
 
@@ -17,6 +17,7 @@ require_auth()
 
 # ─ Sidebar ──────────────────────────────────────────────────────
 sidebar_logo()
+sidebar_user_info()
 
 # ─ Dados ─────────────────────────────────────────────────────────────
 products = api.get_products()

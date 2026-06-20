@@ -7,13 +7,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info
 from lib import components, commerce
 
 st.set_page_config(page_title="Loja Parceiro · HIPNUS", page_icon="🏪", layout="wide")
 ui.inject_theme()
 require_auth(perfis_permitidos=["super_admin", "admin", "b2b"])
 sidebar_logo()
+sidebar_user_info()
 
 all_products = api.get_products()
 lines        = api.list_lines()

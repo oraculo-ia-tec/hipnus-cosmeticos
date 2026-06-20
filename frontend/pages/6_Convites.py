@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info
 from lib import components
 from lib.config import API_V1
 
@@ -16,6 +16,7 @@ st.set_page_config(page_title="Convites · HIPNUS", page_icon="📨", layout="wi
 ui.inject_theme()
 require_auth(perfis_permitidos=["super_admin", "admin"])
 sidebar_logo()
+sidebar_user_info()
 
 components.page_header(title="Convites de Parceiros", subtitle="Gerencie convites para cadastro de novos distribuidores e salões.", kicker="Área Admin")
 components.section_title("Gerar novo convite")

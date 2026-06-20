@@ -7,13 +7,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info
 from lib import components, commerce
 
 st.set_page_config(page_title="Carrinho · HIPNUS", page_icon="🛒", layout="wide")
 ui.inject_theme()
 require_auth()
 sidebar_logo()
+sidebar_user_info()
 
 components.page_header(title="Carrinho de Compras", subtitle="Revise os itens antes de finalizar o pedido.")
 
