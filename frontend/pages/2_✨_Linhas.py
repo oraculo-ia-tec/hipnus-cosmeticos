@@ -18,11 +18,10 @@ st.set_page_config(page_title="Linhas · HIPNUS", page_icon="✨", layout="wide"
 ui.inject_theme()
 require_auth()
 
-# ─ Sidebar ───────────────────────────────────────────────────────────
+# ─ Sidebar: topo ────────────────────────────────────────────────────────
 sidebar_logo()
 sidebar_user_info()
 ui.api_status_badge(api.api_online())
-sidebar_logout_button()
 
 # ─ Carrinho flutuante ────────────────────────────────────────────────
 ui.floating_cart_expander()
@@ -64,3 +63,7 @@ else:
             for col, p in zip(cols, row):
                 with col:
                     commerce.product_card(p, key_prefix="lin", on_add=ui.add_to_cart)
+
+# ─ Sidebar: rodapé ───────────────────────────────────────────────────────
+st.sidebar.divider()
+sidebar_logout_button()

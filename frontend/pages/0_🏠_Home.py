@@ -22,12 +22,10 @@ ui.inject_theme()
 # ─ Guarda de autenticação ────────────────────────────────────────────
 require_auth()
 
-# ─ Sidebar ───────────────────────────────────────────────────────────
-# Ordem: logo → card usuário → [menu nativo] → botão Sair
+# ─ Sidebar: topo (logo + card) ──────────────────────────────────────
 sidebar_logo()
 sidebar_user_info()
 ui.api_status_badge(api.api_online())
-sidebar_logout_button()
 
 # ─ Carrinho flutuante (canto superior direito) ───────────────────────
 ui.floating_cart_expander()
@@ -100,3 +98,7 @@ st.caption(
     "HIPNUS COSMÉTICOS · vitrine para consumidor final e profissional. "
     "Preços de varejo são sugestões; cada parceiro define o preço final em sua loja."
 )
+
+# ─ Sidebar: rodapé (abaixo do menu) ──────────────────────────────────
+st.sidebar.divider()
+sidebar_logout_button()

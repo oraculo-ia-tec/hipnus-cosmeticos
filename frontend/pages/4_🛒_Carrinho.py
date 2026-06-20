@@ -1,8 +1,9 @@
 """
 4_Carrinho.py — HIPNUS COSMÉTICOS
-===================================
-Revisão de itens, quantidades e total.
-O botão de checkout redireciona para a página de pagamento.
+=====================================
+Visuáliza e gerencia os itens do carrinho antes do checkout.
+
+Acesso: qualquer perfil autenticado.
 """
 import sys
 from pathlib import Path
@@ -10,69 +11,52 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib import components, commerce
 
 st.set_page_config(page_title="Carrinho · HIPNUS", page_icon="🛒", layout="wide")
 ui.inject_theme()
-
 require_auth()
 
-# ─ Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()
+# ─ Sidebar: topo ────────────────────────────────────────────────────────
+sidebar_logo()
 sidebar_user_info()
 ui.api_status_badge(api.api_online())
-ui.sidebar_cart_summary()
-sidebar_logout_button()
 
-# ─ Cabeçalho ─────────────────────────────────────────────────────────
-components.section_title("Seu carrinho")
+# ─ Conteúdo ───────────────────────────────────────────────────────────
+components.page_header(
+    title="Carrinho de Compras",
+    subtitle="Revise os itens antes de finalizar o pedido.",
+)
 
-cart = st.session_state.get("cart", {})
-
-# ─ Estado vazio ──────────────────────────────────────────────────────
+cart = ui._cart()
 if not cart:
-    clicked = components.empty_state(
+    components.empty_state(
         icon="🛒",
-        title="Seu carrinho está vazio",
-        message="Adicione produtos no catálogo para começar.",
-        action_label="Ir para o catálogo",
-        action_key="empty_cart_go_catalog",
+        title="Carrinho vazio",
+        message="Adicione produtos pelo Catálogo ou pela Loja do Parceiro.",
     )
-    if clicked:
-        st.switch_page("pages/1_🛍️_Catálogo.py")
-
 else:
-    # ─ Cabeçalho da tabela ───────────────────────────────────────────
-    h = st.columns([4, 1.4, 1.4, 1.6, 0.6])
-    for col, label in zip(h, ["Produto", "Preço", "Qtd", "Subtotal", ""]):
-        col.markdown(f"**{label}**")
-
-    # ─ Linhas do carrinho ────────────────────────────────────────────
     for item in list(cart.values()):
-        result = commerce.cart_row(item, cart=cart)
-        if result is not None:
-            if result == 0:
-                st.rerun()
-            else:
-                cart[item["id"]]["qty"] = result
-                st.rerun()
+        c1, c2, c3, c4 = st.columns([4, 1, 2, 1])
+        c1.markdown(f"**{item['name']}**")
+        c2.markdown(f"`x{item['qty']}`")
+        c3.markdown(f"`{ui.brl(item['price'] * item['qty'])}`")
+        if c4.button("❌", key=f"rm_{item['id']}"):
+            ui.remove_from_cart(item["id"])
+            st.rerun()
 
     components.divider()
+    commerce.cart_total_block(ui.cart_total())
 
-    left, right = st.columns([3, 1.5])
+    col_l, col_r = st.columns([1, 1])
+    with col_l:
+        if st.button("🗑️ Limpar carrinho", use_container_width=True):
+            ui.clear_cart()
+            st.rerun()
+    with col_r:
+        st.page_link("pages/6_Checkout.py", label="→ Finalizar pedido", icon="💳")
 
-    with right:
-        go_checkout = commerce.cart_total_block(
-            total=ui.cart_total(),
-            key_checkout="go_checkout",
-        )
-        if go_checkout:
-            st.switch_page("pages/5_Checkout.py")
-
-    with left:
-        with st.popover("ℹ️ Como funciona o pagamento?", use_container_width=False):
-            st.markdown(
-                "O pagamento é processado via **Asaas** com split automático: "
-                "o piso (floor_price) fica na Hipnus e a margem é repassada ao parceiro."
-            )
+# ─ Sidebar: rodapé ───────────────────────────────────────────────────────
+st.sidebar.divider()
+sidebar_logout_button()
