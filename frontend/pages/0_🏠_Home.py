@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib.config import BRAND
 from lib import components, commerce
 
@@ -23,11 +23,14 @@ ui.inject_theme()
 require_auth()
 
 # ─ Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()
+# Ordem: logo → card usuário → [menu nativo] → botão Sair
+sidebar_logo()
 sidebar_user_info()
 ui.api_status_badge(api.api_online())
-ui.sidebar_cart_summary()
 sidebar_logout_button()
+
+# ─ Carrinho flutuante (canto superior direito) ───────────────────────
+ui.floating_cart_expander()
 
 # ─ Dados ─────────────────────────────────────────────────────────────
 products = api.get_products()

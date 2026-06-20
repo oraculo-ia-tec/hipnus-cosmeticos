@@ -8,12 +8,13 @@ A migração acontece progressivamente: quando uma página for refatorada,
 pode passar a importar diretamente de lib.theme, lib.components e lib.commerce.
 
 Ordem de chamada na sidebar (por convenção):
-  1. auth.sidebar_logo()          → logo Hipnus (TOPO — substitui brand_header)
+  1. auth.sidebar_logo()          → logo Hipnus (TOPO)
   2. auth.sidebar_user_info()     → card do usuário (ACIMA do menu)
   3. [menu nativo Streamlit]      → renderizado automaticamente
-  4. api_status_badge()           → status da API
-  5. sidebar_cart_summary()       → resumo do carrinho
-  6. auth.sidebar_logout_button() → SAIR (ABAIXO do menu)
+  4. auth.sidebar_logout_button() → SAIR (logo abaixo do menu — order CSS)
+
+No corpo da página (chamar logo após inject_theme):
+  5. ui.floating_cart_expander()  → carrinho flutuante no canto superior direito
 
 REGRA DE NAVEGAÇÃO (Streamlit Cloud):
   Usar SEMPRE os wrappers de pages/ (raiz), nunca os caminhos com emoji.
@@ -111,11 +112,108 @@ def clear_cart() -> None:
     st.session_state.cart = {}
 
 
-def sidebar_cart_summary() -> None:
-    """Resumo compacto do carrinho na sidebar.
+def floating_cart_expander() -> None:
+    """Carrinho flutuante fixo no canto superior direito da tela.
 
-    Exibe contagem de itens e total. Se houver itens, exibe link para o carrinho.
-    Chamar após api_status_badge(), antes de sidebar_logout_button().
+    Renderiza um expander 🛒 posicionado via CSS position:fixed no topo direito.
+    Ao clicar, o usuário visualiza todos os itens, quantidades, preços e total.
+    Inclui link direto para a página de carrinho completo.
+
+    Chamar logo após inject_theme() em todas as páginas autenticadas,
+    ANTES do conteúdo principal.
+
+    Efeitos colaterais:
+        - Lê st.session_state.cart (não modifica)
+        - Injeta CSS via st.html() para o posicionamento fixo
+    """
+    count = cart_count()
+    total = cart_total()
+    cart  = _cart()
+
+    # CSS para fixar o expander no canto superior direito
+    st.html("""
+    <style>
+    /* ── Carrinho flutuante ── */
+    div[data-testid="stExpander"].hip-cart-float {
+        position: fixed !important;
+        top: 56px !important;
+        right: 18px !important;
+        z-index: 9999 !important;
+        width: 300px !important;
+        box-shadow: 0 8px 32px rgba(0,0,0,.18) !important;
+        border-radius: 14px !important;
+        background: #fff !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    /* Hack: o Streamlit não suporta classe direta no expander,
+       então marcamos via wrapper de container */
+    div[data-testid="stVerticalBlock"]:has(> div[data-testid="stExpander"].hip-cart-float) {
+        position: fixed !important;
+        top: 56px !important;
+        right: 18px !important;
+        z-index: 9999 !important;
+        width: 300px !important;
+    }
+    /* Fallback universal: último expander dentro do bloco fixed-cart-wrap */
+    #fixed-cart-wrap {
+        position: fixed;
+        top: 56px;
+        right: 18px;
+        z-index: 9999;
+        width: 300px;
+    }
+    </style>
+    <div id="fixed-cart-wrap"></div>
+    """)
+
+    # Âncora HTML que precede o expander para o JS posicionar
+    st.html("""
+    <script>
+    (function() {
+        function moveCart() {
+            var anchor = document.getElementById('fixed-cart-wrap');
+            if (!anchor) return;
+            // Encontra o próximo expander irmão no DOM
+            var parent = anchor.closest('[data-testid="stVerticalBlock"]');
+            if (!parent) return;
+            var expanders = parent.querySelectorAll('[data-testid="stExpander"]');
+            expanders.forEach(function(el) {
+                if (el.querySelector('.hip-cart-label')) {
+                    anchor.appendChild(el);
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', moveCart);
+        } else {
+            setTimeout(moveCart, 200);
+        }
+    })();
+    </script>
+    """)
+
+    label = f"🛒 {count} item{'ns' if count != 1 else ''}  ·  {brl(total)}" if count else "🛒 Carrinho vazio"
+
+    with st.expander(label, expanded=False):
+        st.markdown('<span class="hip-cart-label" style="display:none"></span>', unsafe_allow_html=True)
+        if not cart:
+            st.caption("Nenhum produto adicionado ainda.")
+        else:
+            for item in cart.values():
+                c1, c2 = st.columns([3, 1])
+                c1.markdown(f"**{item['name']}**  \n`x{item['qty']}`")
+                c2.markdown(f"`{brl(item['price'] * item['qty'])}`")
+            st.markdown("---")
+            st.markdown(f"**Total: {brl(total)}**")
+            st.page_link("pages/5_Carrinho.py", label="Ver carrinho completo →", icon="🛒")
+
+
+def sidebar_cart_summary() -> None:
+    """[LEGADO] Mantido para compatibilidade. Use floating_cart_expander().
+
+    Exibe contagem de itens e total na sidebar.
+    Substituído pelo floating_cart_expander() no canto superior direito.
+    Ainda funciona mas não é mais chamado nas páginas padrão.
     """
     count = cart_count()
     st.sidebar.markdown("---")
@@ -136,12 +234,13 @@ def brand_header() -> None:
 
 
 def api_status_badge(online: bool) -> None:
-    """Mostra na sidebar se a vitrine está conectada à API ou em modo demo.
+    """Mostra na sidebar se a vitrine está conectada à API.
+
+    Exibe badge verde apenas quando a API está online.
+    Quando offline, não exibe nada (modo demonstração suprimido da sidebar).
 
     Args:
         online: True se a API respondeu com sucesso, False caso contrário.
     """
     if online:
         st.sidebar.success("API conectada", icon="🟢")
-    else:
-        st.sidebar.info("Modo demonstração (catálogo local)", icon="🟣")
