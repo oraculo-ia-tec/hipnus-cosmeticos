@@ -8,12 +8,13 @@ Startup:
   2. Executa seed_super_admin para garantir que o admin padrão exista.
 
 Rotas registradas:
-  /health          — healthcheck público
-  /api/v1/auth     — autenticação e usuários
-  /api/v1/catalog  — catálogo de produtos
-  /api/v1/orders   — pedidos
-  /api/v1/stores   — lojas parceiras
-  /api/v1/payments — pagamentos Asaas
+  /health              — healthcheck público
+  /api/v1/auth         — autenticação e usuários
+  /api/v1/catalog      — catálogo de produtos
+  /api/v1/orders       — pedidos
+  /api/v1/stores       — lojas parceiras
+  /api/v1/payments     — pagamentos Asaas
+  /api/v1/invites      — convites de cadastro
 """
 from __future__ import annotations
 
@@ -30,14 +31,10 @@ from app.domains.users.service import seed_super_admin
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Importa todos os modelos antes de criar as tabelas
     import_all_models()
     Base.metadata.create_all(bind=engine)
-
-    # Seed do super_admin
     with SessionLocal() as db:
         seed_super_admin(db)
-
     yield
 
 
@@ -62,9 +59,8 @@ def health():
     return {"status": "ok", "app": settings.app_name}
 
 
-# ─── Routers ────────────────────────────────────────────────────────────
+# ─── Routers ────────────────────────────────────────────────────────────────
 from app.domains.users.router import router as auth_router
-
 app.include_router(auth_router, prefix="/api/v1")
 
 try:
@@ -88,5 +84,11 @@ except ImportError:
 try:
     from app.domains.payments.router import router as payments_router
     app.include_router(payments_router, prefix="/api/v1")
+except ImportError:
+    pass
+
+try:
+    from app.domains.invites.router import router as invites_router
+    app.include_router(invites_router, prefix="/api/v1")
 except ImportError:
     pass
