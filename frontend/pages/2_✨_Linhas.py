@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, logout
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib import components, commerce
 
 st.set_page_config(page_title="Linhas · HIPNUS", page_icon="✨", layout="wide")
@@ -15,8 +15,7 @@ ui.inject_theme()
 require_auth()
 sidebar_logo()
 sidebar_user_info()
-if st.sidebar.button("🚶 Sair", use_container_width=True, key="logout_lin"):
-    logout()
+sidebar_logout_button()
 
 all_products = api.get_products()
 lines        = api.list_lines()

@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, logout
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib.config import BRAND
 from lib import components, commerce
 
@@ -17,9 +17,7 @@ require_auth()
 
 sidebar_logo()
 sidebar_user_info()
-
-if st.sidebar.button("🚶 Sair", use_container_width=True, key="logout_home"):
-    logout()
+sidebar_logout_button()
 
 products = api.get_products()
 lines    = api.list_lines()
