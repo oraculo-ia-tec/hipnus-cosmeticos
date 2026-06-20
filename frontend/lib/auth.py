@@ -10,7 +10,7 @@ Navegação (caminhos reais do Streamlit Cloud):
 Roles: super_admin, admin, b2b, b2c, demo
 
 Ordem da sidebar (convenção entre todas as páginas):
-  1. ui.brand_header()          → logo Hipnus (topo)
+  1. sidebar_logo()             → logo Hipnus SVG (TOPO — nova função)
   2. sidebar_user_info()        → card do usuário logado (ACIMA do menu)
   3. [menu nativo Streamlit]    → renderizado automaticamente
   4. ui.api_status_badge()      → status da API
@@ -127,10 +127,28 @@ def logout() -> None:
     st.switch_page(_LOGIN_PAGE)
 
 
+def sidebar_logo() -> None:
+    """Renderiza o logo HIPNUS COSMÉTICOS no topo da sidebar.
+
+    DEVE ser a PRIMEIRA chamada de sidebar em cada página,
+    antes de sidebar_user_info() e do menu nativo.
+    Substitui brand_header() com visual mais premium.
+    """
+    st.sidebar.html("""
+    <div class="hip-sidebar-logo-wrap">
+        <div class="hip-sidebar-logo-icon">H</div>
+        <div class="hip-sidebar-logo-text">
+            <div class="l1">HIPNUS</div>
+            <div class="l2">Cosm&eacute;ticos</div>
+        </div>
+    </div>
+    """)
+
+
 def sidebar_user_info() -> None:
     """Card compacto do usuário logado na sidebar.
 
-    Deve ser chamado IMEDIATAMENTE APÓS ui.brand_header(), antes do
+    Deve ser chamado IMEDIATAMENTE APÓS sidebar_logo(), antes do
     conteúdo da página, para que o Streamlit o posicione acima do menu
     nativo de navegação.
     NÃO inclui o botão Sair — use sidebar_logout_button() no final.
@@ -141,27 +159,19 @@ def sidebar_user_info() -> None:
     via_api      = st.session_state.get("via_api", False)
 
     icone = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
-    fonte = "🔗 API" if via_api else "📴 offline"
+    fonte = "API" if via_api else "offline"
     label = display_name if display_name else nome
 
-    st.sidebar.markdown(
+    st.sidebar.html(
         f"""
-        <div style="
-            background: linear-gradient(135deg, #f3f0ff 0%, #ede8fb 100%);
-            border: 1px solid #d9d3f5;
-            border-radius: 12px;
-            padding: 12px 14px 10px;
-            margin-bottom: 6px;
-        ">
-            <div style="font-weight:700; font-size:.95rem; color:#1a1430;">
-                {icone} {label}
-            </div>
-            <div style="font-size:.73rem; color:#6B6580; margin-top:3px;">
-                Perfil: <strong>{perfil.upper()}</strong>&nbsp;&nbsp;·&nbsp;&nbsp;{fonte}
+        <div class="hip-sidebar-user">
+            <div class="uname">{icone}&nbsp;{label}</div>
+            <div class="umeta">
+                <span class="badge-role">{perfil.replace('_', ' ').upper()}</span>
+                <span class="badge-src">{fonte}</span>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 

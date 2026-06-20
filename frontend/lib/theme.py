@@ -7,7 +7,7 @@ Chamar inject_theme() no topo de cada página, logo após st.set_page_config().
 Responsabilidades:
 - Tipografia global
 - Shell do Streamlit (ocultar elementos padrão)
-- Sidebar
+- Sidebar (logo Hipnus, user info, menu)
 - Botões
 - Formulários
 - Componentes brand (hip-*)
@@ -40,11 +40,104 @@ def inject_theme() -> None:
     #MainMenu, footer, header[data-testid="stHeader"] {{
         visibility: hidden; height: 0;
     }}
+
+    /* ── Remove o item "streamlit app" do menu da sidebar ── */
+    [data-testid="stSidebarNavItems"] li:first-child,
+    [data-testid="stSidebarNav"] > ul > li:first-child,
+    nav[data-testid="stSidebarNav"] ul li:first-child {{
+        display: none !important;
+    }}
+    /* Seletor alternativo por texto — cobre variações de versão */
+    [data-testid="stSidebarNavItems"] a[href="/"],
+    [data-testid="stSidebarNavItems"] a[href="/streamlit_app"] {{
+        display: none !important;
+    }}
+
+    /* ── Sidebar shell ────────────────────────────────── */
     [data-testid="stSidebarHeader"] {{ display: none !important; }}
     section[data-testid="stSidebar"] > div {{ padding-top: 0 !important; }}
-    section[data-testid="stSidebar"] .block-container {{ padding-top: 0.75rem; }}
+    section[data-testid="stSidebar"] .block-container {{ padding-top: 0.5rem; }}
 
-    /* ── Sidebar brand header ────────────────────────── */
+    /* ── Logo Hipnus no topo da sidebar ──────────────── */
+    .hip-sidebar-logo-wrap {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 14px 10px;
+        border-bottom: 1px solid {T.BORDER};
+        margin-bottom: 2px;
+    }}
+    .hip-sidebar-logo-icon {{
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, {T.PRIMARY} 0%, {T.PRIMARY_DARK} 100%);
+        color: {T.TEXT_INVERSE};
+        font-weight: 900;
+        font-size: 1.15rem;
+        letter-spacing: -1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(124,58,237,.35);
+        flex-shrink: 0;
+    }}
+    .hip-sidebar-logo-text .l1 {{
+        font-weight: 800;
+        font-size: .95rem;
+        color: {T.TEXT_PRIMARY};
+        letter-spacing: -.3px;
+        line-height: 1.15;
+    }}
+    .hip-sidebar-logo-text .l2 {{
+        font-size: .65rem;
+        color: {T.TEXT_MUTED};
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }}
+
+    /* ── Card do usuário logado na sidebar ───────────── */
+    .hip-sidebar-user {{
+        background: linear-gradient(135deg, #f3f0ff 0%, #ede8fb 100%);
+        border: 1px solid #d9d3f5;
+        border-radius: {T.RADIUS_MD};
+        padding: 10px 14px 9px;
+        margin: 8px 0 4px;
+    }}
+    .hip-sidebar-user .uname {{
+        font-weight: 700;
+        font-size: .93rem;
+        color: {T.TEXT_PRIMARY};
+        line-height: 1.3;
+    }}
+    .hip-sidebar-user .umeta {{
+        font-size: .71rem;
+        color: {T.TEXT_MUTED};
+        margin-top: 3px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }}
+    .hip-sidebar-user .badge-role {{
+        display: inline-block;
+        background: {T.PRIMARY};
+        color: {T.TEXT_INVERSE};
+        padding: 2px 8px;
+        border-radius: {T.RADIUS_PILL};
+        font-size: .62rem;
+        font-weight: 700;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+    }}
+    .hip-sidebar-user .badge-src {{
+        display: inline-block;
+        background: transparent;
+        color: {T.TEXT_MUTED};
+        font-size: .62rem;
+    }}
+
+    /* ── brand_header() legado (compatibilidade) ─────── */
     .hip-brand {{
         display: flex; align-items: center; gap: 12px;
         padding: 12px 0 8px; margin-bottom: 4px;
@@ -211,31 +304,77 @@ def inject_theme() -> None:
     .hip-auth-wrap {{
         max-width: {T.MAX_W_FORM}; margin: 0 auto; padding: 0 8px;
     }}
+
+    /* Login: logo / identidade */
     .hip-auth-logo {{
-        text-align: center; padding: 40px 0 24px;
+        text-align: center;
+        padding: 48px 0 32px;
+    }}
+    .hip-auth-logo .logo-icon {{
+        width: 72px; height: 72px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, {T.PRIMARY} 0%, {T.PRIMARY_DARK} 100%);
+        color: {T.TEXT_INVERSE};
+        font-weight: 900; font-size: 2rem;
+        display: inline-flex;
+        align-items: center; justify-content: center;
+        box-shadow: 0 8px 24px rgba(124,58,237,.40);
+        margin-bottom: 18px;
     }}
     .hip-auth-logo .wordmark {{
-        font-size: 2.6rem; font-weight: 800;
+        font-size: 2.2rem; font-weight: 800;
         color: {T.PRIMARY}; letter-spacing: -1.5px; line-height: 1;
     }}
     .hip-auth-logo .sub {{
-        font-size: .88rem; color: {T.TEXT_MUTED};
-        letter-spacing: 2.5px; margin-top: 4px;
+        font-size: .82rem; color: {T.TEXT_MUTED};
+        letter-spacing: 3px; margin-top: 5px;
+        text-transform: uppercase;
     }}
     .hip-auth-logo .tagline {{
-        font-size: .82rem; color: {T.TEXT_MUTED};
-        margin-top: 8px; line-height: 1.4;
+        font-size: .82rem; color: {T.TEXT_FAINT};
+        margin-top: 10px; line-height: 1.5;
     }}
+    .hip-auth-logo .divider-dot {{
+        display: inline-block;
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: {T.ACCENT};
+        margin: 16px auto 0;
+    }}
+
+    /* Login: card principal */
     .hip-auth-card {{
-        background: {T.BG}; border: 1px solid {T.BORDER};
-        border-radius: {T.RADIUS_XL}; padding: 28px 28px 24px;
-        box-shadow: {T.SHADOW_MD};
-        max-width: {T.MAX_W_FORM}; margin: 0 auto;
+        background: {T.BG};
+        border: 1px solid {T.BORDER};
+        border-radius: {T.RADIUS_XL};
+        padding: 32px 32px 28px;
+        box-shadow: 0 8px 32px -8px rgba(124,58,237,.18), 0 2px 8px -2px rgba(26,20,48,.08);
+        max-width: {T.MAX_W_FORM};
+        margin: 0 auto;
     }}
+    .hip-auth-card-title {{
+        font-size: 1.08rem;
+        font-weight: 700;
+        color: {T.TEXT_PRIMARY};
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }}
+    .hip-auth-card-title::before {{
+        content: "";
+        display: inline-block;
+        width: 4px; height: 18px;
+        background: {T.PRIMARY};
+        border-radius: 2px;
+    }}
+
+    /* Login: footer */
     .hip-auth-footer {{
-        text-align: center; margin-top: 20px;
-        font-size: .72rem; color: {T.TEXT_FAINT};
+        text-align: center; margin-top: 24px;
+        font-size: .71rem; color: {T.TEXT_FAINT};
         max-width: {T.MAX_W_FORM}; margin-left: auto; margin-right: auto;
+        line-height: 1.6;
     }}
 
     /* ── Formulários ───────────────────────────────────── */
@@ -276,6 +415,20 @@ def inject_login_style() -> None:
     div[data-testid="stTextInputRootElement"] {
         max-width: 440px !important;
         margin: 0 auto !important;
+    }
+    /* inputs com mais destaque no login */
+    div[data-testid="stTextInputRootElement"] input {
+        border-radius: 10px !important;
+        font-size: .97rem !important;
+    }
+    div[data-testid="stTextInputRootElement"] input:focus {
+        box-shadow: 0 0 0 3px rgba(124,58,237,.18) !important;
+    }
+    /* bloco de colunas dos botões login/demo */
+    div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] > button {
+        border-radius: 10px !important;
+        font-size: .97rem !important;
+        min-height: 44px !important;
     }
     </style>
     """)

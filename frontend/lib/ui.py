@@ -8,7 +8,7 @@ A migração acontece progressivamente: quando uma página for refatorada,
 pode passar a importar diretamente de lib.theme, lib.components e lib.commerce.
 
 Ordem de chamada na sidebar (por convenção):
-  1. brand_header()               → logo Hipnus (topo)
+  1. auth.sidebar_logo()          → logo Hipnus (TOPO — substitui brand_header)
   2. auth.sidebar_user_info()     → card do usuário (ACIMA do menu)
   3. [menu nativo Streamlit]      → renderizado automaticamente
   4. api_status_badge()           → status da API
@@ -126,20 +126,13 @@ def sidebar_cart_summary() -> None:
 
 
 def brand_header() -> None:
-    """Renderiza a barra de marca no topo da sidebar.
+    """[LEGADO] Compatibilidade — chama a nova sidebar_logo() de auth.py.
 
-    Deve ser a PRIMEIRA chamada de sidebar em cada página.
-    Depende das classes CSS injetadas por inject_theme().
+    Mantido para não quebrar páginas que ainda usam ui.brand_header().
+    Novas páginas devem usar auth.sidebar_logo() diretamente.
     """
-    st.sidebar.html("""
-    <div class="hip-brand">
-        <div class="hip-logo">H</div>
-        <div>
-            <div class="name">HIPNUS</div>
-            <div class="sub">Cosm&eacute;ticos</div>
-        </div>
-    </div>
-    """)
+    from .auth import sidebar_logo  # evita import circular no topo
+    sidebar_logo()
 
 
 def api_status_badge(online: bool) -> None:

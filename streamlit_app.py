@@ -37,27 +37,48 @@ if st.session_state.get("autenticado"):
 # ─ Logo e identidade da marca ────────────────────────────────────────
 st.html(f"""
 <div class="hip-auth-logo">
+    <div class="logo-icon">H</div>
     <div class="wordmark">HIPNUS</div>
     <div class="sub">COSMÉTICOS</div>
     <div class="tagline">{BRAND['tagline']}</div>
+    <div class="divider-dot"></div>
 </div>
 """)
 
 # ─ Card de login ─────────────────────────────────────────────────────
 st.html('<div class="hip-auth-card">')
 
-st.markdown("#### Entrar na plataforma")
+st.html('<div class="hip-auth-card-title">Entrar na plataforma</div>')
 
-login_input = st.text_input("Usuário", placeholder="seu.usuario", key="_login")
+login_input = st.text_input(
+    "Usuário",
+    placeholder="seu.usuario",
+    key="_login",
+    label_visibility="visible",
+)
 senha_input = st.text_input(
-    "Senha", placeholder="••••••••", type="password", key="_senha"
+    "Senha",
+    placeholder="••••••••",
+    type="password",
+    key="_senha",
+    label_visibility="visible",
 )
 
-col1, col2 = st.columns([2, 1])
+col1, col2 = st.columns([3, 1])
 with col1:
-    btn_entrar = st.button("→ Entrar", use_container_width=True, type="primary")
+    btn_entrar = st.button(
+        "Entrar  →",
+        use_container_width=True,
+        type="primary",
+        key="btn_entrar",
+    )
 with col2:
-    btn_demo = st.button("Demo", use_container_width=True, help="Acessa a vitrine sem login")
+    btn_demo = st.button(
+        "Demo",
+        use_container_width=True,
+        help="Acessa a vitrine em modo demonstração, sem criar conta.",
+        key="btn_demo",
+    )
 
 st.html('</div>')
 
@@ -83,6 +104,7 @@ if btn_demo:
 # ─ Rodapé ────────────────────────────────────────────────────────────
 st.html("""
 <div class="hip-auth-footer">
-    HIPNUS COSMÉTICOS &copy; 2026 — Plataforma exclusiva da marca.
+    HIPNUS COSMÉTICOS &copy; 2026 &mdash; Plataforma exclusiva da marca.<br>
+    Acesso restrito a usuários autorizados.
 </div>
 """)
