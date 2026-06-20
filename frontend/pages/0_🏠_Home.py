@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info, logout
 from lib.config import BRAND
 from lib import components, commerce
 
@@ -15,11 +15,12 @@ st.set_page_config(page_title="HIPNUS COSMÉTICOS", page_icon="💜", layout="wi
 ui.inject_theme()
 require_auth()
 
-# ─ Sidebar ──────────────────────────────────────────────────────
 sidebar_logo()
 sidebar_user_info()
 
-# ─ Dados ─────────────────────────────────────────────────────────────
+if st.sidebar.button("🚶 Sair", use_container_width=True, key="logout_home"):
+    logout()
+
 products = api.get_products()
 lines    = api.list_lines()
 cats     = api.list_categories()
