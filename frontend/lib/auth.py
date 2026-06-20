@@ -24,9 +24,13 @@ from lib.config import API_V1
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-# ─ Entrypoint real do Streamlit Cloud ────────────────────────────────
-_LOGIN_PAGE = "streamlit_app.py"
-_HOME_PAGE  = "pages/1_Home.py"
+# ─ Entrypoint real do Streamlit Cloud ────────────────────────────────────
+LOGIN_PAGE = "streamlit_app.py"
+HOME_PAGE  = "pages/1_Home.py"
+
+# Compat
+_LOGIN_PAGE = LOGIN_PAGE
+_HOME_PAGE  = HOME_PAGE
 
 
 def login_via_api(username: str, password: str) -> dict | None:
@@ -98,7 +102,7 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     Se não autenticado, redireciona para streamlit_app.py (entrypoint real).
     Se perfis_permitidos for informado, bloqueia perfis não autorizados.
     """
-    # ─ Detecta clique no botão Sair HTML fixo ──────────────────────────
+    # ─ Detecta clique no botão Sair HTML fixo ──────────────────────────────────
     if st.query_params.get("logout") == "1":
         logout()
 
@@ -194,10 +198,10 @@ def sidebar_logout_button() -> None:
     /* ── Botão Sair fixado no rodapé da sidebar ── */
     #hip-logout-btn-wrap {
         position: fixed;
-        bottom: 24px;
+        bottom: 20px;
         left: 0;
         width: 244px;          /* largura padrão da sidebar Streamlit */
-        padding: 0 12px;
+        padding: 0 14px;
         z-index: 99999;
         box-sizing: border-box;
     }
@@ -207,17 +211,18 @@ def sidebar_logout_button() -> None:
         justify-content: center;
         gap: 8px;
         width: 100%;
-        padding: 10px 0;
+        padding: 12px 0;
         background: #ffffff;
         color: #3d1a78;
         border: 1.5px solid #d0c4f0;
         border-radius: 10px;
-        font-size: 15px;
-        font-weight: 600;
+        font-size: 1rem;
+        font-weight: 700;
         cursor: pointer;
         transition: background .18s, color .18s, border-color .18s;
         text-decoration: none;
         letter-spacing: .01em;
+        box-sizing: border-box;
     }
     #hip-logout-btn:hover {
         background: #3d1a78;
@@ -234,7 +239,7 @@ def sidebar_logout_button() -> None:
         <a id="hip-logout-btn"
            href="?logout=1"
            onclick="window.parent.location.href='?logout=1'; return false;">
-            🚶 Sair
+            🚼 Sair
         </a>
     </div>
     """)

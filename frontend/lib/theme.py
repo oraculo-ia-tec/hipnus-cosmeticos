@@ -29,19 +29,19 @@ def inject_theme() -> None:
     """
     st.html(f"""
     <style>
-    /* ── Fonte ──────────────────────────────────────────────────── */
+    /* ── Fonte ────────────────────────────────────────────────────────────────── */
     @import url('{T.FONT_URL}');
     html, body, [class*="css"] {{ font-family: {T.FONT_STACK}; }}
 
-    /* ── Layout principal ──────────────────────────────────────── */
+    /* ── Layout principal ────────────────────────────────────────────────────────── */
     .block-container {{ padding-top: 3rem; max-width: {T.MAX_W_DEFAULT}; }}
 
-    /* ── Shell Streamlit ──────────────────────────────────────── */
+    /* ── Shell Streamlit ─────────────────────────────────────────────────────────── */
     #MainMenu, footer, header[data-testid="stHeader"] {{
         visibility: hidden; height: 0;
     }}
 
-    /* ── SUPRIME item "streamlit app" do topo da sidebar ──────────────── */
+    /* ── SUPRIME item "streamlit app" do topo da sidebar ───────────────────────────────────────────── */
     [data-testid="stSidebarNavItems"] li:first-child,
     [data-testid="stSidebarNav"] > ul > li:first-child {{
         display: none !important;
@@ -56,7 +56,7 @@ def inject_theme() -> None:
         display: none !important;
     }}
 
-    /* ── SIDEBAR: reordenação logo+card ACIMA do menu nativo ──────────────────── */
+    /* ── SIDEBAR: reordenação logo+card ACIMA do menu nativo ────────────────────────────────────────────── */
     section[data-testid="stSidebar"] > div {{
         display: flex !important;
         flex-direction: column !important;
@@ -88,12 +88,7 @@ def inject_theme() -> None:
         padding-bottom: 0.5rem !important;
     }}
 
-    /* ── COLAPSA o gap do iframe stHtml que envolve o card do usuário ──────── */
-    /*
-     * st.sidebar.html() cria um iframe via stHtml. Por padrão o Streamlit
-     * deixa margin-bottom no elemento pai desse iframe, gerando um espaco
-     * vazio entre o card do usuário e o menu nativo. Zeramos esse gap aqui.
-     */
+    /* ── COLAPSA o gap do iframe stHtml que envolve o card do usuário ───────────────────────────────────── */
     [data-testid="stSidebarUserContent"] [data-testid="stHtml"] {{
         margin-bottom: 0 !important;
         padding-bottom: 0 !important;
@@ -103,7 +98,6 @@ def inject_theme() -> None:
         margin-bottom: 0 !important;
         display: block !important;
     }}
-    /* Zera tambem o gap que o Streamlit insere entre blocos consecutivos na sidebar */
     [data-testid="stSidebarUserContent"] > div > div:has([data-testid="stHtml"]) {{
         gap: 0 !important;
         margin-bottom: 0 !important;
@@ -113,7 +107,7 @@ def inject_theme() -> None:
         gap: 0 !important;
     }}
 
-    /* ── Logo Hipnus no topo da sidebar ───────────────────────────────── */
+    /* ── Logo Hipnus no topo da sidebar ──────────────────────────────────────────────────────────── */
     .hip-sidebar-logo-wrap {{
         display: flex;
         align-items: center;
@@ -139,36 +133,36 @@ def inject_theme() -> None:
     }}
     .hip-sidebar-logo-text .l1 {{
         font-weight: 800;
-        font-size: .95rem;
+        font-size: 1rem;
         color: {T.TEXT_PRIMARY};
         letter-spacing: -.3px;
         line-height: 1.15;
     }}
     .hip-sidebar-logo-text .l2 {{
-        font-size: .65rem;
+        font-size: .7rem;
         color: {T.TEXT_MUTED};
         letter-spacing: 1.2px;
         text-transform: uppercase;
     }}
 
-    /* ── Card do usuário logado na sidebar ───────────────────────────── */
+    /* ── Card do usuário logado na sidebar ──────────────────────────────────────────────────────────── */
     .hip-sidebar-user {{
         background: linear-gradient(135deg, #f3f0ff 0%, #ede8fb 100%);
         border: 1px solid #d9d3f5;
         border-radius: {T.RADIUS_MD};
-        padding: 10px 14px 9px;
+        padding: 12px 14px 10px;
         margin: 8px 0 4px;
     }}
     .hip-sidebar-user .uname {{
         font-weight: 700;
-        font-size: .93rem;
+        font-size: 1rem;
         color: {T.TEXT_PRIMARY};
         line-height: 1.3;
     }}
     .hip-sidebar-user .umeta {{
-        font-size: .71rem;
+        font-size: .8rem;
         color: {T.TEXT_MUTED};
-        margin-top: 3px;
+        margin-top: 5px;
         display: flex;
         align-items: center;
         gap: 6px;
@@ -178,9 +172,9 @@ def inject_theme() -> None:
         display: inline-block;
         background: {T.PRIMARY};
         color: {T.TEXT_INVERSE};
-        padding: 2px 8px;
+        padding: 3px 9px;
         border-radius: {T.RADIUS_PILL};
-        font-size: .62rem;
+        font-size: .72rem;
         font-weight: 700;
         letter-spacing: .4px;
         text-transform: uppercase;
@@ -189,19 +183,20 @@ def inject_theme() -> None:
         display: inline-block;
         background: transparent;
         color: {T.TEXT_MUTED};
-        font-size: .62rem;
+        font-size: .72rem;
     }}
 
-    /* ── Botão Sair nativo na sidebar ─────────────────────────────── */
+    /* ── Botão Sair nativo na sidebar (fallback, caso seja usado) ──────────────────────────────── */
     section[data-testid="stSidebar"] div.block-container div.stButton > button {{
         width: 100% !important;
         background: #ffffff !important;
         color: #3d1a78 !important;
         border: 1.5px solid #d0c4f0 !important;
         border-radius: 10px !important;
-        font-weight: 600 !important;
-        font-size: .92rem !important;
-        padding: 10px 0 !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        padding: 12px 0 !important;
+        min-height: 46px !important;
         transition: background .18s, color .18s, border-color .18s !important;
     }}
     section[data-testid="stSidebar"] div.block-container div.stButton > button:hover {{
@@ -210,7 +205,7 @@ def inject_theme() -> None:
         border-color: #3d1a78 !important;
     }}
 
-    /* ── brand_header() legado (compatibilidade) ───────────────────────── */
+    /* ── brand_header() legado (compatibilidade) ────────────────────────────────────────────────────────── */
     .hip-brand {{
         display: flex; align-items: center; gap: 12px;
         padding: 12px 0 8px; margin-bottom: 4px;
@@ -232,7 +227,7 @@ def inject_theme() -> None:
         letter-spacing: .6px; text-transform: uppercase;
     }}
 
-    /* ── Hero ───────────────────────────────────────────────────────── */
+    /* ── Hero ────────────────────────────────────────────────────────────────────────────────── */
     .hip-hero {{
         background: linear-gradient(135deg, {T.PRIMARY} 0%, {T.PRIMARY_DARK} 100%);
         color: {T.TEXT_INVERSE}; border-radius: {T.RADIUS_XL};
@@ -253,7 +248,7 @@ def inject_theme() -> None:
         margin-bottom: 12px;
     }}
 
-    /* ── Seções ───────────────────────────────────────────────────────────── */
+    /* ── Seções ─────────────────────────────────────────────────────────────────────────────────────── */
     .hip-section-title {{
         font-weight: 800; font-size: 1.22rem;
         color: {T.TEXT_PRIMARY}; letter-spacing: -.3px; margin: 8px 0 2px;
@@ -262,7 +257,7 @@ def inject_theme() -> None:
         color: {T.TEXT_MUTED}; font-size: .88rem; margin-bottom: 12px;
     }}
 
-    /* ── Cards de produto ─────────────────────────────────────────────────────── */
+    /* ── Cards de produto ──────────────────────────────────────────────────────────────────────────────────── */
     .hip-card {{
         background: {T.BG}; border: 1px solid {T.BORDER};
         border-radius: {T.RADIUS_LG}; padding: 16px 16px 14px;
@@ -299,7 +294,7 @@ def inject_theme() -> None:
     }}
     .hip-card .floor {{ font-size: .68rem; color: {T.TEXT_MUTED}; }}
 
-    /* ── Badges ────────────────────────────────────────────────────────────────── */
+    /* ── Badges ────────────────────────────────────────────────────────────────────────────────────────── */
     .hip-badge {{
         display: inline-block;
         background: {T.SURFACE}; color: {T.PRIMARY_DARK};
@@ -311,7 +306,7 @@ def inject_theme() -> None:
     .hip-badge.kit   {{ background: {T.SUCCESS_BG}; color: {T.SUCCESS}; border-color: #BBF7D0; }}
     .hip-badge.info  {{ background: {T.INFO_BG}; color: {T.INFO}; border-color: #BFDBFE; }}
 
-    /* ── Stat card ───────────────────────────────────────────────────────────────── */
+    /* ── Stat card ──────────────────────────────────────────────────────────────────────────────────────────────── */
     .hip-stat {{
         background: {T.SURFACE}; border: 1px solid {T.BORDER};
         border-radius: {T.RADIUS_LG}; padding: 16px 18px; text-align: center;
@@ -324,7 +319,7 @@ def inject_theme() -> None:
         text-transform: uppercase; letter-spacing: .6px; margin-top: 2px;
     }}
 
-    /* ── Surface card (genérico) ────────────────────────────────────────────────── */
+    /* ── Surface card (genérico) ──────────────────────────────────────────────────────────────────────────────── */
     .hip-surface {{
         background: {T.SURFACE}; border: 1px solid {T.BORDER};
         border-radius: {T.RADIUS_LG}; padding: 20px 22px;
@@ -342,7 +337,7 @@ def inject_theme() -> None:
         background: {T.DANGER_BG}; border-color: #FECACA;
     }}
 
-    /* ── Empty state ───────────────────────────────────────────────────────────── */
+    /* ── Empty state ─────────────────────────────────────────────────────────────────────────────────────── */
     .hip-empty {{
         display: flex; flex-direction: column;
         align-items: center; text-align: center;
@@ -358,7 +353,7 @@ def inject_theme() -> None:
         line-height: 1.5; margin-bottom: 16px;
     }}
 
-    /* ── Botões ───────────────────────────────────────────────────────────────── */
+    /* ── Botões ───────────────────────────────────────────────────────────────────────────────────────────────── */
     div.stButton > button {{
         border-radius: {T.RADIUS_MD}; font-weight: 600;
         border: 1px solid {T.BORDER}; transition: all .16s ease;
@@ -373,7 +368,7 @@ def inject_theme() -> None:
         outline: 2px solid {T.FOCUS_RING}; outline-offset: 2px;
     }}
 
-    /* ── Auth / Login layout ────────────────────────────────────────────── */
+    /* ── Auth / Login layout ──────────────────────────────────────────────────────────────────────── */
     .hip-auth-wrap {{
         max-width: {T.MAX_W_FORM}; margin: 0 auto; padding: 0 8px;
     }}
@@ -444,7 +439,7 @@ def inject_theme() -> None:
         line-height: 1.6;
     }}
 
-    /* ── Formulários ────────────────────────────────────────────────────────────── */
+    /* ── Formulários ────────────────────────────────────────────────────────────────────────────────────────────── */
     .hip-form-section {{ margin-bottom: 12px; }}
     .hip-form-label {{
         font-size: .78rem; font-weight: 600;
@@ -456,7 +451,7 @@ def inject_theme() -> None:
         margin-top: 4px; line-height: 1.4;
     }}
 
-    /* ── Divider ────────────────────────────────────────────────────────────────── */
+    /* ── Divider ──────────────────────────────────────────────────────────────────────────────────────────────────── */
     .hip-divider {{
         height: 1px; background: {T.BORDER};
         margin: 16px 0;
