@@ -42,28 +42,20 @@ def inject_theme() -> None:
     }}
 
     /* ── SUPRIME item "streamlit app" do topo da sidebar ───────────────── */
-    /* Seletor 1: primeiro li da nav nativa (todas as versões) */
     [data-testid="stSidebarNavItems"] li:first-child,
     [data-testid="stSidebarNav"] > ul > li:first-child,
     nav[data-testid="stSidebarNav"] ul li:first-child {{
         display: none !important;
     }}
-    /* Seletor 2: links por href exatos */
     [data-testid="stSidebarNavItems"] a[href="/"],
     [data-testid="stSidebarNavItems"] a[href="/streamlit_app"],
     [data-testid="stSidebarNavItems"] a[href="streamlit_app"] {{
         display: none !important;
     }}
-    /* Seletor 3: stSidebarNavLink que contenha o texto “streamlit app” (cobre v1.35+) */
-    [data-testid="stSidebarNavLink"]:has(p:first-child) {{}}
     li:has([data-testid="stSidebarNavLink"][href="/"]),
     li:has([data-testid="stSidebarNavLink"][href="/streamlit_app"]),
     li:has([data-testid="stSidebarNavLink"][href="streamlit_app"]) {{
         display: none !important;
-    }}
-    /* Seletor 4: qualquer nav link cujo texto visível seja exatamente "streamlit app" */
-    [data-testid="stSidebarNavLink"] p {{
-        text-transform: none;
     }}
     [data-testid="stSidebarNavItems"] li:first-of-type {{
         display: none !important;
@@ -320,8 +312,6 @@ def inject_theme() -> None:
     .hip-auth-wrap {{
         max-width: {T.MAX_W_FORM}; margin: 0 auto; padding: 0 8px;
     }}
-
-    /* Login: logo / identidade */
     .hip-auth-logo {{
         text-align: center;
         padding: 48px 0 32px;
@@ -357,8 +347,6 @@ def inject_theme() -> None:
         background: {T.ACCENT};
         margin: 16px auto 0;
     }}
-
-    /* Login: card principal */
     .hip-auth-card {{
         background: {T.BG};
         border: 1px solid {T.BORDER};
@@ -384,8 +372,6 @@ def inject_theme() -> None:
         background: {T.PRIMARY};
         border-radius: 2px;
     }}
-
-    /* Login: footer */
     .hip-auth-footer {{
         text-align: center; margin-top: 24px;
         font-size: .71rem; color: {T.TEXT_FAINT};
@@ -405,7 +391,7 @@ def inject_theme() -> None:
         margin-top: 4px; line-height: 1.4;
     }}
 
-    /* ── Divider ─────────────────────────────────────────────────────────────────────────────── */
+    /* ── Divider ────────────────────────────────────────────────────────────────────────────── */
     .hip-divider {{
         height: 1px; background: {T.BORDER};
         margin: 16px 0;
@@ -415,36 +401,41 @@ def inject_theme() -> None:
 
 
 def inject_login_style() -> None:
-    """Injeta estilos específicos da tela de login (sidebar e container centralizados).
+    """Injeta estilos específicos da tela de login (layout=wide, split-screen).
 
     Chamar após inject_theme() somente em streamlit_app.py.
+    Gerencia: supressão de sidebar, padding zero no container, layout full-viewport.
     """
     st.html("""
     <style>
+    /* Esconde sidebar e controle de colapso na página de login */
     [data-testid="stSidebar"]        { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
-    div[data-testid="stHorizontalBlock"] {
-        max-width: 440px !important;
-        margin: 0 auto !important;
+
+    /* Remove padding padrão do container para permitir full-viewport */
+    [data-testid="stMainBlockContainer"],
+    [data-testid="stMain"] > div,
+    .block-container {
+        padding: 0 !important;
+        max-width: 100% !important;
+        margin: 0 !important;
     }
-    div[data-testid="stHorizontalBlock"] button { width: 100%; }
-    div[data-testid="stTextInputRootElement"] {
-        max-width: 440px !important;
-        margin: 0 auto !important;
+
+    /* Largura total nos inputs e botões do form de login */
+    [data-testid="stTextInputRootElement"] {
+        max-width: 100% !important;
     }
-    /* inputs com mais destaque no login */
-    div[data-testid="stTextInputRootElement"] input {
-        border-radius: 10px !important;
-        font-size: .97rem !important;
-    }
-    div[data-testid="stTextInputRootElement"] input:focus {
-        box-shadow: 0 0 0 3px rgba(124,58,237,.18) !important;
-    }
-    /* bloco de colunas dos botões login/demo */
     div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] > button {
-        border-radius: 10px !important;
-        font-size: .97rem !important;
-        min-height: 44px !important;
+        width: 100%;
+        border-radius: 12px !important;
+        min-height: 48px !important;
+        font-size: .96rem !important;
+    }
+
+    /* Garante que o bloco HTML do painel esquerdo ocupe todo o lado */
+    [data-testid="stHtml"] {
+        display: block;
+        width: 100%;
     }
     </style>
     """)
