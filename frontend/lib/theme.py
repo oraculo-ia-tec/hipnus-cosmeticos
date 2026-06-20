@@ -43,8 +43,7 @@ def inject_theme() -> None:
 
     /* ── SUPRIME item "streamlit app" do topo da sidebar ───────────────── */
     [data-testid="stSidebarNavItems"] li:first-child,
-    [data-testid="stSidebarNav"] > ul > li:first-child,
-    nav[data-testid="stSidebarNav"] ul li:first-child {{
+    [data-testid="stSidebarNav"] > ul > li:first-child {{
         display: none !important;
     }}
     [data-testid="stSidebarNavItems"] a[href="/"],
@@ -53,61 +52,58 @@ def inject_theme() -> None:
         display: none !important;
     }}
     li:has([data-testid="stSidebarNavLink"][href="/"]),
-    li:has([data-testid="stSidebarNavLink"][href="/streamlit_app"]),
-    li:has([data-testid="stSidebarNavLink"][href="streamlit_app"]) {{
-        display: none !important;
-    }}
-    [data-testid="stSidebarNavItems"] li:first-of-type {{
+    li:has([data-testid="stSidebarNavLink"][href="/streamlit_app"]) {{
         display: none !important;
     }}
 
-    /* ── SIDEBAR: reordenação via flexbox order ──────────────────────────────── */
+    /* ── SIDEBAR: reordenação logo+card ACIMA do menu nativo ───────────────────── */
     /*
-     * O Streamlit sempre renderiza o nav nativo (stSidebarNav) ANTES de
-     * qualquer st.sidebar.html() / st.sidebar.*  — independente da ordem
-     * no código Python. Para colocar o logo e o card do usuário acima do
-     * menu, usamos `order` do flexbox no container interno da sidebar.
+     * Estrutura real do DOM da sidebar (Streamlit Cloud):
      *
-     * Hierarquia DOM da sidebar:
-     *   section[stSidebar]
-     *     div                          ← flex container (direction: column)
-     *       div.block-container        ← contéudo st.sidebar.*()
-     *         [stSidebarHeader]        ← oculto
-     *         [stSidebarUserContent]   ← logo + card usuário  → order: 1
-     *         [stVerticalBlock]        ← demais widgets        → order: 3
-     *       nav[stSidebarNav]          ← menu nativo           → order: 2
+     *   section[data-testid="stSidebar"]
+     *     div                                         <- wrapper (flex column)
+     *       div[data-testid="stSidebarHeader"]        <- oculto
+     *       div[data-testid="stSidebarUserContent"]   <- logo + card (st.sidebar.html)
+     *       nav[data-testid="stSidebarNav"]           <- menu nativo
+     *       div[data-testid="stSidebarNavSeparator"]  <- linha separadora
+     *       div.block-container                       <- demais widgets (status/carrinho)
      *
-     * Resultado visual (de cima para baixo):
-     *   [logo + card usuário]   order 1
-     *   [menu de navegação]     order 2
-     *   [status/carrinho/sair]   order 3
+     * O Streamlit posiciona stSidebarUserContent ABAIXO do nav por padrão.
+     * Solicitamos ao browser que reordene via `order` do flexbox:
+     *   stSidebarUserContent  order: 1  -> TOPO (logo + card)
+     *   stSidebarNav          order: 2  -> abaixo do card
+     *   stSidebarNavSeparator order: 2  -> junto ao menu
+     *   block-container       order: 3  -> status / carrinho / sair
      */
     section[data-testid="stSidebar"] > div {{
         display: flex !important;
         flex-direction: column !important;
-        padding-top: 0 !important;
     }}
 
-    /* Contéudo injetado por st.sidebar.*  — divide em dois grupos */
-    section[data-testid="stSidebar"] > div > div.block-container {{
-        padding-top: 0 !important;
-        order: 1;   /* logo + card usuário ficam aqui — topo */
+    [data-testid="stSidebarHeader"] {{
+        display: none !important;
     }}
 
-    /* Menu nativo — vem depois do logo/card */
-    section[data-testid="stSidebar"] > div > nav[data-testid="stSidebarNav"] {{
-        order: 2;
+    [data-testid="stSidebarUserContent"] {{
+        order: 1 !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }}
+
+    [data-testid="stSidebarNav"] {{
+        order: 2 !important;
         margin-top: 0 !important;
         padding-top: 0 !important;
     }}
 
-    /* Qualquer outro div irmão direto (raro, mas garante) */
-    section[data-testid="stSidebar"] > div > div:not(.block-container) {{
-        order: 3;
+    [data-testid="stSidebarNavSeparator"] {{
+        order: 2 !important;
     }}
 
-    /* ── Sidebar header original ─────────────────────────────────────────────────── */
-    [data-testid="stSidebarHeader"] {{ display: none !important; }}
+    section[data-testid="stSidebar"] > div > div.block-container {{
+        order: 3 !important;
+        padding-top: 0.5rem !important;
+    }}
 
     /* ── Logo Hipnus no topo da sidebar ───────────────────────────────── */
     .hip-sidebar-logo-wrap {{
@@ -320,7 +316,7 @@ def inject_theme() -> None:
         background: {T.DANGER_BG}; border-color: #FECACA;
     }}
 
-    /* ── Empty state ────────────────────────────────────────────────────────────────────────────── */
+    /* ── Empty state ──────────────────────────────────────────────────────────────────────────── */
     .hip-empty {{
         display: flex; flex-direction: column;
         align-items: center; text-align: center;
