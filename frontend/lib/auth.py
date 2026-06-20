@@ -13,9 +13,7 @@ Ordem da sidebar (convenção entre todas as páginas):
   1. sidebar_logo()             → logo Hipnus SVG (TOPO — nova função)
   2. sidebar_user_info()        → card do usuário logado (ACIMA do menu)
   3. [menu nativo Streamlit]    → renderizado automaticamente
-  4. ui.api_status_badge()      → status da API
-  5. ui.sidebar_cart_summary()  → resumo do carrinho
-  6. sidebar_logout_button()    → botão SAIR (ABAIXO do menu)
+  4. sidebar_logout_button()    → injetado via CSS fixed no RODAPÉ da sidebar
 """
 from __future__ import annotations
 
@@ -27,8 +25,6 @@ ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
 # ─ Entrypoint real do Streamlit Cloud ────────────────────────────────
-# streamlit_app.py está na RAIZ do repo — é o entrypoint que o Streamlit
-# Cloud usa. Todos os switch_page de logout/require_auth apontam para ele.
 _LOGIN_PAGE = "streamlit_app.py"
 _HOME_PAGE  = "pages/1_Home.py"
 
@@ -102,6 +98,10 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     Se não autenticado, redireciona para streamlit_app.py (entrypoint real).
     Se perfis_permitidos for informado, bloqueia perfis não autorizados.
     """
+    # ─ Detecta clique no botão Sair HTML fixo ──────────────────────────
+    if st.query_params.get("logout") == "1":
+        logout()
+
     if not st.session_state.get("autenticado"):
         st.switch_page(_LOGIN_PAGE)
 
@@ -126,16 +126,12 @@ def logout() -> None:
     """Limpa a sessão e redireciona para o login (streamlit_app.py)."""
     for key in ["autenticado", "usuario", "perfil", "nome", "display_name", "email", "token", "via_api"]:
         st.session_state.pop(key, None)
+    st.query_params.clear()
     st.switch_page(_LOGIN_PAGE)
 
 
 def sidebar_logo() -> None:
-    """Renderiza o logo HIPNUS COSMÉTICOS no topo da sidebar.
-
-    DEVE ser a PRIMEIRA chamada de sidebar em cada página,
-    antes de sidebar_user_info() e do menu nativo.
-    Substitui brand_header() com visual mais premium.
-    """
+    """Renderiza o logo HIPNUS COSMÉTICOS no topo da sidebar."""
     st.sidebar.html("""
     <div class="hip-sidebar-logo-wrap">
         <div class="hip-sidebar-logo-icon">H</div>
@@ -148,13 +144,7 @@ def sidebar_logo() -> None:
 
 
 def sidebar_user_info() -> None:
-    """Card compacto do usuário logado na sidebar.
-
-    Deve ser chamado IMEDIATAMENTE APÓS sidebar_logo(), antes do
-    conteúdo da página, para que o Streamlit o posicione acima do menu
-    nativo de navegação.
-    NÃO inclui o botão Sair — use sidebar_logout_button() no final.
-    """
+    """Card compacto do usuário logado na sidebar."""
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
@@ -178,11 +168,62 @@ def sidebar_user_info() -> None:
 
 
 def sidebar_logout_button() -> None:
-    """Botão SAIR da sidebar.
+    """Botão SAIR fixado no rodapé da sidebar via CSS position:fixed.
 
-    Deve ser a última chamada de sidebar em cada página,
-    posicionado abaixo do menu nativo de navegação.
+    Injeta o botão como HTML puro posicionado no fundo da sidebar,
+    abaixo do menu nativo, independente da ordem de renderização Python.
+    O clique adiciona ?logout=1 na URL, capturado por require_auth().
+
+    DEVE ser chamado UMA VEZ por página, preferencialmente no início
+    (junto com sidebar_logo e sidebar_user_info), pois o posicionamento
+    é via CSS fixed e não depende da ordem DOM do Streamlit.
     """
-    st.sidebar.markdown("---")
-    if st.sidebar.button("🚶 Sair", use_container_width=True, key="btn_logout_global"):
-        logout()
+    st.sidebar.html("""
+    <style>
+    /* ── Botão Sair fixado no rodapé da sidebar ── */
+    #hip-logout-btn-wrap {
+        position: fixed;
+        bottom: 24px;
+        left: 0;
+        width: 244px;          /* largura padrão da sidebar Streamlit */
+        padding: 0 12px;
+        z-index: 99999;
+        box-sizing: border-box;
+    }
+    #hip-logout-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 0;
+        background: #ffffff;
+        color: #3d1a78;
+        border: 1.5px solid #d0c4f0;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background .18s, color .18s, border-color .18s;
+        text-decoration: none;
+        letter-spacing: .01em;
+    }
+    #hip-logout-btn:hover {
+        background: #3d1a78;
+        color: #ffffff;
+        border-color: #3d1a78;
+    }
+    /* Oculta qualquer botão Sair antigo renderizado via Python */
+    section[data-testid="stSidebar"] button[kind="secondary"]:has(p) {
+        display: none !important;
+    }
+    </style>
+
+    <div id="hip-logout-btn-wrap">
+        <a id="hip-logout-btn"
+           href="?logout=1"
+           onclick="window.parent.location.href='?logout=1'; return false;">
+            🚶 Sair
+        </a>
+    </div>
+    """)
