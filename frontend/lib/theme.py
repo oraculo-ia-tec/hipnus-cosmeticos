@@ -61,10 +61,53 @@ def inject_theme() -> None:
         display: none !important;
     }}
 
-    /* ── Sidebar shell ─────────────────────────────────────────────────── */
+    /* ── SIDEBAR: reordenação via flexbox order ──────────────────────────────── */
+    /*
+     * O Streamlit sempre renderiza o nav nativo (stSidebarNav) ANTES de
+     * qualquer st.sidebar.html() / st.sidebar.*  — independente da ordem
+     * no código Python. Para colocar o logo e o card do usuário acima do
+     * menu, usamos `order` do flexbox no container interno da sidebar.
+     *
+     * Hierarquia DOM da sidebar:
+     *   section[stSidebar]
+     *     div                          ← flex container (direction: column)
+     *       div.block-container        ← contéudo st.sidebar.*()
+     *         [stSidebarHeader]        ← oculto
+     *         [stSidebarUserContent]   ← logo + card usuário  → order: 1
+     *         [stVerticalBlock]        ← demais widgets        → order: 3
+     *       nav[stSidebarNav]          ← menu nativo           → order: 2
+     *
+     * Resultado visual (de cima para baixo):
+     *   [logo + card usuário]   order 1
+     *   [menu de navegação]     order 2
+     *   [status/carrinho/sair]   order 3
+     */
+    section[data-testid="stSidebar"] > div {{
+        display: flex !important;
+        flex-direction: column !important;
+        padding-top: 0 !important;
+    }}
+
+    /* Contéudo injetado por st.sidebar.*  — divide em dois grupos */
+    section[data-testid="stSidebar"] > div > div.block-container {{
+        padding-top: 0 !important;
+        order: 1;   /* logo + card usuário ficam aqui — topo */
+    }}
+
+    /* Menu nativo — vem depois do logo/card */
+    section[data-testid="stSidebar"] > div > nav[data-testid="stSidebarNav"] {{
+        order: 2;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }}
+
+    /* Qualquer outro div irmão direto (raro, mas garante) */
+    section[data-testid="stSidebar"] > div > div:not(.block-container) {{
+        order: 3;
+    }}
+
+    /* ── Sidebar header original ─────────────────────────────────────────────────── */
     [data-testid="stSidebarHeader"] {{ display: none !important; }}
-    section[data-testid="stSidebar"] > div {{ padding-top: 0 !important; }}
-    section[data-testid="stSidebar"] .block-container {{ padding-top: 0.5rem; }}
 
     /* ── Logo Hipnus no topo da sidebar ───────────────────────────────── */
     .hip-sidebar-logo-wrap {{
