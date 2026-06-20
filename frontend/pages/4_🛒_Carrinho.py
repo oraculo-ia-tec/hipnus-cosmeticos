@@ -1,9 +1,6 @@
 """
 4_Carrinho.py — HIPNUS COSMÉTICOS
-=====================================
-Visuáliza e gerencia os itens do carrinho antes do checkout.
-
-Acesso: qualquer perfil autenticado.
+Visuáliza e gerencia os itens do carrinho.
 """
 import sys
 from pathlib import Path
@@ -11,17 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth
 from lib import components, commerce
 
 st.set_page_config(page_title="Carrinho · HIPNUS", page_icon="🛒", layout="wide")
 ui.inject_theme()
 require_auth()
-
-# ─ Sidebar: topo ────────────────────────────────────────────────────────
-sidebar_logo()
-sidebar_user_info()
-ui.api_status_badge(api.api_online())
 
 # ─ Conteúdo ───────────────────────────────────────────────────────────
 components.page_header(
@@ -55,8 +47,4 @@ else:
             ui.clear_cart()
             st.rerun()
     with col_r:
-        st.page_link("pages/6_Checkout.py", label="→ Finalizar pedido", icon="💳")
-
-# ─ Sidebar: rodapé ───────────────────────────────────────────────────────
-st.sidebar.divider()
-sidebar_logout_button()
+        st.page_link("pages/5_💳_Checkout.py", label="→ Finalizar pedido", icon="💳")

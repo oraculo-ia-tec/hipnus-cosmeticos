@@ -1,9 +1,6 @@
 """
 2_Linhas.py — HIPNUS COSMÉTICOS
-=====================================
 Explore as linhas de produtos da marca Hipnus.
-
-Acesso: qualquer perfil autenticado.
 """
 import sys
 from pathlib import Path
@@ -11,20 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth
 from lib import components, commerce
 
 st.set_page_config(page_title="Linhas · HIPNUS", page_icon="✨", layout="wide")
 ui.inject_theme()
 require_auth()
-
-# ─ Sidebar: topo ────────────────────────────────────────────────────────
-sidebar_logo()
-sidebar_user_info()
-ui.api_status_badge(api.api_online())
-
-# ─ Carrinho flutuante ────────────────────────────────────────────────
-ui.floating_cart_expander()
 
 # ─ Dados ─────────────────────────────────────────────────────────────
 all_products = api.get_products()
@@ -63,7 +52,3 @@ else:
             for col, p in zip(cols, row):
                 with col:
                     commerce.product_card(p, key_prefix="lin", on_add=ui.add_to_cart)
-
-# ─ Sidebar: rodapé ───────────────────────────────────────────────────────
-st.sidebar.divider()
-sidebar_logout_button()

@@ -10,18 +10,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth
 from lib import components
 from lib.config import API_V1
 
 st.set_page_config(page_title="Convites · HIPNUS", page_icon="📨", layout="wide")
 ui.inject_theme()
 require_auth(perfis_permitidos=["super_admin", "admin"])
-
-# ─ Sidebar: topo ────────────────────────────────────────────────────────
-sidebar_logo()
-sidebar_user_info()
-ui.api_status_badge(api.api_online())
 
 # ─ Header ────────────────────────────────────────────────────────────
 components.page_header(
@@ -91,7 +86,3 @@ try:
         st.warning(f"Não foi possível carregar convites: {r.status_code}")
 except Exception as e:
     st.info(f"⚠️ API offline — sem dados de convites ({e})")
-
-# ─ Sidebar: rodapé ───────────────────────────────────────────────────────
-st.sidebar.divider()
-sidebar_logout_button()

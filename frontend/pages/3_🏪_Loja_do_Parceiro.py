@@ -1,10 +1,6 @@
 """
 3_Loja_do_Parceiro.py — HIPNUS COSMÉTICOS
-==========================================
-Vitrine personalizada para parceiros B2B (salões, distribuidores).
-Exibe preços de piso e condições comerciais exclusivas.
-
-Acesso: super_admin, admin, b2b.
+Vitrine personalizada para parceiros B2B.
 """
 import sys
 from pathlib import Path
@@ -12,20 +8,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth
 from lib import components, commerce
 
 st.set_page_config(page_title="Loja Parceiro · HIPNUS", page_icon="🏪", layout="wide")
 ui.inject_theme()
 require_auth(perfis_permitidos=["super_admin", "admin", "b2b"])
-
-# ─ Sidebar: topo ────────────────────────────────────────────────────────
-sidebar_logo()
-sidebar_user_info()
-ui.api_status_badge(api.api_online())
-
-# ─ Carrinho flutuante ────────────────────────────────────────────────
-ui.floating_cart_expander()
 
 # ─ Dados ─────────────────────────────────────────────────────────────
 all_products = api.get_products()
@@ -46,7 +34,7 @@ products  = all_products if linha_sel == "Todas" else [
 st.caption(f"{len(products)} produto(s)")
 components.divider()
 
-# ─ Grid de produtos (preço de piso) ──────────────────────────────────
+# ─ Grid de produtos ──────────────────────────────────
 if not products:
     components.empty_state(
         icon="🏪",
@@ -61,7 +49,3 @@ else:
         for col, p in zip(cols, row):
             with col:
                 commerce.product_card(p, key_prefix="b2b", on_add=ui.add_to_cart)
-
-# ─ Sidebar: rodapé ───────────────────────────────────────────────────────
-st.sidebar.divider()
-sidebar_logout_button()

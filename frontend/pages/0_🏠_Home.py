@@ -1,10 +1,6 @@
 """
 0_Home.py — HIPNUS COSMÉTICOS
-================================
 Página inicial da vitrine (pós-login).
-Hero da marca, indicadores do portfólio, destaques e atalhos.
-
-Acesso: qualquer perfil autenticado (admin, b2b, b2c, demo).
 """
 import sys
 from pathlib import Path
@@ -12,23 +8,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth
 from lib.config import BRAND
 from lib import components, commerce
 
 st.set_page_config(page_title="HIPNUS COSMÉTICOS", page_icon="💜", layout="wide")
 ui.inject_theme()
-
-# ─ Guarda de autenticação ────────────────────────────────────────────
 require_auth()
-
-# ─ Sidebar: topo (logo + card) ──────────────────────────────────────
-sidebar_logo()
-sidebar_user_info()
-ui.api_status_badge(api.api_online())
-
-# ─ Carrinho flutuante (canto superior direito) ───────────────────────
-ui.floating_cart_expander()
 
 # ─ Dados ─────────────────────────────────────────────────────────────
 products = api.get_products()
@@ -98,7 +84,3 @@ st.caption(
     "HIPNUS COSMÉTICOS · vitrine para consumidor final e profissional. "
     "Preços de varejo são sugestões; cada parceiro define o preço final em sua loja."
 )
-
-# ─ Sidebar: rodapé (abaixo do menu) ──────────────────────────────────
-st.sidebar.divider()
-sidebar_logout_button()

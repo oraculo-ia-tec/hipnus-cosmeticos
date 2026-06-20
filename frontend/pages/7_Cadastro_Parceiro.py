@@ -1,7 +1,6 @@
 """
 7_Cadastro_Parceiro.py — HIPNUS COSMÉTICOS
 Formulário de cadastro de novos parceiros via convite.
-Acesso: qualquer perfil autenticado (normalmente quem recebeu o convite).
 """
 import sys
 from pathlib import Path
@@ -10,18 +9,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import httpx
 import streamlit as st
 from lib import api, ui
-from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth
 from lib import components
 from lib.config import API_V1
 
 st.set_page_config(page_title="Cadastro Parceiro · HIPNUS", page_icon="🏪", layout="wide")
 ui.inject_theme()
 require_auth()
-
-# ─ Sidebar: topo ────────────────────────────────────────────────────────
-sidebar_logo()
-sidebar_user_info()
-ui.api_status_badge(api.api_online())
 
 # ─ Header ────────────────────────────────────────────────────────────
 components.page_header(
@@ -72,9 +66,3 @@ if submitted:
                 st.error(f"Erro ao enviar: {r.status_code} — {r.text}")
         except Exception as e:
             st.warning(f"⚠️ API indisponível — solicitação não enviada ({e})")
-
-# ─ Sidebar: rodapé (abaixo do menu, após “Cadastro Parceiro”) ────────────────
-# st.sidebar.divider() + sidebar_logout_button() ficam como úLTIMAS
-# chamadas, garantindo que aparecem sempre abaixo de todo o menu nativo.
-st.sidebar.divider()
-sidebar_logout_button()
