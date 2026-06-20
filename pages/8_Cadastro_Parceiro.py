@@ -5,4 +5,4 @@ frontend = Path(__file__).resolve().parents[1] / "frontend"
 if str(frontend) not in sys.path:
     sys.path.insert(0, str(frontend))
 
-exec(open(frontend / "pages" / "6_Cadastro_Parceiro.py", encoding="utf-8").read())
+exec(open(frontend / "pages" / "7_Cadastro_Parceiro.py", encoding="utf-8").read())
