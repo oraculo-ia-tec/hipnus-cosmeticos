@@ -144,7 +144,7 @@ def sidebar_logo() -> None:
 
 
 def sidebar_user_info() -> None:
-    """Card compacto do usuário logado na sidebar."""
+    """Card compacto do usuário logado na sidebar, sem espaço abaixo."""
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
@@ -156,6 +156,17 @@ def sidebar_user_info() -> None:
 
     st.sidebar.html(
         f"""
+        <style>
+        /* Remove margem inferior do container do card de usuário */
+        section[data-testid="stSidebar"] .stHtml:has(.hip-sidebar-user) {{
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }}
+        section[data-testid="stSidebar"] .stHtml:has(.hip-sidebar-user) + div {{
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }}
+        </style>
         <div class="hip-sidebar-user">
             <div class="uname">{icone}&nbsp;{label}</div>
             <div class="umeta">
