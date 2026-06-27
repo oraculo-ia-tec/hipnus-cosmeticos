@@ -2,6 +2,7 @@
 pages/00_IA_Consultora.py — HIPNUS COSMÉTICOS
 ================================================
 Proxy para a IA Consultora (primeiro item do menu).
+A chave GROQ está em secrets.toml na seção [groq].
 """
 from __future__ import annotations
 import os
@@ -16,6 +17,7 @@ for _p in [str(_repo_root), str(_frontend)]:
 
 import streamlit as st
 
-os.environ["GROQ_API_KEY"] = str(st.secrets["GROQ_API_KEY"]).strip()
+# Chave dentro da seção [groq] no secrets.toml
+os.environ["GROQ_API_KEY"] = str(st.secrets["groq"]["GROQ_API_KEY"]).strip()
 
 exec((Path(_frontend) / "pages" / "10_🤖_IA_Consultora.py").read_text(encoding="utf-8"))
