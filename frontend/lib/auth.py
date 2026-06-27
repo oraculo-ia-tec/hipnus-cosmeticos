@@ -1,93 +1,152 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-Guarda de autenticação.
+Guarda de autenticação 100% offline — SEM chamadas ao FastAPI.
 
-Navegação (caminhos reais do Streamlit Cloud):
-  Login     →  "streamlit_app.py"      ← entrypoint real (raiz do repo)
-  Home      →  "pages/1_Home.py"
+Esta versão usa apenas st.session_state e um dicionário de usuários
+demo/seed. Quando o backend FastAPI estiver pronto e em produção,
+basta descomentar o bloco `login_via_api` e habilitá-lo em `fazer_login`.
 
-Roles: super_admin, admin, b2b, b2c, demo
+Roles disponíveis:
+  super_admin : acesso total (William / dev)
+  admin       : administrador da Hipnus
+  b2b         : parceiro profissional / salão
+  b2c         : cliente final
+  demo        : modo demonstração (somente leitura)
 
-Ordem da sidebar (convenção entre todas as páginas):
-  1. sidebar_logo()             → logo Hipnus SVG (TOPO — nova função)
-  2. sidebar_user_info()        → card do usuário logado (ACIMA do menu)
-  3. [menu nativo Streamlit]    → renderizado automaticamente
-  4. sidebar_logout_button()    → injetado via CSS fixed no RODAPÉ da sidebar
+Ordem recomendada na sidebar de cada página:
+  1. sidebar_logo()          → logo HIPNUS (topo)
+  2. sidebar_user_info()     → card do usuário logado
+  3. [menu nativo Streamlit] → renderizado automaticamente
+  4. sidebar_logout_button() → botão fixo no rodapé via CSS
 """
 from __future__ import annotations
 
-import httpx
 import streamlit as st
-from lib.config import API_V1
 
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-# ─ Entrypoint real do Streamlit Cloud ────────────────────────────────────
+# ─── Entrypoints do Streamlit ─────────────────────────────────────────────────
 LOGIN_PAGE = "streamlit_app.py"
 HOME_PAGE  = "pages/1_Home.py"
-
-# Compat
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
 
-def login_via_api(username: str, password: str) -> dict | None:
-    try:
-        r = httpx.post(
-            f"{API_V1}/auth/login",
-            data={"username": username, "password": password},
-            timeout=5.0,
-        )
-        if r.status_code == 200:
-            return r.json()
-    except Exception:
-        pass
-    return None
-
-
-USUARIOS_DEMO = {
-    "william": {"senha": "hipnus@2026", "role": "super_admin", "nome": "William Eustáquio",
-                "display_name": "Desenvolvedor de IA", "email": "programador.descpro@gmail.com"},
-    "admin":   {"senha": "hipnus@adm",  "role": "admin",       "nome": "Administrador",
-                "display_name": "Admin Hipnus", "email": "admin@hipnuscosmeticos.com.br"},
-    "pro":     {"senha": "hipnus@pro",  "role": "b2b",         "nome": "Profissional",
-                "display_name": "Profissional B2B", "email": "pro@hipnuscosmeticos.com.br"},
-    "user":    {"senha": "hipnus@user", "role": "b2c",         "nome": "Cliente",
-                "display_name": "Cliente B2C", "email": "user@hipnuscosmeticos.com.br"},
+# ─── Usuários demo/seed ───────────────────────────────────────────────────────
+USUARIOS_DEMO: dict[str, dict] = {
+    "william": {
+        "senha":        "hipnus@2026",
+        "role":         "super_admin",
+        "nome":         "William Eustáquio",
+        "display_name": "Desenvolvedor de IA",
+        "email":        "programador.descpro@gmail.com",
+    },
+    "admin": {
+        "senha":        "hipnus@adm",
+        "role":         "admin",
+        "nome":         "Administrador",
+        "display_name": "Admin Hipnus",
+        "email":        "admin@hipnuscosmeticos.com.br",
+    },
+    "pro": {
+        "senha":        "hipnus@pro",
+        "role":         "b2b",
+        "nome":         "Profissional",
+        "display_name": "Profissional B2B",
+        "email":        "pro@hipnuscosmeticos.com.br",
+    },
+    "user": {
+        "senha":        "hipnus@user",
+        "role":         "b2c",
+        "nome":         "Cliente",
+        "display_name": "Cliente B2C",
+        "email":        "user@hipnuscosmeticos.com.br",
+    },
 }
 
 
+# ─── Helpers de sessão ────────────────────────────────────────────────────────
+def _gravar_sessao(
+    nome: str,
+    username: str,
+    role: str,
+    display_name: str,
+    email: str,
+    token: str | None,
+    via_api: bool,
+) -> None:
+    st.session_state.update({
+        "autenticado":  True,
+        "usuario":      username,
+        "nome":         nome,
+        "perfil":       role,
+        "display_name": display_name,
+        "email":        email,
+        "token":        token,
+        "via_api":      via_api,
+    })
+
+
 def _login_offline(username: str, password: str) -> bool:
+    """
+    Valida credenciais contra USUARIOS_DEMO.
+    Retorna True e grava sessão em caso de sucesso.
+    """
     u = USUARIOS_DEMO.get(username.strip().lower())
     if not u or password != u["senha"]:
         return False
     _gravar_sessao(
-        nome=u["nome"], username=username.lower(), role=u["role"],
-        display_name=u["display_name"], email=u["email"], token=None, via_api=False,
+        nome=u["nome"],
+        username=username.lower(),
+        role=u["role"],
+        display_name=u["display_name"],
+        email=u["email"],
+        token=None,
+        via_api=False,
     )
     return True
 
 
-def _gravar_sessao(nome, username, role, display_name, email, token, via_api):
-    st.session_state.update({
-        "autenticado": True, "usuario": username, "nome": nome,
-        "perfil": role, "display_name": display_name,
-        "email": email, "token": token, "via_api": via_api,
-    })
+# ─── API (desativada — descomente quando o backend FastAPI estiver em produção) ──
+# def login_via_api(username: str, password: str) -> dict | None:
+#     import httpx
+#     from lib.config import API_V1
+#     try:
+#         r = httpx.post(
+#             f"{API_V1}/auth/login",
+#             data={"username": username, "password": password},
+#             timeout=5.0,
+#         )
+#         if r.status_code == 200:
+#             return r.json()
+#     except Exception:
+#         pass
+#     return None
 
 
+# ─── Login público ────────────────────────────────────────────────────────────
 def fazer_login(username: str, password: str) -> tuple[bool, str]:
-    resultado = login_via_api(username, password)
-    if resultado:
-        user = resultado["user"]
-        _gravar_sessao(
-            nome=user["name"], username=user["username"], role=user["role"],
-            display_name=user.get("display_name") or user["name"],
-            email=user["email"], token=resultado["access_token"], via_api=True,
-        )
-        return True, f"Bem-vindo(a), {user['name']}!"
+    """
+    Tenta autenticar o usuário.
+
+    Fluxo atual (100% offline):
+      1. Valida contra USUARIOS_DEMO.
+      2. (Futuro) Habilitar login_via_api quando FastAPI estiver ativo.
+
+    Retorna (sucesso: bool, mensagem: str).
+    """
+    # ── Futuro: descomentar para tentar API primeiro ──────────────────────────
+    # resultado = login_via_api(username, password)
+    # if resultado:
+    #     user = resultado["user"]
+    #     _gravar_sessao(
+    #         nome=user["name"], username=user["username"], role=user["role"],
+    #         display_name=user.get("display_name") or user["name"],
+    #         email=user["email"], token=resultado["access_token"], via_api=True,
+    #     )
+    #     return True, f"Bem-vindo(a), {user['name']}!"
 
     if _login_offline(username, password):
         nome = USUARIOS_DEMO[username.strip().lower()]["nome"]
@@ -97,12 +156,15 @@ def fazer_login(username: str, password: str) -> tuple[bool, str]:
 
 
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
-    """Protege a página exigindo autenticação.
-
-    Se não autenticado, redireciona para streamlit_app.py (entrypoint real).
-    Se perfis_permitidos for informado, bloqueia perfis não autorizados.
     """
-    # ─ Detecta clique no botão Sair HTML fixo ──────────────────────────────────
+    Protege a página exigindo autenticação.
+
+    - Se não autenticado, redireciona para streamlit_app.py (entrypoint).
+    - Se perfis_permitidos for informado, bloqueia perfis não autorizados.
+    - Detecta clique no botão Sair via query param ?logout=1.
+
+    Retorna dict com dados do usuário logado.
+    """
     if st.query_params.get("logout") == "1":
         logout()
 
@@ -127,13 +189,17 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
 
 
 def logout() -> None:
-    """Limpa a sessão e redireciona para o login (streamlit_app.py)."""
-    for key in ["autenticado", "usuario", "perfil", "nome", "display_name", "email", "token", "via_api"]:
+    """Limpa a sessão e redireciona para o login."""
+    for key in [
+        "autenticado", "usuario", "perfil", "nome",
+        "display_name", "email", "token", "via_api",
+    ]:
         st.session_state.pop(key, None)
     st.query_params.clear()
     st.switch_page(_LOGIN_PAGE)
 
 
+# ─── Componentes de sidebar ───────────────────────────────────────────────────
 def sidebar_logo() -> None:
     """Renderiza o logo HIPNUS COSMÉTICOS no topo da sidebar."""
     st.sidebar.html("""
@@ -148,20 +214,19 @@ def sidebar_logo() -> None:
 
 
 def sidebar_user_info() -> None:
-    """Card compacto do usuário logado na sidebar, sem espaço abaixo."""
+    """Card compacto do usuário logado na sidebar."""
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
     via_api      = st.session_state.get("via_api", False)
 
-    icone = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
-    fonte = "API" if via_api else "offline"
-    label = display_name if display_name else nome
+    icone  = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
+    fonte  = "API" if via_api else "offline"
+    label  = display_name if display_name else nome
 
     st.sidebar.html(
         f"""
         <style>
-        /* Remove margem inferior do container do card de usuário */
         section[data-testid="stSidebar"] .stHtml:has(.hip-sidebar-user) {{
             margin-bottom: 0 !important;
             padding-bottom: 0 !important;
@@ -183,24 +248,18 @@ def sidebar_user_info() -> None:
 
 
 def sidebar_logout_button() -> None:
-    """Botão SAIR fixado no rodapé da sidebar via CSS position:fixed.
-
-    Injeta o botão como HTML puro posicionado no fundo da sidebar,
-    abaixo do menu nativo, independente da ordem de renderização Python.
-    O clique adiciona ?logout=1 na URL, capturado por require_auth().
-
-    DEVE ser chamado UMA VEZ por página, preferencialmente no início
-    (junto com sidebar_logo e sidebar_user_info), pois o posicionamento
-    é via CSS fixed e não depende da ordem DOM do Streamlit.
+    """
+    Botão SAIR fixado no rodapé da sidebar via CSS position:fixed.
+    Injeta HTML puro que adiciona ?logout=1 na URL ao clicar.
+    Deve ser chamado UMA VEZ por página.
     """
     st.sidebar.html("""
     <style>
-    /* ── Botão Sair fixado no rodapé da sidebar ── */
     #hip-logout-btn-wrap {
         position: fixed;
         bottom: 20px;
         left: 0;
-        width: 244px;          /* largura padrão da sidebar Streamlit */
+        width: 244px;
         padding: 0 14px;
         z-index: 99999;
         box-sizing: border-box;
@@ -229,12 +288,10 @@ def sidebar_logout_button() -> None:
         color: #ffffff;
         border-color: #3d1a78;
     }
-    /* Oculta qualquer botão Sair antigo renderizado via Python */
     section[data-testid="stSidebar"] button[kind="secondary"]:has(p) {
         display: none !important;
     }
     </style>
-
     <div id="hip-logout-btn-wrap">
         <a id="hip-logout-btn"
            href="?logout=1"

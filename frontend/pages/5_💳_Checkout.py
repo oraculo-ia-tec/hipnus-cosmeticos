@@ -1,25 +1,29 @@
 """
 5_Checkout.py — HIPNUS COSMÉTICOS
 ====================================
-Fluxo completo de pagamento via Asaas sem passar pelo FastAPI.
+Fluxo completo de pagamento via Asaas, 100% no Streamlit.
+Sem FastAPI. Sem httpx para backend interno.
 
 Etapas:
-  1. Resumo do carrinho com valores e split.
+  1. Resumo do carrinho com split (Hipnus × parceiro).
   2. Dados do comprador (nome, CPF/CNPJ, e-mail, telefone).
-  3. Escolha do método de pagamento (PIX | Boleto).
-  4. Confirmação e chamada ao CheckoutService.
+  3. Escolha do método de pagamento (PIX | BOLETO).
+  4. Confirmação e processamento via CheckoutService.
   5. Exibição do resultado: QR Code Pix ou link de boleto.
+
+Dependências:
+  lib.checkout_service  → CheckoutService, AsaasError
+  lib.asaas_client      → 100% standalone (sem app/)
 """
 import sys
 import base64
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import streamlit as st
 from lib import ui
-from lib.auth import require_auth, sidebar_user_info, sidebar_logout_button
+from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib.checkout_service import CheckoutService, AsaasError
 from lib import components
 
@@ -28,22 +32,22 @@ ui.inject_theme()
 
 require_auth()
 
-# ─ Sidebar ───────────────────────────────────────────────────────────
-ui.brand_header()
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
+sidebar_logo()
 sidebar_user_info()
 ui.sidebar_cart_summary()
 sidebar_logout_button()
 
-# ─ Cabeçalho ─────────────────────────────────────────────────────────
+# ─── Cabeçalho ────────────────────────────────────────────────────────────────
 components.page_header(
     title="Finalizar Compra",
     subtitle="Revise seu pedido e escolha a forma de pagamento.",
-    kicker="Checkout seguro",
+    kicker="Checkout seguro · Asaas",
 )
 
 cart = st.session_state.get("cart", {})
 
-# ─ Carrinho vazio ────────────────────────────────────────────────────
+# ─── Carrinho vazio ───────────────────────────────────────────────────────────
 if not cart:
     clicked = components.empty_state(
         icon="🛒",
@@ -56,30 +60,35 @@ if not cart:
         st.switch_page("pages/1_🛍️_Catálogo.py")
     st.stop()
 
-# ─ Resumo do pedido ──────────────────────────────────────────────────
+# ─── Resumo do pedido ─────────────────────────────────────────────────────────
 components.section_title("Resumo do pedido")
 
-totais = CheckoutService.calcular_totais(cart)
+svc    = CheckoutService()
+totais = svc.calcular_totais(cart)
 
-col1, col2 = st.columns(2)
+col1, col2 = st.columns([3, 2])
 with col1:
     for item in cart.values():
-        st.write(f"• {item['name']} × {item['qty']}  —  {ui.brl(item['price'] * item['qty'])}")
+        st.write(f"• **{item['name']}** × {item['qty']}  —  {ui.brl(item['price'] * item['qty'])}")
 with col2:
     st.metric("Total", ui.brl(totais["total"]))
-    st.caption(f"Parte Hipnus (piso): {ui.brl(totais['floor_total'])}")
-    st.caption(f"Repasse ao parceiro: {ui.brl(totais['partner_amount'])}")
+    st.caption(f"💜 Hipnus (piso + taxa): {ui.brl(totais['hipnus_amount'])}")
+    st.caption(f"🤝 Repasse ao parceiro: {ui.brl(totais['partner_amount'])}")
+    st.caption(f"📊 Taxa de plataforma: {ui.brl(totais['platform_fee'])}")
 
 components.divider()
 
-# ─ Formulário de dados + pagamento ───────────────────────────────────
+# ─── Formulário de dados + pagamento ─────────────────────────────────────────
 components.section_title("Seus dados")
 
 with st.form("form_checkout"):
-    nome     = st.text_input("Nome completo *", placeholder="Ex: Maria da Silva")
-    cpf_cnpj = st.text_input("CPF ou CNPJ * (somente números)", placeholder="00000000000")
-    email    = st.text_input("E-mail *", placeholder="maria@email.com")
-    fone     = st.text_input("Telefone (opcional)", placeholder="31999999999")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        nome     = st.text_input("Nome completo *",          placeholder="Ex: Maria da Silva")
+        cpf_cnpj = st.text_input("CPF ou CNPJ * (só números)", placeholder="00000000000")
+    with col_b:
+        email = st.text_input("E-mail *",    placeholder="maria@email.com")
+        fone  = st.text_input("Telefone (opcional)", placeholder="31999999999")
 
     components.divider()
     components.section_title("Forma de pagamento")
@@ -98,13 +107,15 @@ with st.form("form_checkout"):
         use_container_width=True,
     )
 
-# ─ Processamento ─────────────────────────────────────────────────────
+# ─── Validação e processamento ────────────────────────────────────────────────
 if confirmar:
     erros = []
     if not nome.strip():
         erros.append("Nome é obrigatório.")
     if not cpf_cnpj.strip() or not cpf_cnpj.strip().isdigit():
         erros.append("CPF/CNPJ inválido — informe apenas números.")
+    if len(cpf_cnpj.strip()) not in (11, 14):
+        erros.append("CPF deve ter 11 dígitos e CNPJ 14 dígitos.")
     if not email.strip() or "@" not in email:
         erros.append("E-mail inválido.")
 
@@ -115,39 +126,49 @@ if confirmar:
 
     with st.spinner("Processando pagamento via Asaas..."):
         try:
-            svc = CheckoutService()
             resultado = svc.processar(
                 cart=cart,
                 billing_type={"PIX": "PIX", "BOLETO": "BOLETO"}[metodo],
                 cliente={
-                    "name": nome.strip(),
+                    "name":     nome.strip(),
                     "cpfCnpj": cpf_cnpj.strip(),
-                    "email": email.strip(),
-                    "phone": fone.strip(),
+                    "email":    email.strip(),
+                    "phone":    fone.strip(),
                 },
                 descricao="Pedido HIPNUS COSMÉTICOS",
             )
 
+            # ── Sucesso ───────────────────────────────────────────────────────
             components.feedback_inline(
-                f"Pedido criado! Referência: {resultado['external_ref']}",
+                f"✅ Pedido criado! Referência: `{resultado['external_ref']}`",
                 kind="success",
             )
-            st.caption(f"ID Asaas: `{resultado['payment_id']}` | Status: **{resultado['status']}**")
+            st.caption(
+                f"ID Asaas: `{resultado['payment_id']}` | "
+                f"Status: **{resultado['status']}**"
+            )
 
+            # ── PIX: QR Code ──────────────────────────────────────────────────
             if metodo == "PIX":
                 components.section_title("Pague via PIX")
                 if resultado["pix_qrcode"]:
                     img_bytes = base64.b64decode(resultado["pix_qrcode"])
-                    st.image(img_bytes, caption="QR Code PIX", width=280)
+                    col_qr, _ = st.columns([1, 1])
+                    with col_qr:
+                        st.image(img_bytes, caption="QR Code PIX", width=280)
                 if resultado["pix_payload"]:
-                    st.text_area("Copia e cola PIX:", value=resultado["pix_payload"], height=80)
-                else:
-                    with st.popover("ℹ️ QR Code em processamento", use_container_width=False):
-                        st.markdown(
-                            "O QR Code Pix estará disponível em instantes. "
-                            "Use o link abaixo para acessar a cobrança diretamente."
-                        )
+                    st.text_area(
+                        "Copia e cola PIX:",
+                        value=resultado["pix_payload"],
+                        height=80,
+                    )
+                elif not resultado["pix_qrcode"]:
+                    st.info(
+                        "⏳ QR Code em processamento pelo Asaas. "
+                        "Use o link abaixo para acessar a cobrança."
+                    )
 
+            # ── Link de pagamento (boleto / fallback PIX) ─────────────────────
             if resultado["invoice_url"]:
                 st.link_button(
                     "🔗 Abrir link de pagamento",
@@ -155,13 +176,18 @@ if confirmar:
                     use_container_width=True,
                 )
 
+            # ── Limpa carrinho e salva pedido na sessão ───────────────────────
             ui.clear_cart()
             st.session_state["ultimo_pedido"] = resultado
+            st.session_state.setdefault("historico_pedidos", []).insert(0, resultado)
 
         except AsaasError as exc:
             components.feedback_inline(
-                f"Erro na API Asaas ({exc.status_code}): {exc.payload}",
+                f"❌ Erro na API Asaas ({exc.status_code}): {exc.payload}",
                 kind="danger",
             )
         except Exception as exc:
-            components.feedback_inline(f"Erro inesperado: {exc}", kind="danger")
+            components.feedback_inline(
+                f"❌ Erro inesperado: {exc}",
+                kind="danger",
+            )

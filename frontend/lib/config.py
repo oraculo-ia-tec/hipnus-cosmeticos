@@ -1,13 +1,25 @@
 """
-Configuração do frontend Streamlit da vitrine HIPNUS COSMÉTICOS.
+config.py — HIPNUS COSMÉTICOS
+================================
+Configuração do frontend Streamlit.
 
-Lê variáveis de ambiente / Streamlit Secrets (st.secrets ou os.environ)
-com defaults seguros para desenvolvimento local.
+Lê variáveis de ambiente / Streamlit Secrets com defaults seguros.
+Não depende do app/ (FastAPI) — o frontend é 100% autônomo.
 
-Nomes de variáveis alinhados com o bloco [email] do Streamlit Secrets:
-    EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD,
-    EMAIL_USE_TLS, EMAIL_REMETENTE
+Variáveis suportadas (Secrets ou ENV):
+  ASAAS_API_KEY            → chave da conta raiz Hipnus no Asaas
+  ASAAS_BASE_URL           → URL da API Asaas (padrão: sandbox)
+  PARTNER_WALLET_ID        → walletId do parceiro para split automático
+  HIPNUS_PLATFORM_FEE_PERCENT → taxa de plataforma em % (padrão: 10)
+  HIPNUS_APP_URL           → URL pública do app Streamlit
+  DATABASE_URL             → URL do banco (SQLite local ou MySQL Hostinger)
+  EMAIL_HOST / PORT / USERNAME / PASSWORD / USE_TLS / USE_SSL / REMETENTE
+
+Variáveis legadas (mantidas para compatibilidade; não usadas pelo checkout):
+  HIPNUS_API_URL           → URL do backend FastAPI (futuro)
 """
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -15,43 +27,53 @@ import streamlit as st
 
 
 def _secret(key: str, default: str = "") -> str:
-    """Lê do st.secrets (Streamlit Cloud) ou de os.environ, com fallback."""
+    """Lê do bloco raiz ou [email] do st.secrets, com fallback para os.environ."""
     try:
-        # Tenta primeiro no bloco [email] do secrets.toml
-        return str(st.secrets["email"].get(key, os.getenv(key, default)))
+        val = st.secrets.get(key)
+        if val:
+            return str(val)
     except Exception:
-        return os.getenv(key, default)
+        pass
+    try:
+        val = st.secrets["email"].get(key)
+        if val:
+            return str(val)
+    except Exception:
+        pass
+    return os.getenv(key, default)
 
 
-# ─ API Backend ───────────────────────────────────────────
-API_BASE_URL = os.getenv("HIPNUS_API_URL", "http://localhost:8000")
-API_V1       = f"{API_BASE_URL}/api/v1"
-
-# ─ Paths ───────────────────────────────────────────────
+# ─── Paths ────────────────────────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SEED_PATH    = PROJECT_ROOT / "data" / "catalog_seed.json"
 
-# ─ App URL ────────────────────────────────────────────
+# ─── App URL ──────────────────────────────────────────────────────────────────
 APP_URL = os.getenv("HIPNUS_APP_URL", "https://hipnus-cosmeticos.streamlit.app")
 
-# ─ SMTP (lido dos Secrets do Streamlit Cloud, bloco [email]) ───────
+# ─── Backend FastAPI (legado — mantido para compatibilidade futura) ───────────
+# Usado apenas por api.py (catálogo com fallback) e 6_Convites.py.
+# O checkout NÃO depende desta URL.
+API_BASE_URL = os.getenv("HIPNUS_API_URL", "http://localhost:8000")
+API_V1       = f"{API_BASE_URL}/api/v1"
+
+# ─── SMTP ─────────────────────────────────────────────────────────────────────
 SMTP_HOST      = _secret("EMAIL_HOST",       "smtp.hostinger.com")
 SMTP_PORT      = int(_secret("EMAIL_PORT",   "587"))
 SMTP_USER      = _secret("EMAIL_USERNAME",   "")
 SMTP_PASS      = _secret("EMAIL_PASSWORD",   "")
-SMTP_USE_TLS   = _secret("EMAIL_USE_TLS",    "true").lower() == "true"
+SMTP_USE_TLS   = _secret("EMAIL_USE_TLS",    "true").lower()  == "true"
 SMTP_USE_SSL   = _secret("EMAIL_USE_SSL",    "false").lower() == "true"
 SMTP_REMETENTE = _secret("EMAIL_REMETENTE",  SMTP_USER)
 
-# ─ Identidade da marca ──────────────────────────────────
+# ─── Identidade da marca ──────────────────────────────────────────────────────
 BRAND = {
     "name":    "HIPNUS COSMÉTICOS",
     "tagline": "Tratamento capilar profissional, direto da fonte.",
-    "promise": "Vitrine, compra e relacionamento direto com a Hipnus — para o "
-               "consumidor final e para o profissional.",
+    "promise": "Vitrine, compra e relacionamento direto com a Hipnus — "
+               "para o consumidor final e para o profissional.",
 }
 
-# Paleta da marca (clean, premium, institucional).
+# ─── Paleta da marca ──────────────────────────────────────────────────────────
 COLORS = {
     "primary":      "#7C3AED",
     "primary_dark": "#5B21B6",
