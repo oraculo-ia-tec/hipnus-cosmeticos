@@ -2,9 +2,6 @@
 ia_consultora.py — HIPNUS COSMÉTICOS
 ========================================
 Skill: 🤖 IA Consultora
-
-Serviço de chat inteligente com contexto real da plataforma.
-Usa Groq API (llama-3.3-70b-versatile) via openai-compatible endpoint.
 """
 from __future__ import annotations
 
@@ -12,8 +9,6 @@ import os
 from decimal import Decimal
 from typing import Generator
 
-
-# ─── Configuração ────────────────────────────────────────────────────────────
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
 MAX_TOKENS    = 1024
@@ -21,61 +16,53 @@ MAX_TOKENS    = 1024
 
 def _get_api_key() -> str:
     """
-    Lê GROQ_API_KEY com estratégia em cama de cebola:
-    1. st.secrets via atributo direto
+    Leitura da GROQ_API_KEY em ordem de prioridade:
+    1. Variável de ambiente (injetada pelo proxy antes do exec)
     2. st.secrets via subscript
-    3. st.secrets via to_dict()
-    4. Variável de ambiente
-    Retorna string vazia se não encontrar.
+    3. st.secrets via atributo
+    4. st.secrets via dict()
     """
+    # 1. Ambiente (mais confiável no contexto exec)
+    val = os.environ.get("GROQ_API_KEY", "").strip()
+    if val:
+        return val
+
+    # 2–4. Streamlit Secrets como fallback
     try:
         import streamlit as st
-        secrets = st.secrets
-
-        # Tentativa 1: acesso por subscript direto (mais confiável)
         try:
-            val = secrets["GROQ_API_KEY"]
-            if val and str(val).strip():
-                return str(val).strip()
-        except (KeyError, Exception):
-            pass
-
-        # Tentativa 2: acesso por atributo
-        try:
-            val = getattr(secrets, "GROQ_API_KEY", None)
-            if val and str(val).strip():
-                return str(val).strip()
+            val = str(st.secrets["GROQ_API_KEY"]).strip()
+            if val:
+                return val
         except Exception:
             pass
-
-        # Tentativa 3: converter para dict e buscar
         try:
-            d = dict(secrets)
-            val = d.get("GROQ_API_KEY", "")
-            if val and str(val).strip():
-                return str(val).strip()
+            val = str(getattr(st.secrets, "GROQ_API_KEY", "")).strip()
+            if val:
+                return val
         except Exception:
             pass
-
+        try:
+            val = str(dict(st.secrets).get("GROQ_API_KEY", "")).strip()
+            if val:
+                return val
+        except Exception:
+            pass
     except Exception:
         pass
 
-    # Tentativa 4: variável de ambiente
-    return os.environ.get("GROQ_API_KEY", "").strip()
+    return ""
 
 
 def groq_status() -> dict:
-    """Verifica se a chave Groq está configurada."""
     key = _get_api_key()
     return {
         "configured": bool(key),
-        "key_preview": key[:8] + "..." if key else "",
         "model": GROQ_MODEL,
         "base_url": GROQ_BASE_URL,
     }
 
 
-# ─── Construtor de contexto ──────────────────────────────────────────────────
 def _brl(v) -> str:
     try:
         s = f"{Decimal(str(v)):,.2f}"
@@ -134,7 +121,6 @@ def build_context(
     return "\n".join(linhas)
 
 
-# ─── System prompt ───────────────────────────────────────────────────────────
 def _build_system_prompt(context_block: str) -> str:
     return f"""\
 Você é a **IA Consultora da HIPNUS COSMÉTICOS**, assistente especializada na plataforma.
@@ -167,7 +153,6 @@ Limitações honestas:
 """
 
 
-# ─── Chat via Groq ────────────────────────────────────────────────────────────
 def chat_stream(
     messages: list[dict],
     context_block: str,
@@ -181,9 +166,7 @@ def chat_stream(
     try:
         from openai import OpenAI
     except ImportError:
-        raise RuntimeError(
-            "Pacote 'openai' não instalado. Adicione `openai` ao requirements.txt."
-        )
+        raise RuntimeError("Pacote 'openai' não instalado. Adicione `openai` ao requirements.txt.")
 
     client = OpenAI(api_key=api_key, base_url=GROQ_BASE_URL)
 
