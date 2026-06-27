@@ -1,20 +1,8 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-Guarda de autenticação 100% offline — SEM chamadas ao FastAPI.
-
-Aceita login por USERNAME ou E-MAIL:
-  - Usuarios demo/seed: buscados no dicionario USUARIOS_DEMO
-  - Parceiros cadastrados via convite: buscados no banco SQLite
-    (tabela 'parceiros' quando implementada, ou fallback por e-mail
-     nos registros de invites marcados como usados)
-
-Roles disponíveis:
-  super_admin : acesso total (William / dev)
-  admin       : administrador da Hipnus
-  b2b         : parceiro profissional / salão
-  b2c         : cliente final
-  demo        : modo demonstração (somente leitura)
+Guarda de autenticação — aceita USERNAME ou E-MAIL.
+Exibe avatar do usuário no sidebar (imagem circular).
 """
 from __future__ import annotations
 
@@ -71,6 +59,7 @@ def _gravar_sessao(
     email: str,
     token: str | None,
     via_api: bool,
+    avatar_b64: str | None = None,
 ) -> None:
     st.session_state.update({
         "autenticado":  True,
@@ -81,35 +70,24 @@ def _gravar_sessao(
         "email":        email,
         "token":        token,
         "via_api":      via_api,
+        "avatar_b64":   avatar_b64,
     })
 
 
-# ─── Busca usuário por username OU e-mail nos USUARIOS_DEMO ──────────────────
+# ─── Busca por username OU e-mail nos USUARIOS_DEMO ───────────────────────
 def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
-    """
-    Busca nos USUARIOS_DEMO por username (chave) ou por e-mail.
-    Retorna (username, dados) ou None.
-    """
     ident = identificador.strip().lower()
-    # Por username
     if ident in USUARIOS_DEMO:
         return ident, USUARIOS_DEMO[ident]
-    # Por e-mail
     for uname, dados in USUARIOS_DEMO.items():
         if dados.get("email", "").lower() == ident:
             return uname, dados
     return None
 
 
-# ─── Busca parceiro cadastrado via convite no banco SQLite ─────────────────
+# ─── Busca parceiro no banco SQLite ─────────────────────────────────────────
 def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
-    """
-    Busca parceiro cadastrado via convite no banco SQLite.
-    Usa a tabela 'parceiros' se existir; caso contrario, usa 'invites'
-    para confirmar que o e-mail tem um convite usado.
-
-    Retorna dict com dados do parceiro ou None se nao encontrado.
-    """
+    """Autentica parceiro via tabela 'parceiros' (com senha_hash)."""
     try:
         import sys
         from pathlib import Path
@@ -117,149 +95,81 @@ def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
         if str(_root) not in sys.path:
             sys.path.insert(0, str(_root))
 
+        from lib.user_db import autenticar_parceiro
+        return autenticar_parceiro(email, senha)
+    except Exception:
+        pass
+
+    # Fallback: invite used (sem tabela parceiros)
+    try:
         from lib.db_utils import get_db_session
         from sqlalchemy import text
-
         db, _ = get_db_session()
         if not db:
             return None
-
-        try:
-            # Tentativa 1: tabela 'parceiros' (criada pelo cadastro completo)
-            row = db.execute(
-                text("""
-                    SELECT nome, email, role, telefone, empresa
-                    FROM parceiros
-                    WHERE email = :email AND senha_hash = :senha
-                """),
-                {"email": email.lower().strip(), "senha": senha},
-            ).fetchone()
-            if row:
-                d = dict(row._mapping)
-                return {
-                    "nome":         d.get("nome", email),
-                    "username":     d.get("email", email),
-                    "role":         d.get("role", "b2b"),
-                    "display_name": d.get("empresa") or d.get("nome", ""),
-                    "email":        d.get("email", email),
-                }
-        except Exception:
-            pass
-
-        # Tentativa 2: verifica se e-mail tem convite USADO (cadastro concluido)
-        # Neste caso, aceita qualquer senha por enquanto (sem tabela parceiros ainda)
-        try:
-            row = db.execute(
-                text("""
-                    SELECT email, role FROM invites
-                    WHERE email = :email AND used = 1
-                    LIMIT 1
-                """),
-                {"email": email.lower().strip()},
-            ).fetchone()
-            if row:
-                d = dict(row._mapping)
-                nome_base = email.split("@")[0].capitalize()
-                return {
-                    "nome":         nome_base,
-                    "username":     d.get("email", email),
-                    "role":         d.get("role", "b2b"),
-                    "display_name": nome_base,
-                    "email":        d.get("email", email),
-                }
-        except Exception:
-            pass
-
-        return None
+        row = db.execute(
+            text("SELECT email, role FROM invites WHERE email = :e AND used = 1 LIMIT 1"),
+            {"e": email.lower().strip()},
+        ).fetchone()
+        db.close()
+        if row:
+            d = dict(row._mapping)
+            nome_base = email.split("@")[0].capitalize()
+            return {
+                "nome": nome_base, "username": d["email"],
+                "role": d.get("role", "b2b"), "display_name": nome_base,
+                "email": d["email"], "avatar_b64": None,
+            }
     except Exception:
-        return None
-    finally:
-        try:
-            db.close()
-        except Exception:
-            pass
+        pass
+    return None
 
 
 # ─── Login offline ───────────────────────────────────────────────────────────
 def _login_offline(identificador: str, password: str) -> bool:
-    """
-    Valida credenciais por USERNAME ou E-MAIL.
-
-    Ordem de busca:
-      1. USUARIOS_DEMO (username ou e-mail)
-      2. Banco SQLite — parceiros cadastrados via convite
-
-    Retorna True e grava sessão em caso de sucesso.
-    """
-    # ─ Busca nos usuarios demo/seed ─────────────────────────────────
     encontrado = _buscar_demo(identificador)
     if encontrado:
         uname, u = encontrado
         if password == u["senha"]:
             _gravar_sessao(
-                nome=u["nome"],
-                username=uname,
-                role=u["role"],
-                display_name=u["display_name"],
-                email=u["email"],
-                token=None,
-                via_api=False,
+                nome=u["nome"], username=uname, role=u["role"],
+                display_name=u["display_name"], email=u["email"],
+                token=None, via_api=False, avatar_b64=None,
             )
             return True
-        return False  # usuário encontrado mas senha errada
+        return False
 
-    # ─ Busca no banco (parceiros via convite) ────────────────────────
-    # So tenta se parece com e-mail
     if "@" in identificador:
         parceiro = _buscar_parceiro_db(identificador, password)
         if parceiro:
             _gravar_sessao(
-                nome=parceiro["nome"],
-                username=parceiro["username"],
-                role=parceiro["role"],
-                display_name=parceiro["display_name"],
-                email=parceiro["email"],
-                token=None,
-                via_api=False,
+                nome=parceiro.get("nome", ""),
+                username=parceiro.get("username") or parceiro.get("email", ""),
+                role=parceiro.get("role", "b2b"),
+                display_name=parceiro.get("display_name") or parceiro.get("empresa") or parceiro.get("nome", ""),
+                email=parceiro.get("email", ""),
+                token=None, via_api=False,
+                avatar_b64=parceiro.get("avatar_b64"),
             )
             return True
-
     return False
 
 
 # ─── Login público ───────────────────────────────────────────────────────────
 def fazer_login(identificador: str, password: str) -> tuple[bool, str]:
-    """
-    Autentica por USERNAME ou E-MAIL + senha.
-
-    Exemplos válidos:
-      fazer_login("william", "hipnus@2026")            # username
-      fazer_login("admin@hipnuscosmeticos.com.br", ...) # e-mail
-      fazer_login("parceiro@email.com", ...)            # e-mail de convite usado
-    """
     if _login_offline(identificador, password):
         encontrado = _buscar_demo(identificador)
-        if encontrado:
-            nome = encontrado[1]["nome"]
-        else:
-            nome = identificador.split("@")[0].capitalize()
+        nome = encontrado[1]["nome"] if encontrado else identificador.split("@")[0].capitalize()
         return True, f"Bem-vindo(a), {nome}!"
-
     return False, "Usuário/e-mail ou senha incorretos."
 
 
 # ─── require_auth ──────────────────────────────────────────────────────────
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
-    """
-    Protege a página exigindo autenticação.
-    Redireciona para streamlit_app.py se não autenticado.
-    """
     if st.query_params.get("logout") == "1":
         logout()
-
     if not st.session_state.get("autenticado"):
         st.switch_page(_LOGIN_PAGE)
-
     usuario = {
         "login":        st.session_state.get("usuario", ""),
         "perfil":       st.session_state.get("perfil",  "demo"),
@@ -268,27 +178,25 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "email":        st.session_state.get("email",   ""),
         "token":        st.session_state.get("token",   None),
         "via_api":      st.session_state.get("via_api", False),
+        "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
-
     if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
         st.error("🚫 Você não tem permissão para acessar esta página.")
         st.stop()
-
     return usuario
 
 
 def logout() -> None:
-    """Limpa a sessão e redireciona para o login."""
     for key in [
         "autenticado", "usuario", "perfil", "nome",
-        "display_name", "email", "token", "via_api",
+        "display_name", "email", "token", "via_api", "avatar_b64",
     ]:
         st.session_state.pop(key, None)
     st.query_params.clear()
     st.switch_page(_LOGIN_PAGE)
 
 
-# ─── Componentes de sidebar ─────────────────────────────────────────────────
+# ─── Sidebar ────────────────────────────────────────────────────────────────────
 def sidebar_logo() -> None:
     st.sidebar.html("""
     <div class="hip-sidebar-logo-wrap">
@@ -302,32 +210,61 @@ def sidebar_logo() -> None:
 
 
 def sidebar_user_info() -> None:
+    """
+    Card do usuário na sidebar.
+    Exibe foto de perfil circular (se houver) + nome + role.
+    A mesma avatar_b64 será usada futuramente no chat da IA Consultora.
+    """
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
     via_api      = st.session_state.get("via_api", False)
+    avatar_b64   = st.session_state.get("avatar_b64", None)
 
-    icone  = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
+    icone_fallback = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
     fonte  = "API" if via_api else "offline"
     label  = display_name if display_name else nome
+    role_label = perfil.replace("_", " ").upper()
+
+    # Bloco do avatar: imagem circular se existir, emoji caso contrário
+    if avatar_b64:
+        avatar_html = (
+            f'<img src="{avatar_b64}" '
+            f'style="width:52px;height:52px;border-radius:50%;object-fit:cover;'
+            f'border:2.5px solid rgba(255,255,255,.5);flex-shrink:0;" />'
+        )
+    else:
+        avatar_html = (
+            f'<div style="width:52px;height:52px;border-radius:50%;'
+            f'background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);'
+            f'display:flex;align-items:center;justify-content:center;'
+            f'font-size:1.4rem;flex-shrink:0;">{icone_fallback}</div>'
+        )
 
     st.sidebar.html(
         f"""
         <style>
         section[data-testid="stSidebar"] .stHtml:has(.hip-sidebar-user) {{
-            margin-bottom: 0 !important;
-            padding-bottom: 0 !important;
-        }}
-        section[data-testid="stSidebar"] .stHtml:has(.hip-sidebar-user) + div {{
-            margin-top: 0 !important;
-            padding-top: 0 !important;
+            margin-bottom: 0 !important; padding-bottom: 0 !important;
         }}
         </style>
-        <div class="hip-sidebar-user">
-            <div class="uname">{icone}&nbsp;{label}</div>
-            <div class="umeta">
-                <span class="badge-role">{perfil.replace('_', ' ').upper()}</span>
-                <span class="badge-src">{fonte}</span>
+        <div class="hip-sidebar-user" style="
+            display:flex; align-items:center; gap:10px;
+            background:rgba(124,58,237,.18); border:1px solid rgba(124,58,237,.3);
+            border-radius:14px; padding:10px 12px; margin:0 0 4px;
+        ">
+            {avatar_html}
+            <div style="min-width:0;">
+                <div style="font-weight:700;font-size:.9rem;color:#fff;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;"
+                     title="{label}">{label}</div>
+                <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                    <span style="background:rgba(124,58,237,.5);color:#e9d5ff;
+                                 font-size:.6rem;font-weight:700;letter-spacing:.8px;
+                                 padding:2px 8px;border-radius:999px;">{role_label}</span>
+                    <span style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);
+                                 font-size:.6rem;padding:2px 8px;border-radius:999px;">{fonte}</span>
+                </div>
             </div>
         </div>
         """
@@ -351,13 +288,10 @@ def sidebar_logout_button() -> None:
         transition: background .18s, color .18s, border-color .18s;
         text-decoration: none; letter-spacing: .01em; box-sizing: border-box;
     }
-    #hip-logout-btn:hover {
-        background: #3d1a78; color: #ffffff; border-color: #3d1a78;
-    }
+    #hip-logout-btn:hover { background: #3d1a78; color: #ffffff; border-color: #3d1a78; }
     </style>
     <div id="hip-logout-btn-wrap">
-        <a id="hip-logout-btn"
-           href="?logout=1"
+        <a id="hip-logout-btn" href="?logout=1"
            onclick="window.parent.location.href='?logout=1'; return false;">
             🚶 Sair
         </a>
