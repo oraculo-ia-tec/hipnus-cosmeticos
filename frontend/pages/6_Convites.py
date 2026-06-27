@@ -8,10 +8,10 @@ Fluxo de persistência (3 caminhos em ordem de prioridade):
   2. API indisponível     → persiste no banco DIRETAMENTE via invite_db
   3. API + banco falham   → token offline (não pode ser validado)
 
-Fix v8:
+Fix v9:
+  - Corrigido SyntaxError Python 3.11: backslash dentro de f-strings
   - signup_url corrigida para rota real do Streamlit Cloud
   - usa lib.invite_db standalone (sem dependência do app/)
-  - token preservado na URL do e-mail com ?token= correto
 """
 from __future__ import annotations
 
@@ -71,20 +71,11 @@ def _resolve_app_url() -> str:
 
 
 def _signup_url(token: str) -> str:
-    """
-    Gera a URL correta de cadastro para o Streamlit Cloud.
-
-    Rota real da página 7_Cadastro_Parceiro.py no Streamlit Cloud:
-      /Cadastro_Parceiro  (o número '7_' é removido automaticamente)
-
-    O token é passado via query param ?token= e lido ANTES de
-    qualquer redirect de autenticação.
-    """
     base = _resolve_app_url().rstrip("/")
     return f"{base}/Cadastro_Parceiro?token={token}"
 
 
-# ─── Caminho 1: API ───────────────────────────────────────────────────────────────────
+# ─── Caminho 1: API ───────────────────────────────────────────────────────────
 def _criar_via_api(email: str, role: str, token_admin: str | None = None) -> dict | None:
     headers = {"Content-Type": "application/json"}
     if token_admin:
@@ -97,7 +88,6 @@ def _criar_via_api(email: str, role: str, token_admin: str | None = None) -> dic
         )
         if resp.status_code in (200, 201):
             data = resp.json()
-            # Garante que a signup_url usa a rota correta
             if "token" in data:
                 data["signup_url"] = _signup_url(data["token"])
             return data
@@ -106,7 +96,7 @@ def _criar_via_api(email: str, role: str, token_admin: str | None = None) -> dic
     return None
 
 
-# ─── Caminho 2: banco direto via invite_db ───────────────────────────────────────────
+# ─── Caminho 2: banco direto via invite_db ─────────────────────────────────────
 def _criar_via_db(email: str, role: str, criado_por: str) -> dict | None:
     return criar_invite_db(
         email=email,
@@ -116,10 +106,10 @@ def _criar_via_db(email: str, role: str, criado_por: str) -> dict | None:
     )
 
 
-# ─── Caminho 3: offline (sem banco, sem API) ──────────────────────────────────────
+# ─── Caminho 3: offline ────────────────────────────────────────────────────────
 def _criar_offline(email: str, role: str, criado_por: str) -> dict:
     token      = uuid.uuid4().hex
-    signup_url = _signup_url(token)  # URL correta mesmo offline
+    signup_url = _signup_url(token)
     return {
         "token":      token,
         "email":      email,
@@ -134,7 +124,7 @@ def _criar_offline(email: str, role: str, criado_por: str) -> dict:
     }
 
 
-# ─── SMTP ─────────────────────────────────────────────────────────────────────
+# ─── SMTP ──────────────────────────────────────────────────────────────────────
 def _enviar_smtp(destinatario: str, signup_url: str, role: str) -> tuple[bool, str]:
     if not SMTP_USER or not SMTP_PASS:
         return False, "Credenciais SMTP não configuradas."
@@ -213,7 +203,7 @@ def _enviar_smtp(destinatario: str, signup_url: str, role: str) -> tuple[bool, s
         return False, str(exc)
 
 
-# ─── UI Helpers ───────────────────────────────────────────────────────────────────
+# ─── UI Helpers ────────────────────────────────────────────────────────────────
 def _badge_role(role: str) -> str:
     return {
         "b2b": "🎤 Profissional", "b2c": "👤 Cliente", "admin": "🛡️ Admin",
@@ -252,21 +242,23 @@ def _aviso_smtp() -> None:
     if not SMTP_USER or not SMTP_PASS:
         st.warning("⚙️ SMTP não configurado. Verifique o bloco [email] nos Streamlit Secrets.")
     else:
+        smtp_info = f"{SMTP_HOST}:{SMTP_PORT} — {SMTP_REMETENTE}"
         st.html(f"""
         <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;
                     padding:10px 16px;font-size:.82rem;color:#166534;margin-bottom:12px;">
-            ✅ <strong>SMTP:</strong> {SMTP_HOST}:{SMTP_PORT} — {SMTP_REMETENTE}
+            ✅ <strong>SMTP:</strong> {smtp_info}
         </div>""")
 
 def _debug_info() -> None:
     db_url  = resolve_db_url()
     app_url = _resolve_app_url()
+    ex_url  = _signup_url("TOKEN_EXEMPLO")
     with st.expander("🔧 Info técnica (admin)"):
         st.code(
             f"API_URL:         {API_URL}\n"
             f"DATABASE_URL:    {db_url}\n"
             f"APP_BASE_URL:    {app_url}\n"
-            f"SIGNUP_URL ex:   {_signup_url('TOKEN_EXEMPLO')}",
+            f"SIGNUP_URL ex:   {ex_url}",
             language="text",
         )
 
@@ -282,7 +274,7 @@ _debug_info()
 tab1, tab2, tab3 = st.tabs(["📨 Enviar Convite", "🔗 Gerar Convite", "📋 Monitorar Convites"])
 
 
-# ══ TAB 1 — ENVIAR CONVITE ─────────────────────────────────────────────────────────────────
+# ══ TAB 1 — ENVIAR CONVITE ─────────────────────────────────────────────────────
 with tab1:
     components.section_title("Enviar convite por e-mail")
     st.caption("Prioridade: 1º API, 2º banco direto (path absoluto), 3º offline.")
@@ -357,7 +349,7 @@ with tab1:
                     _card_link(convite["signup_url"], role_t1, criado_por, "offline")
 
 
-# ══ TAB 2 — GERAR CONVITE MANUAL ─────────────────────────────────────────────────────────
+# ══ TAB 2 — GERAR CONVITE MANUAL ──────────────────────────────────────────────
 with tab2:
     components.section_title("Gerar link de convite manual")
     st.caption("Gera o link e salva no banco. Copie e envie manualmente.")
@@ -404,7 +396,7 @@ with tab2:
             )
 
 
-# ══ TAB 3 — MONITORAR ───────────────────────────────────────────────────────────────────
+# ══ TAB 3 — MONITORAR ──────────────────────────────────────────────────────────
 with tab3:
     components.section_title("Monitorar convites da sessão")
     convites = st.session_state.get("_convites_gerados", [])
@@ -431,20 +423,25 @@ with tab3:
         m4.metric("Offline", offline)
         components.divider()
         for inv in convites:
-            status_env = "✅ Enviado" if inv.get("email_sent") else "📋 Manual"
-            label = (
-                f"{inv.get('email','N/A')} — {status_env} · "
-                f"{_badge_role(inv.get('role',''))} · "
-                f"{_badge_origem(inv.get('origem',''))}"
-            )
+            # Variaveis intermediarias para evitar backslash em f-string (Python 3.11)
+            email_val   = inv.get("email", "N/A")
+            status_env  = "✅ Enviado" if inv.get("email_sent") else "📋 Manual"
+            role_badge  = _badge_role(inv.get("role", ""))
+            orig_badge  = _badge_origem(inv.get("origem", ""))
+            label       = f"{email_val} — {status_env} · {role_badge} · {orig_badge}"
+
+            email_ok    = "✅ Sim" if inv.get("email_sent") else "❌ Não"
+            expira_val  = inv.get("expires_at", "—")
+            token_val   = inv.get("token", "N/A")
+
             with st.expander(label):
                 col_a, col_b = st.columns(2)
                 with col_a:
-                    st.markdown(f"**Perfil:** {_badge_role(inv.get('role',''))}")
-                    st.markdown(f"**E-mail:** {'\u2705 Sim' if inv.get('email_sent') else '\u274c N\u00e3o'}")
-                    st.markdown(f"**Expira:** {inv.get('expires_at', '\u2014')}")
-                    st.markdown(f"**Origem:** {_badge_origem(inv.get('origem', ''))}")
+                    st.markdown(f"**Perfil:** {role_badge}")
+                    st.markdown(f"**E-mail enviado:** {email_ok}")
+                    st.markdown(f"**Expira:** {expira_val}")
+                    st.markdown(f"**Origem:** {orig_badge}")
                 with col_b:
-                    st.markdown(f"**Token:** `{inv.get('token', 'N/A')}`")
+                    st.markdown(f"**Token:** `{token_val}`")
                     if inv.get("signup_url"):
                         st.code(inv["signup_url"], language=None)
