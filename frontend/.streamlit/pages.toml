@@ -1,0 +1,53 @@
+# pages.toml — HIPNUS COSMÉTICOS
+# Declaração explícita de todas as páginas do app.
+# Resolve: (1) ordem do menu, (2) ícones, (3) Configuração sumindo no Streamlit Cloud.
+
+[[pages]]
+path = "streamlit_app.py"
+name = "Login"
+icon = ":material/login:"
+
+[[pages]]
+path = "pages/0_🏠_Home.py"
+name = "Home"
+icon = ":material/home:"
+
+[[pages]]
+path = "pages/1_🛍️_Catálogo.py"
+name = "Catálogo"
+icon = ":material/storefront:"
+
+[[pages]]
+path = "pages/2_✨_Linhas.py"
+name = "Linhas"
+icon = ":material/auto_awesome:"
+
+[[pages]]
+path = "pages/3_🏪_Loja_do_Parceiro.py"
+name = "Loja do Parceiro"
+icon = ":material/store:"
+
+[[pages]]
+path = "pages/4_🛒_Carrinho.py"
+name = "Carrinho"
+icon = ":material/shopping_cart:"
+
+[[pages]]
+path = "pages/5_💳_Checkout.py"
+name = "Checkout"
+icon = ":material/credit_card:"
+
+[[pages]]
+path = "pages/6_Convites.py"
+name = "Convites"
+icon = ":material/mail:"
+
+[[pages]]
+path = "pages/7_Cadastro_Parceiro.py"
+name = "Cadastro Parceiro"
+icon = ":material/person_add:"
+
+[[pages]]
+path = "pages/8_Configuracao.py"
+name = "Configuração"
+icon = ":material/settings:"
