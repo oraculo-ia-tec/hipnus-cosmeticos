@@ -3,23 +3,12 @@
 ============================================
 Página acessada pelo convidado através do link personalizado.
 
-Fluxo de validação (com fallback):
-  1. Lê ?token= da query string
-  2a. Tenta validar via API (GET /api/v1/invites/{token})
-  2b. Fallback: valida diretamente no banco SQLAlchemy
-  3. Exibe formulário pré-preenchido
-  4. Ao submeter:
-     4a. Tenta POST /api/v1/invites/{token}/use
-     4b. Fallback: marca como usado no banco diretamente
-  5. Sucesso
-
-Configuração esperada em .streamlit/secrets.toml:
-  DATABASE_URL = "sqlite:///./data/hipnus.db"
-  APP_BASE_URL = "https://hipnus-cosmeticos.streamlit.app"
+Fix v7: usa lib.db_utils.get_db_session() que resolve o path SQLite
+para ABSOLUTO usando PROJECT_ROOT, garantindo que o mesmo .db
+usado em 6_Convites seja acessado aqui.
 """
 from __future__ import annotations
 
-import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -32,58 +21,26 @@ _ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+# Adiciona frontend ao path para importar lib
+_FRONTEND = Path(__file__).resolve().parents[1]
+if str(_FRONTEND) not in sys.path:
+    sys.path.insert(0, str(_FRONTEND))
+
+from lib.db_utils import get_db_session, resolve_db_url
+
 # ─── Config ──────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Cadastro Parceiro | Hipnus Cosméticos",
-    page_icon="💼",
-    layout="centered",
+    page_icon="💼", layout="centered",
 )
 
 API_URL = st.secrets.get("HIPNUS_API_URL", "http://localhost:8000")
 
 
-# ─── Resolve DATABASE_URL (secrets > environ > default) ───────────────────────────
-def _resolve_db_url() -> str:
-    try:
-        val = st.secrets.get("DATABASE_URL")
-        if val: return val.strip().strip('"').strip("'")
-    except Exception:
-        pass
-    try:
-        val = st.secrets["default"].get("DATABASE_URL")
-        if val: return val.strip().strip('"').strip("'")
-    except Exception:
-        pass
-    val = os.environ.get("DATABASE_URL")
-    if val: return val
-    return "sqlite:///./data/hipnus.db"
-
-
-# ─── Fallback: acesso direto ao banco ───────────────────────────────────────────────
-
-def _get_db_session():
-    """Abre sessão SQLAlchemy com DATABASE_URL resolvido dos secrets."""
-    try:
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import sessionmaker
-        db_url = _resolve_db_url()
-        if db_url.startswith("sqlite:///"):
-            db_path = Path(db_url.replace("sqlite:///", "", 1))
-            db_path.parent.mkdir(parents=True, exist_ok=True)
-        connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
-        engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
-        # Garante tabelas
-        from app.db.base import Base
-        import app.domains.invites.models  # noqa: F401
-        Base.metadata.create_all(bind=engine)
-        Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
-        return Session(), None
-    except Exception as exc:
-        return None, str(exc)
-
+# ─── Validação via API com fallback no banco ─────────────────────────────────────────
 
 def _validar_token_db(token: str) -> dict | None:
-    db, err = _get_db_session()
+    db, err = get_db_session()
     if not db:
         return None
     try:
@@ -107,7 +64,7 @@ def _validar_token_db(token: str) -> dict | None:
 
 
 def _usar_token_db(token: str, dados: dict) -> tuple[bool, str]:
-    db, err = _get_db_session()
+    db, err = get_db_session()
     if not db:
         return False, f"Banco indisponível: {err}"
     try:
@@ -125,8 +82,6 @@ def _usar_token_db(token: str, dados: dict) -> tuple[bool, str]:
     finally:
         db.close()
 
-
-# ─── Helpers via API (com fallback no banco) ─────────────────────────────────────────
 
 def validar_token(token: str) -> dict | None:
     try:
@@ -156,21 +111,20 @@ def validar_email(email: str) -> bool:
 st.markdown("""
 <style>
 .invite-header {
-    background: linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-    border-radius:16px;padding:2.5rem 2rem 2rem;
-    text-align:center;margin-bottom:2rem;color:white;
+    background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+    border-radius:16px;padding:2.5rem 2rem 2rem;text-align:center;margin-bottom:2rem;color:white;
 }
-.invite-header h1 { font-size:2rem;margin-bottom:.25rem; }
-.invite-header p  { opacity:.8;font-size:1rem;margin:0; }
-.success-box {
+.invite-header h1{font-size:2rem;margin-bottom:.25rem;}
+.invite-header p{opacity:.8;font-size:1rem;margin:0;}
+.success-box{
     background:#d4edda;border:1px solid #c3e6cb;border-radius:12px;
     padding:1.5rem;text-align:center;color:#155724;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ─── Lógica principal ──────────────────────────────────────────────────────────────────
 
+# ─── Lógica principal ──────────────────────────────────────────────────────────────────
 token_url = st.query_params.get("token")
 
 st.markdown("""
@@ -188,8 +142,7 @@ if st.session_state.cadastro_ok:
     st.markdown("""
     <div class="success-box">
         <h2>✅ Cadastro realizado!</h2>
-        <p>Bem-vindo à família Hipnus Cosméticos.<br>
-        Em breve você receberá um e-mail de confirmação.</p>
+        <p>Bem-vindo à família Hipnus Cosméticos.</p>
     </div>
     """, unsafe_allow_html=True)
     if st.button("🏠 Ir para a Home", use_container_width=True):
@@ -199,25 +152,23 @@ if st.session_state.cadastro_ok:
 token = token_url
 if not token:
     st.info("ℹ️ Acesse esta página pelo link do seu convite, ou cole o código abaixo.")
-    token_input = st.text_input("Código do convite", placeholder="cole aqui o token do seu convite")
+    token_input = st.text_input("Código do convite", placeholder="cole aqui o token")
     if token_input:
         token = token_input.strip()
 
 if not token:
-    st.info("Aguardando código de convite...")
     st.stop()
 
-# Validação do token
+# Validação
 if st.session_state.token_validado != token:
     with st.spinner("Validando seu convite..."):
         invite = validar_token(token)
     if invite is None:
         st.error("❌ Convite inválido, expirado ou já utilizado. Solicite um novo convite ao administrador.")
-        db_url = _resolve_db_url()
         with st.expander("🔧 Detalhes técnicos (admin)"):
             st.code(
                 f"API_URL:      {API_URL}\n"
-                f"DATABASE_URL: {db_url}\n"
+                f"DATABASE_URL: {resolve_db_url()}\n"
                 f"Token:        {token[:16]}...",
                 language="text",
             )
@@ -229,16 +180,14 @@ invite = st.session_state.invite_data
 
 role_labels = {
     "distribuidor": "🏗️ Distribuidor", "revendedor": "🛍️ Revendedor",
-    "salao": "✂️ Salão de Beleza", "profissional": "💇 Profissional",
+    "salao": "✂️ Salão", "profissional": "💇 Profissional",
     "parceiro": "🤝 Parceiro", "b2b": "🎤 Profissional / Salão",
     "b2c": "👤 Cliente Final", "admin": "🛡️ Administrador",
 }
 role       = invite.get("role", "parceiro")
 role_label = role_labels.get(role, role.capitalize())
-
 try:
-    exp_dt  = datetime.fromisoformat(invite.get("expires_at", ""))
-    exp_str = exp_dt.strftime("%d/%m/%Y às %H:%M")
+    exp_str = datetime.fromisoformat(invite.get("expires_at", "")).strftime("%d/%m/%Y às %H:%M")
 except Exception:
     exp_str = invite.get("expires_at", "—")
 
@@ -275,8 +224,7 @@ if submitted:
     if senha != senha2:            erros.append("As senhas não coincidem.")
     if not aceite:                 erros.append("Você precisa aceitar os termos de uso.")
     if erros:
-        for e in erros:
-            st.error(e)
+        for e in erros: st.error(e)
     else:
         payload = {
             "nome": nome.strip(), "email": email.strip(), "telefone": telefone.strip(),
