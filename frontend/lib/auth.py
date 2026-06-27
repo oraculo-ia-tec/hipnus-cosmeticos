@@ -3,9 +3,11 @@ auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação 100% offline — SEM chamadas ao FastAPI.
 
-Esta versão usa apenas st.session_state e um dicionário de usuários
-demo/seed. Quando o backend FastAPI estiver pronto e em produção,
-basta descomentar o bloco `login_via_api` e habilitá-lo em `fazer_login`.
+Aceita login por USERNAME ou E-MAIL:
+  - Usuarios demo/seed: buscados no dicionario USUARIOS_DEMO
+  - Parceiros cadastrados via convite: buscados no banco SQLite
+    (tabela 'parceiros' quando implementada, ou fallback por e-mail
+     nos registros de invites marcados como usados)
 
 Roles disponíveis:
   super_admin : acesso total (William / dev)
@@ -13,12 +15,6 @@ Roles disponíveis:
   b2b         : parceiro profissional / salão
   b2c         : cliente final
   demo        : modo demonstração (somente leitura)
-
-Ordem recomendada na sidebar de cada página:
-  1. sidebar_logo()          → logo HIPNUS (topo)
-  2. sidebar_user_info()     → card do usuário logado
-  3. [menu nativo Streamlit] → renderizado automaticamente
-  4. sidebar_logout_button() → botão fixo no rodapé via CSS
 """
 from __future__ import annotations
 
@@ -27,14 +23,13 @@ import streamlit as st
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-# ─── Entrypoints do Streamlit ─────────────────────────────────────────────────
-LOGIN_PAGE = "streamlit_app.py"
-HOME_PAGE  = "pages/1_Home.py"
+LOGIN_PAGE  = "streamlit_app.py"
+HOME_PAGE   = "pages/1_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
 
-# ─── Usuários demo/seed ───────────────────────────────────────────────────────
+# ─── Usuários demo/seed ─────────────────────────────────────────────────────────
 USUARIOS_DEMO: dict[str, dict] = {
     "william": {
         "senha":        "hipnus@2026",
@@ -67,7 +62,7 @@ USUARIOS_DEMO: dict[str, dict] = {
 }
 
 
-# ─── Helpers de sessão ────────────────────────────────────────────────────────
+# ─── Helpers de sessão ─────────────────────────────────────────────────────────
 def _gravar_sessao(
     nome: str,
     username: str,
@@ -89,81 +84,175 @@ def _gravar_sessao(
     })
 
 
-def _login_offline(username: str, password: str) -> bool:
+# ─── Busca usuário por username OU e-mail nos USUARIOS_DEMO ──────────────────
+def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
     """
-    Valida credenciais contra USUARIOS_DEMO.
+    Busca nos USUARIOS_DEMO por username (chave) ou por e-mail.
+    Retorna (username, dados) ou None.
+    """
+    ident = identificador.strip().lower()
+    # Por username
+    if ident in USUARIOS_DEMO:
+        return ident, USUARIOS_DEMO[ident]
+    # Por e-mail
+    for uname, dados in USUARIOS_DEMO.items():
+        if dados.get("email", "").lower() == ident:
+            return uname, dados
+    return None
+
+
+# ─── Busca parceiro cadastrado via convite no banco SQLite ─────────────────
+def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
+    """
+    Busca parceiro cadastrado via convite no banco SQLite.
+    Usa a tabela 'parceiros' se existir; caso contrario, usa 'invites'
+    para confirmar que o e-mail tem um convite usado.
+
+    Retorna dict com dados do parceiro ou None se nao encontrado.
+    """
+    try:
+        import sys
+        from pathlib import Path
+        _root = Path(__file__).resolve().parents[2]
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+
+        from lib.db_utils import get_db_session
+        from sqlalchemy import text
+
+        db, _ = get_db_session()
+        if not db:
+            return None
+
+        try:
+            # Tentativa 1: tabela 'parceiros' (criada pelo cadastro completo)
+            row = db.execute(
+                text("""
+                    SELECT nome, email, role, telefone, empresa
+                    FROM parceiros
+                    WHERE email = :email AND senha_hash = :senha
+                """),
+                {"email": email.lower().strip(), "senha": senha},
+            ).fetchone()
+            if row:
+                d = dict(row._mapping)
+                return {
+                    "nome":         d.get("nome", email),
+                    "username":     d.get("email", email),
+                    "role":         d.get("role", "b2b"),
+                    "display_name": d.get("empresa") or d.get("nome", ""),
+                    "email":        d.get("email", email),
+                }
+        except Exception:
+            pass
+
+        # Tentativa 2: verifica se e-mail tem convite USADO (cadastro concluido)
+        # Neste caso, aceita qualquer senha por enquanto (sem tabela parceiros ainda)
+        try:
+            row = db.execute(
+                text("""
+                    SELECT email, role FROM invites
+                    WHERE email = :email AND used = 1
+                    LIMIT 1
+                """),
+                {"email": email.lower().strip()},
+            ).fetchone()
+            if row:
+                d = dict(row._mapping)
+                nome_base = email.split("@")[0].capitalize()
+                return {
+                    "nome":         nome_base,
+                    "username":     d.get("email", email),
+                    "role":         d.get("role", "b2b"),
+                    "display_name": nome_base,
+                    "email":        d.get("email", email),
+                }
+        except Exception:
+            pass
+
+        return None
+    except Exception:
+        return None
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+
+# ─── Login offline ───────────────────────────────────────────────────────────
+def _login_offline(identificador: str, password: str) -> bool:
+    """
+    Valida credenciais por USERNAME ou E-MAIL.
+
+    Ordem de busca:
+      1. USUARIOS_DEMO (username ou e-mail)
+      2. Banco SQLite — parceiros cadastrados via convite
+
     Retorna True e grava sessão em caso de sucesso.
     """
-    u = USUARIOS_DEMO.get(username.strip().lower())
-    if not u or password != u["senha"]:
-        return False
-    _gravar_sessao(
-        nome=u["nome"],
-        username=username.lower(),
-        role=u["role"],
-        display_name=u["display_name"],
-        email=u["email"],
-        token=None,
-        via_api=False,
-    )
-    return True
+    # ─ Busca nos usuarios demo/seed ─────────────────────────────────
+    encontrado = _buscar_demo(identificador)
+    if encontrado:
+        uname, u = encontrado
+        if password == u["senha"]:
+            _gravar_sessao(
+                nome=u["nome"],
+                username=uname,
+                role=u["role"],
+                display_name=u["display_name"],
+                email=u["email"],
+                token=None,
+                via_api=False,
+            )
+            return True
+        return False  # usuário encontrado mas senha errada
+
+    # ─ Busca no banco (parceiros via convite) ────────────────────────
+    # So tenta se parece com e-mail
+    if "@" in identificador:
+        parceiro = _buscar_parceiro_db(identificador, password)
+        if parceiro:
+            _gravar_sessao(
+                nome=parceiro["nome"],
+                username=parceiro["username"],
+                role=parceiro["role"],
+                display_name=parceiro["display_name"],
+                email=parceiro["email"],
+                token=None,
+                via_api=False,
+            )
+            return True
+
+    return False
 
 
-# ─── API (desativada — descomente quando o backend FastAPI estiver em produção) ──
-# def login_via_api(username: str, password: str) -> dict | None:
-#     import httpx
-#     from lib.config import API_V1
-#     try:
-#         r = httpx.post(
-#             f"{API_V1}/auth/login",
-#             data={"username": username, "password": password},
-#             timeout=5.0,
-#         )
-#         if r.status_code == 200:
-#             return r.json()
-#     except Exception:
-#         pass
-#     return None
-
-
-# ─── Login público ────────────────────────────────────────────────────────────
-def fazer_login(username: str, password: str) -> tuple[bool, str]:
+# ─── Login público ───────────────────────────────────────────────────────────
+def fazer_login(identificador: str, password: str) -> tuple[bool, str]:
     """
-    Tenta autenticar o usuário.
+    Autentica por USERNAME ou E-MAIL + senha.
 
-    Fluxo atual (100% offline):
-      1. Valida contra USUARIOS_DEMO.
-      2. (Futuro) Habilitar login_via_api quando FastAPI estiver ativo.
-
-    Retorna (sucesso: bool, mensagem: str).
+    Exemplos válidos:
+      fazer_login("william", "hipnus@2026")            # username
+      fazer_login("admin@hipnuscosmeticos.com.br", ...) # e-mail
+      fazer_login("parceiro@email.com", ...)            # e-mail de convite usado
     """
-    # ── Futuro: descomentar para tentar API primeiro ──────────────────────────
-    # resultado = login_via_api(username, password)
-    # if resultado:
-    #     user = resultado["user"]
-    #     _gravar_sessao(
-    #         nome=user["name"], username=user["username"], role=user["role"],
-    #         display_name=user.get("display_name") or user["name"],
-    #         email=user["email"], token=resultado["access_token"], via_api=True,
-    #     )
-    #     return True, f"Bem-vindo(a), {user['name']}!"
-
-    if _login_offline(username, password):
-        nome = USUARIOS_DEMO[username.strip().lower()]["nome"]
+    if _login_offline(identificador, password):
+        encontrado = _buscar_demo(identificador)
+        if encontrado:
+            nome = encontrado[1]["nome"]
+        else:
+            nome = identificador.split("@")[0].capitalize()
         return True, f"Bem-vindo(a), {nome}!"
 
-    return False, "Usuário ou senha incorretos."
+    return False, "Usuário/e-mail ou senha incorretos."
 
 
+# ─── require_auth ──────────────────────────────────────────────────────────
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     """
     Protege a página exigindo autenticação.
-
-    - Se não autenticado, redireciona para streamlit_app.py (entrypoint).
-    - Se perfis_permitidos for informado, bloqueia perfis não autorizados.
-    - Detecta clique no botão Sair via query param ?logout=1.
-
-    Retorna dict com dados do usuário logado.
+    Redireciona para streamlit_app.py se não autenticado.
     """
     if st.query_params.get("logout") == "1":
         logout()
@@ -199,9 +288,8 @@ def logout() -> None:
     st.switch_page(_LOGIN_PAGE)
 
 
-# ─── Componentes de sidebar ───────────────────────────────────────────────────
+# ─── Componentes de sidebar ─────────────────────────────────────────────────
 def sidebar_logo() -> None:
-    """Renderiza o logo HIPNUS COSMÉTICOS no topo da sidebar."""
     st.sidebar.html("""
     <div class="hip-sidebar-logo-wrap">
         <div class="hip-sidebar-logo-icon">H</div>
@@ -214,7 +302,6 @@ def sidebar_logo() -> None:
 
 
 def sidebar_user_info() -> None:
-    """Card compacto do usuário logado na sidebar."""
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
@@ -248,55 +335,31 @@ def sidebar_user_info() -> None:
 
 
 def sidebar_logout_button() -> None:
-    """
-    Botão SAIR fixado no rodapé da sidebar via CSS position:fixed.
-    Injeta HTML puro que adiciona ?logout=1 na URL ao clicar.
-    Deve ser chamado UMA VEZ por página.
-    """
     st.sidebar.html("""
     <style>
     #hip-logout-btn-wrap {
-        position: fixed;
-        bottom: 20px;
-        left: 0;
-        width: 244px;
-        padding: 0 14px;
-        z-index: 99999;
-        box-sizing: border-box;
+        position: fixed; bottom: 20px; left: 0;
+        width: 244px; padding: 0 14px;
+        z-index: 99999; box-sizing: border-box;
     }
     #hip-logout-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: 100%;
-        padding: 12px 0;
-        background: #ffffff;
-        color: #3d1a78;
-        border: 1.5px solid #d0c4f0;
-        border-radius: 10px;
-        font-size: 1rem;
-        font-weight: 700;
-        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        gap: 8px; width: 100%; padding: 12px 0;
+        background: #ffffff; color: #3d1a78;
+        border: 1.5px solid #d0c4f0; border-radius: 10px;
+        font-size: 1rem; font-weight: 700; cursor: pointer;
         transition: background .18s, color .18s, border-color .18s;
-        text-decoration: none;
-        letter-spacing: .01em;
-        box-sizing: border-box;
+        text-decoration: none; letter-spacing: .01em; box-sizing: border-box;
     }
     #hip-logout-btn:hover {
-        background: #3d1a78;
-        color: #ffffff;
-        border-color: #3d1a78;
-    }
-    section[data-testid="stSidebar"] button[kind="secondary"]:has(p) {
-        display: none !important;
+        background: #3d1a78; color: #ffffff; border-color: #3d1a78;
     }
     </style>
     <div id="hip-logout-btn-wrap">
         <a id="hip-logout-btn"
            href="?logout=1"
            onclick="window.parent.location.href='?logout=1'; return false;">
-            🚼 Sair
+            🚶 Sair
         </a>
     </div>
     """)

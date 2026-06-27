@@ -2,16 +2,7 @@
 streamlit_app.py — HIPNUS COSMÉTICOS
 ======================================
 Entrypoint do Streamlit Cloud — página de Login.
-
-Arquitetura do layout:
-  st.columns([55, 45]) divide a tela em dois painéis.
-  Coluna esquerda  → st.html() com o visual da marca (sem widgets).
-  Coluna direita   → widgets nativos Streamlit (inputs + botões).
-
-Navegação:
-  Login bem-sucedido  →  st.switch_page("pages/1_Home.py")
-  require_auth() fail →  st.switch_page("streamlit_app.py")
-  logout()            →  st.switch_page("streamlit_app.py")
+Aceita login por USERNAME ou E-MAIL.
 """
 import sys
 from pathlib import Path
@@ -23,18 +14,16 @@ if str(frontend_path) not in sys.path:
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-# ─── Inicializa banco na primeira execução ───────────────────────────────────────────
 try:
     from app.db.init_db import init_db
     init_db()
 except Exception:
-    pass  # Não bloqueia o startup; erros são logados em init_db()
+    pass
 
 import streamlit as st
 from lib.auth import fazer_login
 from lib.theme import inject_theme, inject_login_style
 
-# ─ Configuração da página ─────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Login — HIPNUS COSMÉTICOS",
     page_icon="💜",
@@ -44,112 +33,67 @@ st.set_page_config(
 inject_theme()
 inject_login_style()
 
-# ─ Redireciona se já autenticado ──────────────────────────────────────────────────────
 if st.session_state.get("autenticado"):
     st.switch_page("pages/1_Home.py")
 
-# ─ CSS específico do layout split-screen ─────────────────────────────────────────────
 st.html("""
 <style>
-/* ── Reset geral do container Streamlit para o login ────────────────────── */
 [data-testid="stMainBlockContainer"],
 [data-testid="stMain"] > div,
 .block-container {
-  padding: 0 !important;
-  max-width: 100% !important;
-  margin: 0 !important;
+  padding: 0 !important; max-width: 100% !important; margin: 0 !important;
 }
 [data-testid="stToolbar"],
 [data-testid="stSidebar"],
 [data-testid="collapsedControl"],
-header[data-testid="stHeader"] {
-  display: none !important;
-}
-
-/* ── Grid de colunas do Streamlit sem gap e alinhado ao topo ───────────────── */
+header[data-testid="stHeader"] { display: none !important; }
 [data-testid="stHorizontalBlock"] {
-  gap: 0 !important;
-  align-items: stretch !important;
-  min-height: 100vh !important;
+  gap: 0 !important; align-items: stretch !important; min-height: 100vh !important;
 }
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
-  padding: 0 !important;
-  min-height: 100vh;
+  padding: 0 !important; min-height: 100vh;
 }
-
-/* ── Coluna ESQUERDA: herda o gradiente da marca via div interna ────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child {
   background: linear-gradient(145deg, #1a0733 0%, #3b1278 40%, #6c2bd9 75%, #8b44f6 100%);
 }
-
-/* ── Coluna DIREITA: fundo claro ─────────────────────────────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:last-child {
-  background: #f8f7fc;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 48px 40px !important;
+  background: #f8f7fc; display: flex; flex-direction: column;
+  justify-content: center; padding: 48px 40px !important;
 }
-
-/* ── Inputs do painel direito ─────────────────────────────────────────────── */
 [data-testid="stTextInput"] > div > div > input {
-  background: #fff !important;
-  border: 1.5px solid #e5e0f5 !important;
-  border-radius: 12px !important;
-  font-size: .96rem !important;
-  padding: 13px 16px !important;
-  color: #1a0a2e !important;
+  background: #fff !important; border: 1.5px solid #e5e0f5 !important;
+  border-radius: 12px !important; font-size: .96rem !important;
+  padding: 13px 16px !important; color: #1a0a2e !important;
   transition: border-color .18s, box-shadow .18s !important;
 }
 [data-testid="stTextInput"] > div > div > input:focus {
   border-color: #7c3aed !important;
-  box-shadow: 0 0 0 4px rgba(124,58,237,.12) !important;
-  outline: none !important;
+  box-shadow: 0 0 0 4px rgba(124,58,237,.12) !important; outline: none !important;
 }
 [data-testid="stTextInput"] > label {
-  font-size: .8rem !important;
-  font-weight: 600 !important;
-  color: #4b4567 !important;
-  letter-spacing: .2px !important;
+  font-size: .8rem !important; font-weight: 600 !important;
+  color: #4b4567 !important; letter-spacing: .2px !important;
 }
-
-/* ── Botão Entrar ────────────────────────────────────────────────────────────────────── */
 [data-testid="stButton"] > button[kind="primary"] {
   background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%) !important;
-  border: none !important;
-  border-radius: 12px !important;
-  height: 50px !important;
-  font-size: .97rem !important;
-  font-weight: 700 !important;
-  letter-spacing: .3px !important;
-  color: #fff !important;
+  border: none !important; border-radius: 12px !important; height: 50px !important;
+  font-size: .97rem !important; font-weight: 700 !important;
+  letter-spacing: .3px !important; color: #fff !important;
   box-shadow: 0 4px 20px rgba(124,58,237,.35) !important;
-  transition: all .18s cubic-bezier(0.16,1,0.3,1) !important;
-  width: 100% !important;
+  transition: all .18s cubic-bezier(0.16,1,0.3,1) !important; width: 100% !important;
 }
 [data-testid="stButton"] > button[kind="primary"]:hover {
-  box-shadow: 0 8px 28px rgba(124,58,237,.45) !important;
-  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 28px rgba(124,58,237,.45) !important; transform: translateY(-1px) !important;
 }
-
-/* ── Botão Demo ──────────────────────────────────────────────────────────────────────────── */
 [data-testid="stButton"] > button:not([kind="primary"]) {
-  background: #fff !important;
-  border: 1.5px solid #e5e0f5 !important;
-  border-radius: 12px !important;
-  height: 46px !important;
-  font-size: .87rem !important;
-  font-weight: 600 !important;
-  color: #7c3aed !important;
-  transition: all .18s ease !important;
-  width: 100% !important;
+  background: #fff !important; border: 1.5px solid #e5e0f5 !important;
+  border-radius: 12px !important; height: 46px !important;
+  font-size: .87rem !important; font-weight: 600 !important;
+  color: #7c3aed !important; transition: all .18s ease !important; width: 100% !important;
 }
 [data-testid="stButton"] > button:not([kind="primary"]):hover {
-  background: #f3f0ff !important;
-  border-color: #7c3aed !important;
+  background: #f3f0ff !important; border-color: #7c3aed !important;
 }
-
-/* ── Animações ─────────────────────────────────────────────────────────────────────────── */
 @keyframes fadeSlideRight {
   from { opacity: 0; transform: translateX(-24px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -161,10 +105,8 @@ header[data-testid="stHeader"] {
 </style>
 """)
 
-# ─ Layout split-screen com colunas nativas do Streamlit ────────────────────────────
 col_left, col_right = st.columns([55, 45], gap="small")
 
-# ─ COLUNA ESQUERDA: visual da marca (HTML puro) ────────────────────────────────
 with col_left:
     st.html("""
     <style>
@@ -224,7 +166,6 @@ with col_left:
     .claim-text strong { color: #fff; font-weight: 700; display: block; font-size: .88rem; }
     .hip-panel-footer { font-size: .68rem; color: rgba(255,255,255,.35); letter-spacing: .5px; }
     </style>
-
     <div class="hip-panel-inner">
       <div class="hip-logo-row">
         <div class="hip-logo-icon">H</div>
@@ -256,7 +197,6 @@ with col_left:
     </div>
     """)
 
-# ─ COLUNA DIREITA: formulário com widgets nativos Streamlit ─────────────────────
 with col_right:
     st.html("""
     <div style="margin:0 auto 28px;max-width:360px;animation:fadeSlideLeft 0.6s 0.15s cubic-bezier(0.16,1,0.3,1) both;">
@@ -268,11 +208,16 @@ with col_right:
       <h2 style="font-size:1.55rem;font-weight:800;color:#1a0a2e;letter-spacing:-.5px;line-height:1.2;margin:0 0 7px;">
         Entrar na plataforma
       </h2>
-      <p style="font-size:.85rem;color:#6b7280;line-height:1.5;margin:0;">Acesse com seu usuário e senha cadastrados.</p>
+      <p style="font-size:.85rem;color:#6b7280;line-height:1.5;margin:0;">Use seu usuário <strong>ou e-mail</strong> e senha para acessar.</p>
     </div>
     """)
 
-    login_input = st.text_input("Usuário", placeholder="seu.usuario", key="_login")
+    # Campo aceita username OU e-mail
+    login_input = st.text_input(
+        "Usuário ou e-mail",
+        placeholder="usuario  ou  seu@email.com",
+        key="_login",
+    )
     senha_input = st.text_input("Senha", placeholder="••••••••", type="password", key="_senha")
     st.write("")
 
@@ -285,11 +230,10 @@ with col_right:
 
     st.html('<div style="text-align:center;margin-top:24px;font-size:.7rem;color:#b0a9c8;line-height:1.7;">HIPNUS COSMÉTICOS &copy; 2026<br>Plataforma exclusiva da marca. Acesso restrito.</div>')
 
-# ─ Lógica de autenticação ─────────────────────────────────────────────────────────────────
 if btn_entrar:
     if not login_input or not senha_input:
         with col_right:
-            st.warning("⚠️ Preencha usuário e senha para continuar.")
+            st.warning("⚠️ Preencha o usuário/e-mail e a senha para continuar.")
     else:
         ok, msg = fazer_login(login_input.strip(), senha_input)
         if ok:
