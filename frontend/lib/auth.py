@@ -179,7 +179,7 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
     if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
-        st.error("�edd5 Você não tem permissão para acessar esta página.")
+        st.error("🚫 Você não tem permissão para acessar esta página.")
         st.stop()
     return usuario
 
@@ -298,7 +298,6 @@ def sidebar_nav_highlight() -> None:
     """CSS extra para garantir que os links do nav nativo fiquem legíveis e elegantes."""
     st.sidebar.html("""
     <style>
-    /* ─ Nav links: força cor branca e espaçamento ─ */
     [data-testid="stSidebarNavLink"] {
       color: rgba(255,255,255,.82) !important;
       font-family: 'Inter', sans-serif !important;
@@ -310,39 +309,27 @@ def sidebar_nav_highlight() -> None:
       border: 1px solid transparent !important;
       transition: all .2s ease !important;
       letter-spacing: .1px !important;
-      display: flex !important;
-      align-items: center !important;
-      gap: 8px !important;
     }
     [data-testid="stSidebarNavLink"]:hover {
       color: #fff !important;
       background: rgba(185,131,255,.14) !important;
       border-color: rgba(185,131,255,.28) !important;
-      text-shadow: 0 0 10px rgba(185,131,255,.4) !important;
     }
     [data-testid="stSidebarNavLink"][aria-current="page"] {
       color: #fff !important;
       background: rgba(124,58,237,.28) !important;
       border-color: rgba(185,131,255,.45) !important;
-      box-shadow: 0 0 14px rgba(185,131,255,.18) !important;
       font-weight: 600 !important;
     }
-    /* ─ Sidebar nav list: padding uniforme ─ */
     [data-testid="stSidebarNavItems"] {
       padding: 4px 0 8px !important;
     }
-    [data-testid="stSidebarNavItems"] li {
-      margin: 0 !important;
-    }
-    /* ─ Textos e captions da sidebar ─ */
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
     section[data-testid="stSidebar"] label {
       color: rgba(255,255,255,.75) !important;
     }
-    section[data-testid="stSidebar"] strong {
-      color: #fff !important;
-    }
+    section[data-testid="stSidebar"] strong { color: #fff !important; }
     </style>
     """)
 
@@ -374,7 +361,6 @@ def sidebar_logout_button() -> None:
       background: rgba(185,131,255,.18);
       color: #fff;
       border-color: rgba(185,131,255,.5);
-      box-shadow: 0 0 18px rgba(185,131,255,.2);
     }
     </style>
     <div id="hip-logout-btn-wrap">
@@ -386,22 +372,12 @@ def sidebar_logout_button() -> None:
     """)
 
 
-# ─── Função unificada: monta toda a sidebar de uma vez ────────────────────────────
+# ─── Função unificada ───────────────────────────────────────────────────────────────────────
 def build_sidebar(
     show_cart: bool = True,
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """
-    Monta a sidebar premium completa em ordem:
-      1. Logo HIPNUS
-      2. Card do usuário
-      3. CSS nav highlight
-      4. [Menu nativo Streamlit — automático]
-      5. Separador
-      6. Resumo do carrinho (opcional)
-      7. Botão Sair (fixo no rodapé)
-    """
     sidebar_logo()
     sidebar_user_info()
     sidebar_nav_highlight()
@@ -409,13 +385,9 @@ def build_sidebar(
         sidebar_divider()
         from .ui import brl
         st.sidebar.html(f"""
-        <div style="
-          margin:4px 10px 6px;
-          background:rgba(124,58,237,.12);
-          border:1px solid rgba(185,131,255,.2);
-          border-radius:10px;padding:8px 12px;
-          display:flex;justify-content:space-between;align-items:center;
-        ">
+        <div style="margin:4px 10px 6px;background:rgba(124,58,237,.12);
+          border:1px solid rgba(185,131,255,.2);border-radius:10px;padding:8px 12px;
+          display:flex;justify-content:space-between;align-items:center;">
           <span style="color:rgba(255,255,255,.7);font-size:.78rem;">🛒 Carrinho</span>
           <span style="color:#fff;font-weight:700;font-size:.82rem;">{brl(cart_total)}</span>
         </div>
