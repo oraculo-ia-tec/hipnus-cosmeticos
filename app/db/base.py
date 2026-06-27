@@ -23,7 +23,7 @@ _connect_args = (
 
 engine = create_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
+    echo=settings.debug,        # Pydantic v2: atributo em lowercase
     pool_pre_ping=True,
     connect_args=_connect_args,
 )
