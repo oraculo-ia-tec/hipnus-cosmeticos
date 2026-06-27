@@ -5,10 +5,11 @@ Skill: 📧 Notificações por E-mail
 
 Serviço centralizado de e-mail via SMTP Hostinger (porta 465 / SSL).
 Exporta:
-  - smtp_status()          — diagnóstico seguro do ambiente
-  - send_email()           — envio genérico HTML
-  - send_test_email()      — e-mail de teste com layout Hipnus
-  - send_invite_email()    — convite de parceiro com link de cadastro
+  - smtp_status()                      — diagnóstico seguro do ambiente
+  - send_email()                       — envio genérico HTML
+  - send_test_email()                  — e-mail de teste com layout Hipnus
+  - send_invite_email()                — convite de parceiro com link de cadastro
+  - send_order_confirmation_email()    — confirmação de pedido pós-checkout (Skill #3)
 """
 from __future__ import annotations
 
@@ -16,8 +17,8 @@ import os
 import smtplib
 import ssl
 from datetime import datetime, timedelta
+from decimal import Decimal
 from email.header import Header
-from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate
@@ -32,7 +33,7 @@ SMTP_FROM     = os.getenv("SMTP_FROM",     "no-reply@hipnuscosmeticos.com.br")
 INVITE_EXPIRY_DAYS = 7
 
 
-# ─── Diagnóstico ──────────────────────────────────────────────────────────
+# ─── Diagnóstico ─────────────────────────────────────────────────────────────────────
 def smtp_status() -> dict:
     """Retorna status da configuração SMTP sem expor segredos."""
     return {
@@ -45,13 +46,8 @@ def smtp_status() -> dict:
     }
 
 
-# ─── Engine de envio interno ─────────────────────────────────────────────────
-def _send_via_ssl(
-    to_email: str,
-    subject: str,
-    html_body: str,
-    text_body: str,
-) -> tuple[bool, str]:
+# ─── Engine de envio interno ─────────────────────────────────────────────────────────────────
+def _send_via_ssl(to_email: str, subject: str, html_body: str, text_body: str) -> tuple[bool, str]:
     """Envia usando SMTP_SSL (porta 465, padrão Hostinger)."""
     try:
         msg = MIMEMultipart("alternative")
@@ -72,7 +68,7 @@ def _send_via_ssl(
         return False, f"Falha ao enviar e-mail: {exc}"
 
 
-# ─── API pública ───────────────────────────────────────────────────────────────
+# ─── API pública ─────────────────────────────────────────────────────────────────────────
 def send_email(
     to_email: str | Iterable[str],
     subject: str,
@@ -101,7 +97,7 @@ def send_email(
 
 def send_test_email(to_email: str) -> tuple[bool, str]:
     """E-mail de teste com layout padrão Hipnus."""
-    html = f"""
+    html = """
     <div style="font-family:Inter,Segoe UI,sans-serif;background:#f8f7fc;padding:32px;">
       <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e0f5;
                   border-radius:18px;overflow:hidden;">
@@ -143,11 +139,7 @@ def send_test_email(to_email: str) -> tuple[bool, str]:
     )
 
 
-def send_invite_email(
-    destinatario: str,
-    signup_url: str,
-    role: str,
-) -> tuple[bool, str]:
+def send_invite_email(destinatario: str, signup_url: str, role: str) -> tuple[bool, str]:
     """
     Envia o convite de parceiro com template visual completo.
     Centraliza o disparo que antes existia como função local em 6_Convites.py.
@@ -215,10 +207,123 @@ def send_invite_email(
         f"Perfil: {role_label}\nVálido até: {expira}\n\n"
         f"Link de cadastro:\n{signup_url}\n"
     )
-
     return _send_via_ssl(
         to_email=destinatario,
         subject="Seu convite para HIPNUS COSMÉTICOS",
         html_body=html_body,
         text_body=text_body,
     )
+
+
+# ─── Skill #3 — Confirmação de pedido ──────────────────────────────────────────────────────
+def _brl(v) -> str:
+    try:
+        val = Decimal(str(v))
+    except Exception:
+        val = Decimal("0")
+    s = f"{val:,.2f}"
+    return f"R$ {s}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def send_order_confirmation_email(
+    to_email: str,
+    customer_name: str,
+    billing_type: str,
+    resultado: dict,
+    itens: list[dict],
+) -> tuple[bool, str]:
+    """
+    Envia confirmação de pedido ao cliente logo após o checkout.
+
+    Parâmetros:
+        to_email       : e-mail do comprador
+        customer_name  : nome do comprador
+        billing_type   : 'PIX' | 'BOLETO' | 'CREDIT_CARD'
+        resultado      : dict retornado por CheckoutService.processar()
+        itens          : list(st.session_state['cart'].values())
+
+    Retorna:
+        (True, mensagem) ou (False, motivo_do_erro)
+    """
+    status = smtp_status()
+    if not status["ready"]:
+        return False, "SMTP não configurado para envio da confirmação de pedido."
+
+    total            = resultado.get("totais", {}).get("total", 0)
+    external_ref     = resultado.get("external_ref", "")
+    payment_id       = resultado.get("payment_id", "")
+    invoice_url      = resultado.get("invoice_url", "")
+    status_pagamento = resultado.get("status", "")
+    metodo_label     = {"PIX": "PIX", "BOLETO": "Boleto", "CREDIT_CARD": "Cartão"}.get(billing_type, billing_type)
+
+    linhas_html = "".join(
+        f"<tr>"
+        f"<td style='padding:10px 12px;border-bottom:1px solid #eee;color:#1a1430;'>{item['name']}</td>"
+        f"<td style='padding:10px 12px;border-bottom:1px solid #eee;text-align:center;color:#1a1430;'>{item['qty']}</td>"
+        f"<td style='padding:10px 12px;border-bottom:1px solid #eee;text-align:right;color:#1a1430;'>"
+        f"{_brl(Decimal(str(item['price'])) * Decimal(str(item['qty'])))}</td>"
+        f"</tr>"
+        for item in itens
+    )
+    linhas_txt = "\n".join(
+        f"- {item['name']} x {item['qty']} — {_brl(Decimal(str(item['price'])) * Decimal(str(item['qty'])))}"
+        for item in itens
+    )
+    cta = (
+        f"<a href='{invoice_url}' style='display:inline-block;background:#7C3AED;color:#fff;"
+        f"text-decoration:none;font-size:15px;font-weight:bold;padding:14px 28px;border-radius:10px;'>"
+        f"Abrir pagamento</a>"
+        if invoice_url else ""
+    )
+
+    html_body = f"""
+    <div style='font-family:Inter,Segoe UI,sans-serif;background:#f8f7fc;padding:32px;'>
+      <div style='max-width:680px;margin:0 auto;background:#fff;border:1px solid #e5e0f5;
+                  border-radius:18px;overflow:hidden;'>
+        <div style='background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);
+                    padding:28px 32px;color:#fff;'>
+          <div style='font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
+                      opacity:.85;font-weight:700;'>HIPNUS COSMÉTICOS</div>
+          <h1 style='margin:10px 0 0;font-size:24px;line-height:1.2;'>Pedido confirmado ✅</h1>
+        </div>
+        <div style='padding:28px 32px;color:#1a1430;'>
+          <p style='font-size:15px;line-height:1.7;margin:0 0 16px;'>
+            Olá, <strong>{customer_name}</strong>. Recebemos seu pedido com sucesso.
+          </p>
+          <div style='background:#f3f0ff;border:1px solid #e9d5ff;border-radius:14px;
+                      padding:14px 16px;font-size:14px;color:#5b21b6;margin-bottom:18px;'>
+            Referência: <strong>{external_ref}</strong><br>
+            ID do pagamento: <strong>{payment_id}</strong><br>
+            Método: <strong>{metodo_label}</strong><br>
+            Status: <strong>{status_pagamento}</strong>
+          </div>
+          <table width='100%' cellpadding='0' cellspacing='0'
+                 style='border-collapse:collapse;border:1px solid #eee;border-radius:12px;overflow:hidden;'>
+            <thead>
+              <tr style='background:#faf7ff;'>
+                <th style='padding:10px 12px;text-align:left;color:#5b21b6;'>Item</th>
+                <th style='padding:10px 12px;text-align:center;color:#5b21b6;'>Qtd</th>
+                <th style='padding:10px 12px;text-align:right;color:#5b21b6;'>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>{linhas_html}</tbody>
+          </table>
+          <p style='font-size:18px;font-weight:800;color:#1a1430;text-align:right;
+                    margin:18px 0 22px;'>Total: {_brl(total)}</p>
+          {cta}
+        </div>
+      </div>
+    </div>
+    """
+    text_body = (
+        f"HIPNUS COSMÉTICOS\n\n"
+        f"Olá, {customer_name}. Recebemos seu pedido com sucesso.\n\n"
+        f"Referência: {external_ref}\n"
+        f"ID do pagamento: {payment_id}\n"
+        f"Método: {metodo_label}\n"
+        f"Status: {status_pagamento}\n"
+        f"Total: {_brl(total)}\n\n"
+        f"Itens:\n{linhas_txt}\n\n"
+        + (f"Link de pagamento: {invoice_url}\n" if invoice_url else "")
+    )
+    return _send_via_ssl(to_email, "HIPNUS — Confirmação do seu pedido", html_body, text_body)
