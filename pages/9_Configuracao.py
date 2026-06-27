@@ -20,6 +20,7 @@ import streamlit as st
 from lib import ui, components
 from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib.user_db import atualizar_perfil, alterar_senha, buscar_por_email, image_to_b64
+from lib.email_service import smtp_status, send_test_email
 
 st.set_page_config(page_title="Configurações · HIPNUS", page_icon="⚙️", layout="wide")
 ui.inject_theme()
@@ -44,6 +45,7 @@ nome_logado   = usuario.get("nome", "")
 perfil_logado = usuario.get("perfil", "demo")
 
 parceiro_db = buscar_por_email(email_logado) if (email_logado and "@" in email_logado) else None
+smtp = smtp_status()
 
 def _val(campo: str, fallback: str = "") -> str:
     if parceiro_db and parceiro_db.get(campo):
@@ -53,7 +55,7 @@ def _val(campo: str, fallback: str = "") -> str:
 avatar_atual = (parceiro_db.get("avatar_b64") if parceiro_db else None) or st.session_state.get("avatar_b64")
 
 # ── Tabs
-tab_perfil, tab_foto, tab_senha = st.tabs(["👤 Perfil", "📸 Foto de Perfil", "🔑 Senha"])
+tab_perfil, tab_foto, tab_senha, tab_email = st.tabs(["👤 Perfil", "📸 Foto de Perfil", "🔑 Senha", "📧 E-mail"])
 
 # ══ TAB 1 — PERFIL
 with tab_perfil:
@@ -171,3 +173,63 @@ with tab_senha:
             else:
                 ok_p, msg_p = alterar_senha(email_logado, senha_atual, nova_senha)
                 st.success(f"✅ {msg_p}") if ok_p else st.error(f"❌ {msg_p}")
+
+# ══ TAB 4 — E-MAIL
+with tab_email:
+    components.section_title("Notificações por e-mail")
+
+    c1, c2 = st.columns([1.2, 1])
+    with c1:
+        st.markdown("**Status do SMTP**")
+        st.caption("Diagnóstico seguro do ambiente Hostinger sem expor senha.")
+        st.html(f"""
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0 18px;">
+            <div style="background:#f8f7fc;border:1px solid #e5e0f5;border-radius:14px;padding:14px;">
+                <div style="font-size:.72rem;color:#6b7280;text-transform:uppercase;font-weight:700;">Host</div>
+                <div style="font-size:.95rem;color:#1a0a2e;font-weight:700;">{smtp['host']}</div>
+            </div>
+            <div style="background:#f8f7fc;border:1px solid #e5e0f5;border-radius:14px;padding:14px;">
+                <div style="font-size:.72rem;color:#6b7280;text-transform:uppercase;font-weight:700;">Porta</div>
+                <div style="font-size:.95rem;color:#1a0a2e;font-weight:700;">{smtp['port']}</div>
+            </div>
+            <div style="background:#f8f7fc;border:1px solid #e5e0f5;border-radius:14px;padding:14px;">
+                <div style="font-size:.72rem;color:#6b7280;text-transform:uppercase;font-weight:700;">Usuário SMTP</div>
+                <div style="font-size:.95rem;color:{'#16a34a' if smtp['user_configured'] else '#dc2626'};font-weight:700;">{'Configurado' if smtp['user_configured'] else 'Pendente'}</div>
+            </div>
+            <div style="background:#f8f7fc;border:1px solid #e5e0f5;border-radius:14px;padding:14px;">
+                <div style="font-size:.72rem;color:#6b7280;text-transform:uppercase;font-weight:700;">Senha SMTP</div>
+                <div style="font-size:.95rem;color:{'#16a34a' if smtp['password_configured'] else '#dc2626'};font-weight:700;">{'Configurada' if smtp['password_configured'] else 'Pendente'}</div>
+            </div>
+        </div>
+        """)
+
+        if smtp["ready"]:
+            st.success(f"✅ SMTP pronto para uso. Remetente padrão: {smtp['from_email']}")
+        else:
+            st.warning("⚠️ SMTP ainda incompleto. Preencha as variáveis no ambiente antes de testar o envio.")
+
+    with c2:
+        st.markdown("**Teste de envio**")
+        destino_teste = st.text_input(
+            "Enviar teste para",
+            value=email_logado or "",
+            placeholder="email@dominio.com",
+            key="smtp_email_teste",
+        )
+        st.caption("Use um e-mail válido para validar o SMTP da Hostinger em produção.")
+        enviar_teste = st.button("📨 Enviar e-mail de teste", type="primary", use_container_width=True)
+        if enviar_teste:
+            if not destino_teste or "@" not in destino_teste:
+                st.error("❌ Informe um e-mail válido para teste.")
+            else:
+                ok_mail, msg_mail = send_test_email(destino_teste.strip())
+                st.success(f"✅ {msg_mail}") if ok_mail else st.error(f"❌ {msg_mail}")
+
+    components.divider()
+    st.markdown("**Próximos disparos prontos para plugar nesta skill**")
+    st.markdown(
+        "- Convite de parceiro enviado automaticamente após aprovação.\n"
+        "- Confirmação de pedido com resumo da compra.\n"
+        "- Atualização de pagamento/checkout.\n"
+        "- Alerta interno para o admin quando um novo parceiro concluir cadastro."
+    )
