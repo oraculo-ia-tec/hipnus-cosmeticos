@@ -2,21 +2,12 @@
 6_Convites.py — HIPNUS COSMÉTICOS
 ====================================
 Gerenciamento de convites de cadastro para parceiros e distribuidores.
-
-Fluxo de persistência (3 caminhos em ordem de prioridade):
-  1. API disponível       → POST /api/v1/invites/ (persiste via FastAPI)
-  2. API indisponível     → persiste no banco DIRETAMENTE via invite_db
-  3. API + banco falham   → token offline (não pode ser validado)
-
-Refactoring:
-  - _enviar_smtp() local removida — substituida por email_service.send_invite_email()
-  - Toda lógica SMTP centralizada em lib/email_service.py
 """
 from __future__ import annotations
 
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import requests as http_requests
@@ -29,10 +20,8 @@ import streamlit as st
 from lib import ui
 from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib import components
-from lib.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_REMETENTE
-from lib.db_utils import resolve_db_url
 from lib.invite_db import criar_invite_db
-from lib.email_service import send_invite_email, smtp_status  # ← Skill 📧
+from lib.email_service import send_invite_email, smtp_status
 
 # ─── Setup ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Convites · HIPNUS", page_icon="📨", layout="wide")
@@ -118,12 +107,8 @@ def _badge_role(role: str) -> str:
         "b2b": "🎤 Profissional", "b2c": "👤 Cliente", "admin": "🛡️ Admin",
     }.get(role, role)
 
-def _badge_origem(origem: str) -> str:
-    return {
-        "api": "🔵 API", "db_direto": "🟢 Banco Direto", "offline": "🟡 Offline",
-    }.get(origem, origem)
 
-def _card_link(signup_url: str, role: str, criado_por: str, origem: str) -> None:
+def _card_link(signup_url: str, role: str, criado_por: str) -> None:
     st.html(f"""
     <div style="background:#f3f0ff;border:1.5px solid #c4b5fd;border-radius:12px;
                 padding:18px 20px;margin:12px 0;">
@@ -137,38 +122,12 @@ def _card_link(signup_url: str, role: str, criado_por: str, origem: str) -> None
         <div style="font-size:.75rem;color:#6B6580;margin-top:8px;">
             Perfil: <strong>{_badge_role(role)}</strong>
             &nbsp;·&nbsp; Criado por: <strong>{criado_por}</strong>
-            &nbsp;·&nbsp; Origem: {_badge_origem(origem)}
         </div>
     </div>""")
     st.text_area(
         "Copie o link:", value=signup_url,
         height=75, key=f"_copy_{signup_url[-8:]}",
     )
-
-def _aviso_smtp() -> None:
-    smtp = smtp_status()
-    if not smtp["ready"]:
-        st.warning("⚙️ SMTP não configurado. Verifique as variáveis SMTP_* no ambiente.")
-    else:
-        smtp_info = f"{smtp['host']}:{smtp['port']} — {smtp['from_email']}"
-        st.html(f"""
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;
-                    padding:10px 16px;font-size:.82rem;color:#166534;margin-bottom:12px;">
-            ✅ <strong>SMTP pronto:</strong> {smtp_info}
-        </div>""")
-
-def _debug_info() -> None:
-    db_url  = resolve_db_url()
-    app_url = _resolve_app_url()
-    ex_url  = _signup_url("TOKEN_EXEMPLO")
-    with st.expander("🔧 Info técnica (admin)"):
-        st.code(
-            f"API_URL:         {API_URL}\n"
-            f"DATABASE_URL:    {db_url}\n"
-            f"APP_BASE_URL:    {app_url}\n"
-            f"SIGNUP_URL ex:   {ex_url}",
-            language="text",
-        )
 
 
 # ─── Header ────────────────────────────────────────────────────────────────────
@@ -177,7 +136,6 @@ components.page_header(
     subtitle="Gerencie convites personalizados para novos distribuidores, salões e parceiros.",
     kicker="Área Admin",
 )
-_debug_info()
 
 tab1, tab2, tab3 = st.tabs(["📨 Enviar Convite", "🔗 Gerar Convite", "📋 Monitorar Convites"])
 
@@ -185,8 +143,6 @@ tab1, tab2, tab3 = st.tabs(["📨 Enviar Convite", "🔗 Gerar Convite", "📋 M
 # ══ TAB 1 — ENVIAR CONVITE ─────────────────────────────────────────────────────────
 with tab1:
     components.section_title("Enviar convite por e-mail")
-    st.caption("Prioridade: 1º API, 2º banco direto (path absoluto), 3º offline.")
-    _aviso_smtp()
 
     with st.form("form_enviar_convite", clear_on_submit=True):
         col1, col2 = st.columns([3, 1])
@@ -221,41 +177,37 @@ with tab1:
                 st.session_state["_convites_gerados"].insert(0, convite)
                 ok, msg = send_invite_email(email_t1, resultado["signup_url"], role_t1)
                 if ok:
-                    st.success(f"✅ Convite (API) + e-mail enviado para **{email_t1}**!")
+                    st.success(f"✅ Convite enviado para **{email_t1}**!")
                 else:
-                    st.warning(f"⚠️ Convite salvo, e-mail falhou: {msg}")
-                _card_link(resultado["signup_url"], role_t1, criado_por, "api")
+                    st.warning(f"⚠️ Convite criado, mas o e-mail não pôde ser enviado. Copie o link abaixo.")
+                _card_link(resultado["signup_url"], role_t1, criado_por)
             else:
-                with st.spinner("API indisponível. Salvando no banco..."):
+                with st.spinner("Salvando convite..."):
                     resultado = _criar_via_db(email_t1, role_t1, criado_por)
                 if resultado:
                     convite = {**resultado, "origem": "db_direto"}
                     st.session_state["_convites_gerados"].insert(0, convite)
                     ok, msg = send_invite_email(email_t1, resultado["signup_url"], role_t1)
                     if ok:
-                        st.success(f"✅ Convite salvo no banco + e-mail enviado para **{email_t1}**!")
+                        st.success(f"✅ Convite enviado para **{email_t1}**!")
                         convite["email_sent"] = True
                     else:
-                        st.warning(f"⚠️ Token salvo no banco, e-mail falhou: {msg}. Copie o link abaixo.")
-                    _card_link(resultado["signup_url"], role_t1, criado_por, "db_direto")
+                        st.warning("⚠️ Convite salvo, mas o e-mail não pôde ser enviado. Copie o link abaixo.")
+                    _card_link(resultado["signup_url"], role_t1, criado_por)
                 else:
                     convite = _criar_offline(email_t1, role_t1, criado_por)
                     st.session_state["_convites_gerados"].insert(0, convite)
-                    st.error(
-                        "❌ API e banco indisponíveis. Token offline — "
-                        "**o link NÃO será validado**. "
-                        "Verifique DATABASE_URL nos Streamlit Secrets."
-                    )
+                    st.error("❌ Não foi possível salvar o convite. Verifique as configurações e tente novamente.")
                     ok, _ = send_invite_email(email_t1, convite["signup_url"], role_t1)
                     if ok:
-                        st.info("📧 E-mail enviado, mas convite offline não pode ser validado.")
-                    _card_link(convite["signup_url"], role_t1, criado_por, "offline")
+                        st.info("📧 E-mail enviado.")
+                    _card_link(convite["signup_url"], role_t1, criado_por)
 
 
 # ══ TAB 2 — GERAR CONVITE MANUAL ────────────────────────────────────────────────────
 with tab2:
     components.section_title("Gerar link de convite manual")
-    st.caption("Gera o link e salva no banco. Copie e envie manualmente.")
+    st.caption("Gera o link de cadastro para você copiar e enviar manualmente.")
     with st.form("form_gerar_convite", clear_on_submit=True):
         col1, col2 = st.columns([3, 1])
         with col1:
@@ -285,12 +237,12 @@ with tab2:
                 )
             if resultado:
                 convite = {**resultado, "email_sent": False, "origem": resultado.get("origem", "db_direto")}
-                st.success("📋 Convite salvo no banco.")
+                st.success("✅ Link gerado com sucesso!")
             else:
                 convite = _criar_offline(email_t2, role_t2, criado_por)
-                st.warning("⚠️ Banco indisponível. Token offline.")
+                st.warning("⚠️ Convite gerado em modo temporário. Salve o link abaixo.")
             st.session_state["_convites_gerados"].insert(0, convite)
-            _card_link(convite["signup_url"], role_t2, criado_por, convite["origem"])
+            _card_link(convite["signup_url"], role_t2, criado_por)
 
 
 # ══ TAB 3 — MONITORAR ────────────────────────────────────────────────────────────────
@@ -311,31 +263,22 @@ with tab3:
     else:
         total    = len(convites)
         enviados = sum(1 for c in convites if c.get("email_sent"))
-        banco    = sum(1 for c in convites if c.get("origem") in ("api", "db_direto"))
-        offline  = sum(1 for c in convites if c.get("origem") == "offline")
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Total", total)
-        m2.metric("E-mail enviado", enviados)
-        m3.metric("Salvo no banco", banco)
-        m4.metric("Offline", offline)
+        m1, m2 = st.columns(2)
+        m1.metric("Total gerados", total)
+        m2.metric("E-mails enviados", enviados)
         components.divider()
         for inv in convites:
             email_val  = inv.get("email", "N/A")
             status_env = "✅ Enviado" if inv.get("email_sent") else "📋 Manual"
             role_badge = _badge_role(inv.get("role", ""))
-            orig_badge = _badge_origem(inv.get("origem", ""))
-            label      = f"{email_val} — {status_env} · {role_badge} · {orig_badge}"
-            email_ok   = "✅ Sim" if inv.get("email_sent") else "❌ Não"
+            label      = f"{email_val} — {status_env} · {role_badge}"
             expira_val = inv.get("expires_at", "—")
-            token_val  = inv.get("token", "N/A")
             with st.expander(label):
                 col_a, col_b = st.columns(2)
                 with col_a:
                     st.markdown(f"**Perfil:** {role_badge}")
-                    st.markdown(f"**E-mail enviado:** {email_ok}")
+                    st.markdown(f"**E-mail enviado:** {'✅ Sim' if inv.get('email_sent') else '❌ Não'}")
                     st.markdown(f"**Expira:** {expira_val}")
-                    st.markdown(f"**Origem:** {orig_badge}")
                 with col_b:
-                    st.markdown(f"**Token:** `{token_val}`")
                     if inv.get("signup_url"):
                         st.code(inv["signup_url"], language=None)

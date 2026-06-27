@@ -18,7 +18,6 @@ import streamlit as st
 from lib import ui, components
 from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib.ia_consultora import build_context, chat_stream, groq_status
-from lib.email_service import smtp_status
 
 st.set_page_config(
     page_title="IA Consultora · HIPNUS",
@@ -30,20 +29,17 @@ ui.inject_theme()
 usuario = require_auth()
 sidebar_logo()
 sidebar_user_info()
-ui.sidebar_cart_summary()
 sidebar_logout_button()
 
 components.page_header(
     title="IA Consultora",
-    subtitle="Pergunte sobre pedidos, split, pagamentos, convites e muito mais.",
-    kicker="🤖 Powered by Groq · Llama 3.3 70B",
+    subtitle="Pergunte sobre produtos, pedidos, pagamentos e muito mais.",
 )
 
 # ─── Avatar do usuário para o chat ──────────────────────────────────────────
-perfil       = st.session_state.get("perfil", "b2c")
-avatar_b64   = st.session_state.get("avatar_b64", None)
+perfil     = st.session_state.get("perfil", "b2c")
+avatar_b64 = st.session_state.get("avatar_b64", None)
 
-# Fallback por perfil quando não há foto
 _icones_perfil = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}
 USER_AVATAR = avatar_b64 if avatar_b64 else _icones_perfil.get(perfil, "👤")
 
@@ -52,19 +48,17 @@ status = groq_status()
 
 if not status["configured"]:
     st.error(
-        "❌ **GROQ\_API\_KEY não encontrada.**\n\n"
-        "Adicione nos **Secrets do Streamlit Cloud**:\n"
-        "```toml\n[groq]\nGROQ_API_KEY = \"gsk_...\"\ n```"
+        "❌ A IA Consultora não está disponível no momento. "
+        "Entre em contato com o suporte."
     )
     st.stop()
 
 # ─── Contexto da sessão ─────────────────────────────────────────────────
 cart              = st.session_state.get("cart", {})
 historico_pedidos = st.session_state.get("historico_pedidos", [])
-smtp_ok           = smtp_status().get("ready", False)
 
 usuario_ctx = {
-    "nome":   st.session_state.get("nome")   or st.session_state.get("display_name", ""),
+    "nome":   st.session_state.get("nome") or st.session_state.get("display_name", ""),
     "perfil": perfil,
     "email":  st.session_state.get("email", ""),
 }
@@ -73,7 +67,7 @@ context_block = build_context(
     usuario=usuario_ctx,
     cart=cart,
     historico_pedidos=historico_pedidos,
-    smtp_ok=smtp_ok,
+    smtp_ok=True,
 )
 
 # ─── Histórico de chat na sessão ─────────────────────────────────────────────
@@ -82,14 +76,9 @@ if "_ia_messages" not in st.session_state:
 
 messages: list[dict] = st.session_state["_ia_messages"]
 
-# ─── Sidebar: info + limpar ───────────────────────────────────────────────
-smtp_label = "✅ ativo" if smtp_ok else "⚠️ inativo"
+# ─── Sidebar: limpar conversa ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🤖 IA Consultora")
-    st.caption(f"Modelo: `{status['model']}`")
-    st.caption(f"Itens no carrinho: **{len(cart)}**")
-    st.caption(f"Pedidos na sessão: **{len(historico_pedidos)}**")
-    st.caption(f"SMTP: {smtp_label}")
     st.divider()
     if st.button("🗑️ Limpar conversa", use_container_width=True):
         st.session_state["_ia_messages"] = []
@@ -97,12 +86,12 @@ with st.sidebar:
 
 # ─── Prompts rápidos ──────────────────────────────────────────────────
 PROMPTS_RAPIDOS = [
-    ("🛒 O que tem no meu carrinho?",          "O que tem no meu carrinho?"),
-    ("💳 Quais pedidos fiz nesta sessão?",      "Quais pedidos fiz nesta sessão?"),
-    ("🤝 Como funciona o split com parceiros?",  "Como funciona o split entre Hipnus e parceiros?"),
-    ("💰 Como calcular meu repasse?",            "Como calculo o valor do meu repasse como parceiro?"),
-    ("📧 O e-mail está configurado?",           "O e-mail transacional está configurado e funcionando?"),
-    ("📃 Como funciona o PIX no checkout?",      "Como funciona o pagamento via PIX no checkout?"),
+    ("🛒 O que tem no meu carrinho?",         "O que tem no meu carrinho?"),
+    ("💳 Quais pedidos fiz nesta sessão?",     "Quais pedidos fiz nesta sessão?"),
+    ("🤝 Como funciona o split com parceiros?", "Como funciona o split entre Hipnus e parceiros?"),
+    ("💰 Como calcular meu repasse?",           "Como calculo o valor do meu repasse como parceiro?"),
+    ("💆 Quais produtos indicar para cabelos danificados?", "Quais produtos Hipnus indicar para cabelos danificados?"),
+    ("📦 Como faço um pedido?",                "Como faço um pedido na loja Hipnus?"),
 ]
 
 if not messages:
@@ -121,7 +110,7 @@ for msg in messages:
         st.markdown(msg["content"])
 
 # ─── Input do usuário ──────────────────────────────────────────────────
-if prompt_input := st.chat_input("Pergunte sobre pedidos, split, pagamentos..."):
+if prompt_input := st.chat_input("Pergunte sobre produtos, pedidos, pagamentos..."):
     messages.append({"role": "user", "content": prompt_input})
     with st.chat_message("user", avatar=USER_AVATAR):
         st.markdown(prompt_input)
