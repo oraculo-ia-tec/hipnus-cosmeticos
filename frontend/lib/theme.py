@@ -1,6 +1,6 @@
 """
-theme.py — HIPNUS COSMÉTICOS  ·  Premium Neon Edition
-=======================================================
+theme.py — HIPNUS COSMÉTICOS  ·  Premium Neon Edition 2026
+============================================================
 Injeta o CSS global do design system.
 Chamar inject_theme() no topo de cada página, logo após st.set_page_config().
 """
@@ -13,10 +13,10 @@ def inject_theme() -> None:
     """Injeta o CSS global do design system HIPNUS Premium Neon."""
     st.html(f"""
     <style>
-    /* ── Google Fonts Premium ──────────────────────────────────────────────────── */
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    /* ── Google Fonts Premium ────────────────────────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@700;800&display=swap');
 
-    /* ── Variáveis de Design ──────────────────────────────────────────────────── */
+    /* ── Variáveis de Design ────────────────────────────────────────── */
     :root {{
       --neon-purple:  #b983ff;
       --neon-violet:  #7c3aed;
@@ -29,9 +29,11 @@ def inject_theme() -> None:
       --glow-cyan:    0 0 20px rgba(0,245,255,0.4),   0 0 60px rgba(0,245,255,0.15);
       --glow-pink:    0 0 20px rgba(255,110,247,0.4), 0 0 60px rgba(255,110,247,0.15);
       --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+      --font-display: 'Syne', 'Playfair Display', serif;
+      --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }}
 
-    /* ── Animações Globais ────────────────────────────────────────────────────── */
+    /* ── Animações Globais ────────────────────────────────────────── */
     @keyframes shimmer {{
       0%   {{ background-position: -200% center; }}
       100% {{ background-position:  200% center; }}
@@ -66,25 +68,25 @@ def inject_theme() -> None:
       50%       {{ text-shadow: 0 0 20px rgba(185,131,255,0.9), 0 0 40px rgba(185,131,255,0.6), 0 0 60px rgba(124,58,237,0.4); }}
     }}
 
-    /* ── Tipografia Global ────────────────────────────────────────────────────── */
+    /* ── Tipografia Global ────────────────────────────────────────── */
     html, body, [class*="css"] {{
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: var(--font-body);
       -webkit-font-smoothing: antialiased;
     }}
     h1, h2, h3, .hip-hero h1, .hip-section-title {{
-      font-family: 'Playfair Display', 'Georgia', serif;
+      font-family: var(--font-display);
       letter-spacing: -0.02em;
     }}
 
-    /* ── Layout principal ─────────────────────────────────────────────────────── */
+    /* ── Layout principal ─────────────────────────────────────────── */
     .block-container {{ padding-top: 3rem; max-width: {T.MAX_W_DEFAULT}; }}
 
-    /* ── Shell Streamlit ──────────────────────────────────────────────────────── */
+    /* ── Shell Streamlit ─────────────────────────────────────────── */
     #MainMenu, footer, header[data-testid="stHeader"] {{
         visibility: hidden; height: 0;
     }}
 
-    /* ── SUPRIME item "streamlit app" da sidebar ──────────────────────────────── */
+    /* ── SUPRIME item streamlit app da sidebar ──────────────────────── */
     [data-testid="stSidebarNavItems"] li:first-child,
     [data-testid="stSidebarNav"] > ul > li:first-child {{ display: none !important; }}
     [data-testid="stSidebarNavItems"] a[href="/"],
@@ -93,66 +95,26 @@ def inject_theme() -> None:
     li:has([data-testid="stSidebarNavLink"][href="/"]),
     li:has([data-testid="stSidebarNavLink"][href="/streamlit_app"]) {{ display: none !important; }}
 
-    /* ── SIDEBAR: estrutura dark premium ─────────────────────────────────────── */
+    /* ── SIDEBAR: estrutura dark premium mesh ──────────────────────── */
     section[data-testid="stSidebar"] > div {{
         display: flex !important;
         flex-direction: column !important;
-        background: linear-gradient(180deg, #100020 0%, #1a0733 60%, #100020 100%) !important;
+        background:
+          radial-gradient(ellipse at 10% 10%, rgba(124,58,237,.18) 0%, transparent 55%),
+          radial-gradient(ellipse at 90% 85%, rgba(0,245,255,.06) 0%, transparent 50%),
+          linear-gradient(180deg, #0a0015 0%, #110028 50%, #0a0015 100%) !important;
     }}
 
-    /* ── SIDEBAR: reordenação logo+card ACIMA do menu nativo ─────────────────── */
+    /* ── SIDEBAR: reordenação ───────────────────────────────────── */
     [data-testid="stSidebarHeader"]       {{ display: none !important; }}
     [data-testid="stSidebarUserContent"]  {{ order: 1 !important; padding-top: 0 !important; margin-top: 0 !important; }}
-    [data-testid="stSidebarNav"]          {{ order: 2 !important; margin-top: 0 !important; padding-top: 0 !important; }}
-    [data-testid="stSidebarNavSeparator"] {{ order: 2 !important; }}
+    [data-testid="stSidebarNav"]          {{ order: 2 !important; display: none !important; }}
+    [data-testid="stSidebarNavSeparator"] {{ display: none !important; }}
     section[data-testid="stSidebar"] > div > div.block-container {{
         order: 3 !important; padding-top: 0 !important; padding-bottom: 0.5rem !important;
     }}
 
-    /* ── SIDEBAR: nav links — texto branco legível ────────────────────────────── */
-    [data-testid="stSidebarNavLink"] {{
-      color: rgba(255, 255, 255, 0.82) !important;
-      font-family: 'Inter', sans-serif !important;
-      font-weight: 500 !important;
-      font-size: 0.9rem !important;
-      padding: 10px 16px !important;
-      border-radius: 10px !important;
-      transition: all 0.2s var(--transition-smooth) !important;
-      border: 1px solid transparent !important;
-      letter-spacing: 0.1px !important;
-    }}
-    [data-testid="stSidebarNavLink"]:hover {{
-      color: #ffffff !important;
-      background: rgba(185,131,255,0.15) !important;
-      border-color: rgba(185,131,255,0.3) !important;
-      text-shadow: 0 0 12px rgba(185,131,255,0.5) !important;
-    }}
-    [data-testid="stSidebarNavLink"][aria-current="page"] {{
-      color: #ffffff !important;
-      background: rgba(124,58,237,0.25) !important;
-      border-color: rgba(185,131,255,0.4) !important;
-      box-shadow: 0 0 15px rgba(185,131,255,0.2) !important;
-      font-weight: 600 !important;
-    }}
-    /* ícone dos nav links também branco */
-    [data-testid="stSidebarNavLink"] svg,
-    [data-testid="stSidebarNavLink"] span {{
-      color: inherit !important;
-      fill: currentColor !important;
-    }}
-
-    /* ── SIDEBAR: texto do carrinho e outros elementos ────────────────────────── */
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div {{
-      color: rgba(255,255,255,0.75);
-    }}
-    section[data-testid="stSidebar"] strong {{
-      color: #fff;
-    }}
-
-    /* ── COLAPSA gap do iframe stHtml que envolve card do usuário ─────────────── */
+    /* ── Collapse gap iframes html ────────────────────────────────── */
     [data-testid="stSidebarUserContent"] [data-testid="stHtml"] {{
         margin-bottom: 0 !important; padding-bottom: 0 !important; line-height: 0 !important;
     }}
@@ -164,93 +126,16 @@ def inject_theme() -> None:
     }}
     [data-testid="stSidebarUserContent"] .stVerticalBlock {{ gap: 0 !important; }}
 
-    /* ── Logo Hipnus na sidebar — Premium ─────────────────────────────────────── */
-    .hip-sidebar-logo-wrap {{
-        display: flex; align-items: center; gap: 12px;
-        padding: 20px 16px 14px;
-        border-bottom: 1px solid rgba(185,131,255,0.2);
-        margin-bottom: 4px; position: relative;
+    /* ── Scrollbar premium ─────────────────────────────────────────── */
+    ::-webkit-scrollbar {{ width: 5px; height: 5px; }}
+    ::-webkit-scrollbar-track {{ background: transparent; }}
+    ::-webkit-scrollbar-thumb {{
+        background: linear-gradient(180deg, #7c3aed, #5b21b6);
+        border-radius: 3px;
     }}
-    .hip-sidebar-logo-wrap::after {{
-        content: ''; position: absolute; bottom: -1px; left: 16px; right: 16px;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--neon-purple), transparent);
-        opacity: 0.6;
-    }}
-    .hip-sidebar-logo-icon {{
-        width: 42px; height: 42px; border-radius: 12px;
-        background: linear-gradient(135deg, {T.PRIMARY} 0%, {T.PRIMARY_DARK} 100%);
-        color: #fff;
-        font-family: 'Playfair Display', serif;
-        font-weight: 900; font-size: 1.2rem; letter-spacing: -1px;
-        display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 4px 20px rgba(124,58,237,.5), 0 0 30px rgba(185,131,255,.2);
-        flex-shrink: 0;
-        animation: pulse-neon 3s ease-in-out infinite;
-    }}
-    .hip-sidebar-logo-text .l1 {{
-        font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.05rem;
-        background: linear-gradient(135deg, #fff 0%, var(--neon-purple) 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        letter-spacing: -.3px; line-height: 1.15;
-    }}
-    .hip-sidebar-logo-text .l2 {{
-        font-size: .65rem; color: rgba(185,131,255,0.65);
-        letter-spacing: 2px; text-transform: uppercase;
-    }}
+    ::-webkit-scrollbar-thumb:hover {{ background: #b983ff; }}
 
-    /* ── Card do usuário logado na sidebar — Neon Glass ──────────────────────── */
-    .hip-sidebar-user {{
-        background: linear-gradient(135deg, rgba(124,58,237,0.18) 0%, rgba(185,131,255,0.08) 100%);
-        border: 1px solid rgba(185,131,255,0.25);
-        border-radius: 14px; padding: 12px 14px 10px; margin: 8px 0 4px;
-        backdrop-filter: blur(10px);
-        transition: all 0.2s ease;
-    }}
-    .hip-sidebar-user:hover {{
-        border-color: rgba(185,131,255,0.4);
-        box-shadow: 0 0 20px rgba(185,131,255,0.15);
-    }}
-    .hip-sidebar-user .uname {{
-        font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.95rem;
-        color: #fff !important; line-height: 1.3;
-    }}
-    .hip-sidebar-user .umeta {{
-        font-size: .78rem; color: rgba(185,131,255,0.8) !important;
-        margin-top: 5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    }}
-    .hip-sidebar-user .badge-role {{
-        display: inline-block;
-        background: linear-gradient(135deg, {T.PRIMARY} 0%, #5b21b6 100%);
-        color: #fff !important; padding: 3px 10px; border-radius: 999px;
-        font-size: .68rem; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
-        box-shadow: 0 0 12px rgba(124,58,237,0.4);
-    }}
-    .hip-sidebar-user .badge-src {{
-        display: inline-block; background: transparent;
-        color: rgba(185,131,255,0.7) !important; font-size: .72rem;
-    }}
-
-    /* ── Botão Sair na sidebar ────────────────────────────────────────────────── */
-    section[data-testid="stSidebar"] div.block-container div.stButton > button {{
-        width: 100% !important;
-        background: rgba(185,131,255,0.1) !important;
-        color: #fff !important;
-        border: 1px solid rgba(185,131,255,0.3) !important;
-        border-radius: 12px !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important; font-size: 0.9rem !important;
-        padding: 10px 0 !important; min-height: 44px !important;
-        transition: all .2s var(--transition-smooth) !important;
-    }}
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover {{
-        background: rgba(185,131,255,0.22) !important;
-        color: #fff !important;
-        border-color: rgba(185,131,255,0.55) !important;
-        box-shadow: 0 0 20px rgba(185,131,255,0.25) !important;
-    }}
-
-    /* ── brand_header() legado ────────────────────────────────────────────────── */
+    /* ── Hip brand_header() legado ────────────────────────────────── */
     .hip-brand {{
         display: flex; align-items: center; gap: 12px;
         padding: 12px 0 8px; margin-bottom: 4px;
@@ -263,14 +148,14 @@ def inject_theme() -> None:
         font-size: 1rem; box-shadow: {T.SHADOW_SM}; flex-shrink: 0;
     }}
     .hip-brand .name {{
-        font-family: 'Playfair Display', serif;
+        font-family: 'Syne', sans-serif;
         font-weight: 800; font-size: 1rem; color: {T.TEXT_PRIMARY}; letter-spacing: -.2px;
     }}
     .hip-brand .sub {{
         font-size: .7rem; color: {T.TEXT_MUTED}; letter-spacing: .6px; text-transform: uppercase;
     }}
 
-    /* ── Hero Premium Neon ────────────────────────────────────────────────────── */
+    /* ── Hero Premium Neon ────────────────────────────────────────── */
     .hip-hero {{
         background: linear-gradient(135deg, {T.PRIMARY} 0%, {T.PRIMARY_DARK} 100%);
         background-size: 200% 200%;
@@ -289,7 +174,7 @@ def inject_theme() -> None:
         pointer-events: none;
     }}
     .hip-hero h1 {{
-        font-family: 'Playfair Display', serif;
+        font-family: 'Syne', sans-serif;
         font-size: 1.9rem; font-weight: 800;
         margin: 0 0 8px; letter-spacing: -.5px; line-height: 1.2;
     }}
@@ -302,15 +187,15 @@ def inject_theme() -> None:
         margin-bottom: 14px; color: var(--neon-purple);
     }}
 
-    /* ── Seções ───────────────────────────────────────────────────────────────── */
+    /* ── Seções ────────────────────────────────────────────────────────────── */
     .hip-section-title {{
-        font-family: 'Playfair Display', serif;
+        font-family: 'Syne', sans-serif;
         font-weight: 800; font-size: 1.22rem;
         color: {T.TEXT_PRIMARY}; letter-spacing: -.3px; margin: 8px 0 2px;
     }}
     .hip-section-sub {{ color: {T.TEXT_MUTED}; font-size: .88rem; margin-bottom: 12px; }}
 
-    /* ── Cards de produto — Neon Glass ───────────────────────────────────────── */
+    /* ── Cards de produto ─────────────────────────────────────────────── */
     .hip-card {{
         background: {T.BG}; border: 1px solid {T.BORDER};
         border-radius: {T.RADIUS_LG}; padding: 16px 16px 14px;
@@ -350,7 +235,7 @@ def inject_theme() -> None:
     .hip-card .price small {{ font-weight: 500; color: {T.TEXT_MUTED}; font-size: .68rem; }}
     .hip-card .floor {{ font-size: .68rem; color: {T.TEXT_MUTED}; }}
 
-    /* ── Badges ──────────────────────────────────────────────────────────────── */
+    /* ── Badges ────────────────────────────────────────────────────── */
     .hip-badge {{
         display: inline-block; background: {T.SURFACE}; color: {T.PRIMARY_DARK};
         border: 1px solid {T.BORDER}; padding: 3px 10px; border-radius: {T.RADIUS_PILL};
@@ -363,7 +248,7 @@ def inject_theme() -> None:
     .hip-badge.info  {{ background: {T.INFO_BG}; color: {T.INFO}; border-color: #BFDBFE; }}
     .hip-badge.neon  {{ background: rgba(185,131,255,0.12); color: var(--neon-purple); border-color: rgba(185,131,255,0.3); box-shadow: 0 0 8px rgba(185,131,255,0.2); }}
 
-    /* ── Stat card Neon ──────────────────────────────────────────────────────── */
+    /* ── Stat card Neon ─────────────────────────────────────────────── */
     .hip-stat {{
         background: linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(185,131,255,0.04) 100%);
         border: 1px solid rgba(185,131,255,0.2);
@@ -379,7 +264,7 @@ def inject_theme() -> None:
         box-shadow: var(--glow-purple); transform: translateY(-2px);
     }}
     .hip-stat .v {{
-        font-family: 'Playfair Display', serif; font-weight: 800; font-size: 1.6rem;
+        font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem;
         background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan));
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }}
@@ -388,7 +273,7 @@ def inject_theme() -> None:
         text-transform: uppercase; letter-spacing: .6px; margin-top: 4px;
     }}
 
-    /* ── Surface card ────────────────────────────────────────────────────────── */
+    /* ── Surface card ─────────────────────────────────────────────── */
     .hip-surface {{
         background: {T.SURFACE}; border: 1px solid {T.BORDER};
         border-radius: {T.RADIUS_LG}; padding: 20px 22px;
@@ -404,7 +289,7 @@ def inject_theme() -> None:
         backdrop-filter: blur(12px);
     }}
 
-    /* ── Empty state ─────────────────────────────────────────────────────────── */
+    /* ── Empty state ─────────────────────────────────────────────────── */
     .hip-empty {{
         display: flex; flex-direction: column;
         align-items: center; text-align: center;
@@ -412,12 +297,12 @@ def inject_theme() -> None:
     }}
     .hip-empty .icon {{ font-size: 2.4rem; margin-bottom: 12px; animation: float 3s ease-in-out infinite; }}
     .hip-empty h3 {{
-        font-family: 'Playfair Display', serif;
+        font-family: 'Syne', sans-serif;
         color: {T.TEXT_PRIMARY}; font-size: 1rem; font-weight: 700; margin-bottom: 6px;
     }}
     .hip-empty p {{ font-size: .88rem; max-width: 32ch; line-height: 1.5; margin-bottom: 16px; }}
 
-    /* ── Botões Premium Neon ─────────────────────────────────────────────────── */
+    /* ── Botões Premium Neon ──────────────────────────────────────────── */
     div.stButton > button {{
         font-family: 'Inter', sans-serif !important;
         border-radius: {T.RADIUS_MD}; font-weight: 600;
@@ -440,126 +325,14 @@ def inject_theme() -> None:
         box-shadow: 0 0 0 4px rgba(185,131,255,.25) !important;
     }}
 
-    /* ── Botão Flutuante FAB ─────────────────────────────────────────────────── */
-    .hip-fab {{
-        position: fixed; bottom: 28px; right: 28px;
-        width: 58px; height: 58px; border-radius: 50%;
-        background: linear-gradient(135deg, var(--neon-violet), #5b21b6);
-        color: #fff; display: flex; align-items: center; justify-content: center;
-        font-size: 1.4rem;
-        box-shadow: 0 4px 20px rgba(124,58,237,.5), var(--glow-purple);
-        cursor: pointer; z-index: 9999;
-        border: 1px solid rgba(185,131,255,0.3);
-        transition: all .25s var(--transition-smooth);
-        animation: pulse-neon 3s ease-in-out infinite;
-        text-decoration: none;
-    }}
-    .hip-fab:hover {{
-        transform: scale(1.12) translateY(-3px);
-        box-shadow: 0 8px 40px rgba(124,58,237,.7), 0 0 50px rgba(185,131,255,.35) !important;
-        animation: none;
-    }}
-    .hip-fab-label {{
-        position: fixed; bottom: 38px; right: 96px;
-        background: rgba(13,0,25,0.9); border: 1px solid rgba(185,131,255,0.3);
-        color: rgba(185,131,255,0.9);
-        padding: 6px 12px; border-radius: 8px;
-        font-family: 'Inter', sans-serif; font-size: .75rem; font-weight: 600;
-        pointer-events: none; opacity: 0; transition: opacity .2s ease;
-        backdrop-filter: blur(8px); white-space: nowrap;
-    }}
-    .hip-fab:hover + .hip-fab-label {{ opacity: 1; }}
-
-    /* ── Auth / Login layout ──────────────────────────────────────────────────── */
-    .hip-auth-wrap {{ max-width: {T.MAX_W_FORM}; margin: 0 auto; padding: 0 8px; }}
-    .hip-auth-logo {{ text-align: center; padding: 48px 0 32px; }}
-    .hip-auth-logo .logo-icon {{
-        width: 72px; height: 72px; border-radius: 20px;
-        background: linear-gradient(135deg, {T.PRIMARY} 0%, {T.PRIMARY_DARK} 100%);
-        color: {T.TEXT_INVERSE};
-        font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2rem;
-        display: inline-flex; align-items: center; justify-content: center;
-        box-shadow: 0 8px 24px rgba(124,58,237,.40), var(--glow-purple);
-        margin-bottom: 18px; animation: pulse-neon 3s ease-in-out infinite;
-    }}
-    .hip-auth-logo .wordmark {{
-        font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 800;
-        background: linear-gradient(135deg, {T.PRIMARY}, var(--neon-purple));
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-        letter-spacing: -1.5px; line-height: 1;
-    }}
-    .hip-auth-logo .sub {{
-        font-size: .82rem; color: {T.TEXT_MUTED}; letter-spacing: 3px;
-        margin-top: 5px; text-transform: uppercase;
-    }}
-    .hip-auth-logo .tagline {{ font-size: .82rem; color: {T.TEXT_FAINT}; margin-top: 10px; line-height: 1.5; }}
-    .hip-auth-logo .divider-dot {{
-        display: inline-block; width: 5px; height: 5px; border-radius: 50%;
-        background: var(--neon-purple); margin: 16px auto 0;
-        box-shadow: 0 0 8px var(--neon-purple);
-    }}
-    .hip-auth-card {{
-        background: {T.BG}; border: 1px solid {T.BORDER};
-        border-radius: {T.RADIUS_XL}; padding: 32px 32px 28px;
-        box-shadow: 0 8px 32px -8px rgba(124,58,237,.18), 0 2px 8px -2px rgba(26,20,48,.08);
-        max-width: {T.MAX_W_FORM}; margin: 0 auto;
-        transition: box-shadow .25s ease, border-color .25s ease;
-    }}
-    .hip-auth-card:hover {{
-        box-shadow: 0 8px 40px rgba(124,58,237,.25), 0 0 0 1px rgba(185,131,255,.2);
-        border-color: rgba(185,131,255,0.3);
-    }}
-    .hip-auth-card-title {{
-        font-family: 'Inter', sans-serif; font-size: 1.08rem; font-weight: 700;
-        color: {T.TEXT_PRIMARY}; margin-bottom: 20px;
-        display: flex; align-items: center; gap: 8px;
-    }}
-    .hip-auth-card-title::before {{
-        content: ''; display: inline-block; width: 4px; height: 18px;
-        background: linear-gradient(180deg, var(--neon-purple), var(--neon-violet));
-        border-radius: 2px; box-shadow: 0 0 8px rgba(185,131,255,0.5);
-    }}
-    .hip-auth-footer {{
-        text-align: center; margin-top: 24px;
-        font-size: .71rem; color: {T.TEXT_FAINT};
-        max-width: {T.MAX_W_FORM}; margin-left: auto; margin-right: auto; line-height: 1.6;
-    }}
-
-    /* ── Formulários Premium ─────────────────────────────────────────────────── */
-    .hip-form-section {{ margin-bottom: 12px; }}
-    .hip-form-label {{
-        font-family: 'Inter', sans-serif; font-size: .78rem; font-weight: 600;
-        color: {T.TEXT_MUTED}; letter-spacing: .3px; text-transform: uppercase;
-        margin-bottom: 6px; display: block;
-    }}
-    .hip-form-hint {{ font-size: .75rem; color: {T.TEXT_FAINT}; margin-top: 4px; line-height: 1.4; }}
-    [data-testid="stTextInput"] > div > div > input {{
-        font-family: 'Inter', sans-serif !important; border-radius: 12px !important;
-        border: 1.5px solid {T.BORDER} !important;
-        transition: border-color .2s ease, box-shadow .2s ease !important;
-    }}
-    [data-testid="stTextInput"] > div > div > input:focus {{
-        border-color: var(--neon-violet) !important;
-        box-shadow: 0 0 0 3px rgba(124,58,237,.12), 0 0 15px rgba(185,131,255,.1) !important;
-    }}
-
-    /* ── Divider Neon ────────────────────────────────────────────────────────── */
+    /* ── Divider Neon ─────────────────────────────────────────────────── */
     .hip-divider {{
         height: 1px;
         background: linear-gradient(90deg, transparent, rgba(185,131,255,0.4), transparent);
         margin: 16px 0; border: none;
     }}
 
-    /* ── Scrollbar premium ───────────────────────────────────────────────────── */
-    ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
-    ::-webkit-scrollbar-track {{ background: transparent; }}
-    ::-webkit-scrollbar-thumb {{
-        background: linear-gradient(180deg, var(--neon-violet), #5b21b6);
-        border-radius: 3px;
-    }}
-    ::-webkit-scrollbar-thumb:hover {{ background: var(--neon-purple); }}
-
-    /* ── Selection color ─────────────────────────────────────────────────────── */
+    /* ── Selection color ─────────────────────────────────────────────── */
     ::selection {{ background: rgba(185,131,255,0.25); color: #1a0a2e; }}
     </style>
     """)
