@@ -39,4 +39,4 @@ else:
             ui.clear_cart()
             st.rerun()
     with col_r:
-        st.page_link("pages/5_💳_Checkout.py", label="→ Finalizar pedido", icon="💳")
+        st.page_link("pages/6_Checkout.py", label="→ Finalizar pedido", icon="💳")
