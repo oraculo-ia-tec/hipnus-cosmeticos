@@ -69,16 +69,20 @@ def _gravar_sessao(
     via_api: bool,
     avatar_b64: str | None = None,
 ) -> None:
+    import time
     st.session_state.update({
-        "autenticado":  True,
-        "usuario":      username,
-        "nome":         nome,
-        "perfil":       role,
-        "display_name": display_name,
-        "email":        email,
-        "token":        token,
-        "via_api":      via_api,
-        "avatar_b64":   avatar_b64,
+        "autenticado":        True,
+        "usuario":            username,
+        "nome":               nome,
+        "perfil":             role,
+        "display_name":       display_name,
+        "email":              email,
+        "token":              token,
+        "via_api":            via_api,
+        "avatar_b64":         avatar_b64,
+        # ── Skill JWT: registra o início da sessão ──────────────────
+        "session_start":      time.time(),
+        "_jwt_dialog_shown":  False,
     })
 
 
@@ -214,6 +218,7 @@ def logout() -> None:
     for key in [
         "autenticado", "usuario", "perfil", "nome",
         "display_name", "email", "token", "via_api", "avatar_b64",
+        "session_start", "_jwt_dialog_shown",  # ← Skill JWT
     ]:
         st.session_state.pop(key, None)
     st.query_params.clear()
