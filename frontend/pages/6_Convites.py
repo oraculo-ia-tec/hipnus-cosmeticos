@@ -20,15 +20,10 @@ Credenciais esperadas em .streamlit/secrets.toml:
   EMAIL_USE_SSL   = "false"
   EMAIL_REMETENTE = "contato@oraculosia.site"
 
-Correcões v3:
-  - Adicionado MIMEText(text/plain) como fallback obrigatório antes do HTML.
-    Sem ele, clientes que bloqueiam HTML exibem mensagem vazia.
-  - Subject codificado via email.header.Header (RFC 2047) para suportar
-    UTF-8 sem quebrar servidores que rejeitam cabeçalhos com emojis.
-  - From codificado via email.utils.formataddr para evitar rejeicão
-    por caracteres especiais no nome do remetente.
-  - Adicionados headers anti-spam: X-Mailer, MIME-Version, Date.
-  - Emojis removidos do Subject (causa rejeicão/spam em muitos MTAs).
+Correcões v4:
+  - signup_url agora usa ?token= (era ?invite=).
+    7_Cadastro_Parceiro.py leia st.query_params.get("token"), portanto
+    o parâmetro deve ser exatamente "token" para o auto-preenchimento funcionar.
 """
 from __future__ import annotations
 
@@ -67,10 +62,13 @@ if "_convites_gerados" not in st.session_state:
 def _gerar_token_convite(email: str, role: str, criado_por: str) -> dict:
     """
     Gera token UUID4 hex e monta o link de cadastro com APP_URL.
-    Usado na Tab1 (com envio SMTP) e na Tab2 (offline).
+
+    IMPORTANTE: o parâmetro da query string é '?token=' (não '?invite='),
+    pois 7_Cadastro_Parceiro.py leia st.query_params.get('token').
     """
     token      = uuid.uuid4().hex
-    signup_url = f"{APP_URL}/Cadastro_Parceiro?invite={token}"
+    # FIX v4: era ?invite=  →  agora ?token=
+    signup_url = f"{APP_URL}/Cadastro_Parceiro?token={token}"
     expires_at = datetime.utcnow() + timedelta(days=7)
     return {
         "token":      token,
@@ -93,11 +91,8 @@ def _enviar_email_smtp(destinatario: str, signup_url: str, role: str, token: str
 
     Boas práticas de entrega aplicadas:
       - MIMEMultipart('alternative') com text/plain ANTES do text/html.
-        Clientes que bloqueiam HTML recebem o conteúdo em texto puro.
       - Subject codificado com email.header.Header (RFC 2047 / UTF-8).
-        Evita rejeicão por emojis ou acentos no assunto.
-      - From montado com email.utils.formataddr para codificar o nome
-        do remetente corretamente.
+      - From montado com email.utils.formataddr.
       - Headers Date e X-Mailer adicionados (reduzem score de spam).
 
     Retorna (sucesso: bool, mensagem: str).
@@ -237,19 +232,14 @@ def _enviar_email_smtp(destinatario: str, signup_url: str, role: str, token: str
 
     # ── Montagem da mensagem MIME ──────────────────────────────────────────
     msg = MIMEMultipart("alternative")
-
-    # Subject codificado RFC 2047 — sem emojis para máxima compatibilidade
-    msg["Subject"] = Header("Seu convite para a plataforma HIPNUS COSMETICOS", "utf-8").encode()
-
-    # From codificado corretamente para não ser rejeitado por acentos
-    msg["From"]    = formataddr(("HIPNUS COSMETICOS", SMTP_REMETENTE))
-    msg["To"]      = destinatario
-    msg["Date"]    = formatdate(localtime=False)
-    msg["X-Mailer"] = "HIPNUS-Convites/3.0"
+    msg["Subject"]      = Header("Seu convite para a plataforma HIPNUS COSMETICOS", "utf-8").encode()
+    msg["From"]         = formataddr(("HIPNUS COSMETICOS", SMTP_REMETENTE))
+    msg["To"]           = destinatario
+    msg["Date"]         = formatdate(localtime=False)
+    msg["X-Mailer"]     = "HIPNUS-Convites/4.0"
     msg["MIME-Version"] = "1.0"
 
-    # ORDEM IMPORTA: text/plain primeiro, text/html por último
-    # RFC 2046: clientes usam a última parte que conseguem renderizar
+    # ORDEM IMPORTA: text/plain primeiro, text/html por último (RFC 2046)
     msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html",  "utf-8"))
 
@@ -276,7 +266,7 @@ def _enviar_email_smtp(destinatario: str, signup_url: str, role: str, token: str
     except smtplib.SMTPConnectError:
         return False, f"Nao foi possivel conectar ao servidor SMTP {SMTP_HOST}:{SMTP_PORT}."
     except smtplib.SMTPRecipientsRefused:
-        return False, f"Destinatario recusado pelo servidor: {destinatario}. Verifique o e-mail informado."
+        return False, f"Destinatario recusado pelo servidor: {destinatario}."
     except smtplib.SMTPException as exc:
         return False, f"Erro SMTP: {exc}"
     except Exception as exc:
@@ -419,10 +409,7 @@ with tab1:
                 _card_link(convite["signup_url"], role_t1, criado_por, "smtp_direto")
             else:
                 st.error(f"❌ Falha ao enviar e-mail.\n\n**Detalhe:** {msg_smtp}")
-                st.info(
-                    "💡 O link de convite foi gerado mesmo assim. "
-                    "Copie abaixo e envie manualmente ao convidado."
-                )
+                st.info("💡 O link foi gerado mesmo assim. Copie abaixo e envie manualmente.")
                 _card_link(convite["signup_url"], role_t1, criado_por, "offline")
 
 
