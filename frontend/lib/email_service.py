@@ -3,13 +3,8 @@ email_service.py — HIPNUS COSMÉTICOS
 ====================================
 Skill: 📧 Notificações por E-mail
 
-Serviço centralizado de e-mail via SMTP Hostinger (porta 465 / SSL).
-Exporta:
-  - smtp_status()                      — diagnóstico seguro do ambiente
-  - send_email()                       — envio genérico HTML
-  - send_test_email()                  — e-mail de teste com layout Hipnus
-  - send_invite_email()                — convite de parceiro com link de cadastro
-  - send_order_confirmation_email()    — confirmação de pedido pós-checkout (Skill #3)
+Lê credenciais SMTP de st.secrets (Streamlit Cloud) com fallback para os.getenv.
+Suporte a [email] section no secrets.toml ou chaves na raiz.
 """
 from __future__ import annotations
 
@@ -24,43 +19,78 @@ from email.mime.text import MIMEText
 from email.utils import formataddr, formatdate
 from typing import Iterable
 
-SMTP_HOST     = os.getenv("SMTP_HOST",     "smtp.hostinger.com")
-SMTP_PORT     = int(os.getenv("SMTP_PORT", "465"))
-SMTP_USER     = os.getenv("SMTP_USER",     "")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-SMTP_FROM     = os.getenv("SMTP_FROM",     "no-reply@hipnuscosmeticos.com.br")
+
+def _smtp_secret(key: str, default: str = "") -> str:
+    """
+    Lê credencial SMTP tentando (em ordem):
+      1. st.secrets["email"][key]   ← seção [email] no secrets.toml
+      2. st.secrets[key]            ← raiz do secrets.toml
+      3. os.getenv(key, default)    ← variável de ambiente
+    """
+    try:
+        import streamlit as st
+        try:
+            val = st.secrets["email"][key]
+            if val:
+                return str(val).strip()
+        except Exception:
+            pass
+        try:
+            val = st.secrets[key]
+            if val:
+                return str(val).strip()
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return os.getenv(key, default)
+
+
+# ─── Credenciais SMTP (lidas dinamicamente a cada chamada via função) ──────────────────
+def _get_smtp_config() -> dict:
+    """Retorna dicionário com todas as credenciais SMTP lidas no momento da chamada."""
+    return {
+        "host":     _smtp_secret("SMTP_HOST",     "smtp.hostinger.com"),
+        "port":     int(_smtp_secret("SMTP_PORT", "465")),
+        "user":     _smtp_secret("SMTP_USER",     ""),
+        "password": _smtp_secret("SMTP_PASSWORD", ""),
+        "from":     _smtp_secret("SMTP_FROM",     "no-reply@hipnuscosmeticos.com.br"),
+    }
+
 
 INVITE_EXPIRY_DAYS = 7
 
 
-# ─── Diagnóstico ─────────────────────────────────────────────────────────────────────
+# ─── Diagnóstico ───────────────────────────────────────────────────────────────────────
 def smtp_status() -> dict:
     """Retorna status da configuração SMTP sem expor segredos."""
+    cfg = _get_smtp_config()
     return {
-        "host":                 SMTP_HOST,
-        "port":                 SMTP_PORT,
-        "user_configured":      bool(SMTP_USER),
-        "password_configured":  bool(SMTP_PASSWORD),
-        "from_email":           SMTP_FROM,
-        "ready":                bool(SMTP_HOST and SMTP_PORT and SMTP_USER and SMTP_PASSWORD and SMTP_FROM),
+        "host":                 cfg["host"],
+        "port":                 cfg["port"],
+        "user_configured":      bool(cfg["user"]),
+        "password_configured":  bool(cfg["password"]),
+        "from_email":           cfg["from"],
+        "ready":                bool(cfg["host"] and cfg["port"] and cfg["user"] and cfg["password"] and cfg["from"]),
     }
 
 
 # ─── Engine de envio interno ─────────────────────────────────────────────────────────────────
 def _send_via_ssl(to_email: str, subject: str, html_body: str, text_body: str) -> tuple[bool, str]:
     """Envia usando SMTP_SSL (porta 465, padrão Hostinger)."""
+    cfg = _get_smtp_config()
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = Header(subject, "utf-8").encode()
-        msg["From"]    = formataddr(("HIPNUS COSMÉTICOS", SMTP_FROM))
+        msg["From"]    = formataddr(("HIPNUS COSMÉTICOS", cfg["from"]))
         msg["To"]      = to_email
         msg["Date"]    = formatdate(localtime=False)
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html",  "utf-8"))
         context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=20) as s:
-            s.login(SMTP_USER, SMTP_PASSWORD)
-            s.sendmail(SMTP_FROM, to_email, msg.as_string())
+        with smtplib.SMTP_SSL(cfg["host"], cfg["port"], context=context, timeout=20) as s:
+            s.login(cfg["user"], cfg["password"])
+            s.sendmail(cfg["from"], to_email, msg.as_string())
         return True, "E-mail enviado com sucesso."
     except smtplib.SMTPAuthenticationError:
         return False, "Falha de autenticação SMTP. Verifique SMTP_USER e SMTP_PASSWORD."
@@ -68,7 +98,7 @@ def _send_via_ssl(to_email: str, subject: str, html_body: str, text_body: str) -
         return False, f"Falha ao enviar e-mail: {exc}"
 
 
-# ─── API pública ─────────────────────────────────────────────────────────────────────────
+# ─── API pública ──────────────────────────────────────────────────────────────────────────────
 def send_email(
     to_email: str | Iterable[str],
     subject: str,
@@ -78,7 +108,7 @@ def send_email(
     """Envio genérico. Aceita um ou múltiplos destinatários."""
     status = smtp_status()
     if not status["ready"]:
-        return False, "SMTP incompleto. Configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD e SMTP_FROM."
+        return False, "SMTP incompleto. Configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD e SMTP_FROM nos Secrets."
     recipients = [to_email] if isinstance(to_email, str) else list(to_email)
     errors = []
     for recipient in recipients:
@@ -142,7 +172,6 @@ def send_test_email(to_email: str) -> tuple[bool, str]:
 def send_invite_email(destinatario: str, signup_url: str, role: str) -> tuple[bool, str]:
     """
     Envia o convite de parceiro com template visual completo.
-    Centraliza o disparo que antes existia como função local em 6_Convites.py.
     """
     status = smtp_status()
     if not status["ready"]:
@@ -215,7 +244,7 @@ def send_invite_email(destinatario: str, signup_url: str, role: str) -> tuple[bo
     )
 
 
-# ─── Skill #3 — Confirmação de pedido ──────────────────────────────────────────────────────
+# ─── Skill #3 — Confirmação de pedido ───────────────────────────────────────────────────────────────
 def _brl(v) -> str:
     try:
         val = Decimal(str(v))
@@ -232,19 +261,6 @@ def send_order_confirmation_email(
     resultado: dict,
     itens: list[dict],
 ) -> tuple[bool, str]:
-    """
-    Envia confirmação de pedido ao cliente logo após o checkout.
-
-    Parâmetros:
-        to_email       : e-mail do comprador
-        customer_name  : nome do comprador
-        billing_type   : 'PIX' | 'BOLETO' | 'CREDIT_CARD'
-        resultado      : dict retornado por CheckoutService.processar()
-        itens          : list(st.session_state['cart'].values())
-
-    Retorna:
-        (True, mensagem) ou (False, motivo_do_erro)
-    """
     status = smtp_status()
     if not status["ready"]:
         return False, "SMTP não configurado para envio da confirmação de pedido."
