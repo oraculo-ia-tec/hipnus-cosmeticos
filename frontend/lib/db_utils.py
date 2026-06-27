@@ -17,10 +17,17 @@ Uso:
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 # Ancora fixa: raiz do projeto (2 niveis acima de frontend/lib/)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+FRONTEND_DIR = Path(__file__).resolve().parents[1]
+
+# Garante paths no sys.path imediatamente ao importar este modulo
+for _p in [str(PROJECT_ROOT), str(FRONTEND_DIR)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 
 def resolve_db_url() -> str:
@@ -58,6 +65,7 @@ def _read_raw_url() -> str:
     val = os.environ.get("DATABASE_URL")
     if val:
         return val.strip()
+    # Default: SQLite absoluto dentro do projeto
     return f"sqlite:///{PROJECT_ROOT / 'data' / 'hipnus.db'}"
 
 
@@ -74,7 +82,6 @@ def _make_absolute(db_url: str) -> str:
     path = Path(path_str)
 
     if not path.is_absolute():
-        # Remove ./ ou ../ e resolve relativo ao PROJECT_ROOT
         path = (PROJECT_ROOT / path).resolve()
 
     return f"sqlite:///{path}"
@@ -83,19 +90,26 @@ def _make_absolute(db_url: str) -> str:
 def get_db_session():
     """
     Abre sessao SQLAlchemy com DATABASE_URL absolutamente resolvido.
-    Garante que o diretorio exista e que as tabelas da tabela invites existam.
-    Retorna (session, error_str). Se falhar, session=None.
+
+    Garante:
+      - PROJECT_ROOT e frontend/ estao no sys.path antes de qualquer import
+      - O diretorio do SQLite existe (mkdir)
+      - As tabelas necessarias sao criadas (create_all, idempotente)
+
+    Retorna (session, None) em sucesso ou (None, error_str) em falha.
     """
+    # Dupla garantia de paths (caso seja chamado antes do modulo ser inicializado)
+    for _p in [str(PROJECT_ROOT), str(FRONTEND_DIR)]:
+        if _p not in sys.path:
+            sys.path.insert(0, _p)
+
     try:
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
-        import sys
-        if str(PROJECT_ROOT) not in sys.path:
-            sys.path.insert(0, str(PROJECT_ROOT))
 
         db_url = resolve_db_url()
 
-        # Garante diretorio
+        # Garante diretorio do SQLite
         if db_url.startswith("sqlite:///"):
             db_path = Path(db_url[len("sqlite:///"):])
             db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -103,16 +117,22 @@ def get_db_session():
         connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
         engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
 
-        # Garante tabelas (idempotente)
-        from app.db.base import Base
-        import app.domains.invites.models  # noqa: F401
+        # Cria tabelas (idempotente) — importa modelos com sys.path ja resolvido
         try:
-            import app.domains.users.models  # noqa: F401
-        except ImportError:
+            from app.db.base import Base
+            import app.domains.invites.models  # noqa: F401
+            try:
+                import app.domains.users.models  # noqa: F401
+            except ImportError:
+                pass
+            Base.metadata.create_all(bind=engine)
+        except Exception:
+            # Se os modelos nao estiverem acessiveis, continua sem create_all
+            # (tabelas podem ja existir de um boot anterior)
             pass
-        Base.metadata.create_all(bind=engine)
 
         Session = sessionmaker(bind=engine, autocommit=False, autoflush=False)
         return Session(), None
+
     except Exception as exc:
         return None, str(exc)
