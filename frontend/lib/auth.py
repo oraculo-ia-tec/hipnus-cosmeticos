@@ -1,8 +1,7 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-Guarda de autenticação — aceita USERNAME ou E-MAIL.
-Exibe avatar do usuário no sidebar (imagem circular).
+Guarda de autenticação + Sidebar Premium Unificada.
 """
 from __future__ import annotations
 
@@ -17,7 +16,7 @@ _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
 
-# ─── Usuários demo/seed ─────────────────────────────────────────────────────────
+# ─── Usuários demo/seed ─────────────────────────────────────────────────────
 USUARIOS_DEMO: dict[str, dict] = {
     "william": {
         "senha":        "hipnus@2026",
@@ -26,7 +25,6 @@ USUARIOS_DEMO: dict[str, dict] = {
         "display_name": "Desenvolvedor de IA",
         "email":        "programador.descpro@gmail.com",
     },
-    # Acesso pelo e-mail williamllider@gmail.com / senha teste@123
     "williamllider": {
         "senha":        "teste@123",
         "role":         "b2b",
@@ -58,35 +56,28 @@ USUARIOS_DEMO: dict[str, dict] = {
 }
 
 
-# ─── Helpers de sessão ─────────────────────────────────────────────────────────
+# ─── Helpers de sessão ────────────────────────────────────────────────────
 def _gravar_sessao(
-    nome: str,
-    username: str,
-    role: str,
-    display_name: str,
-    email: str,
-    token: str | None,
-    via_api: bool,
-    avatar_b64: str | None = None,
+    nome: str, username: str, role: str,
+    display_name: str, email: str, token: str | None,
+    via_api: bool, avatar_b64: str | None = None,
 ) -> None:
     import time
     st.session_state.update({
-        "autenticado":        True,
-        "usuario":            username,
-        "nome":               nome,
-        "perfil":             role,
-        "display_name":       display_name,
-        "email":              email,
-        "token":              token,
-        "via_api":            via_api,
-        "avatar_b64":         avatar_b64,
-        # ── Skill JWT: registra o início da sessão ──────────────────
-        "session_start":      time.time(),
-        "_jwt_dialog_shown":  False,
+        "autenticado":       True,
+        "usuario":           username,
+        "nome":              nome,
+        "perfil":            role,
+        "display_name":      display_name,
+        "email":             email,
+        "token":             token,
+        "via_api":           via_api,
+        "avatar_b64":        avatar_b64,
+        "session_start":     time.time(),
+        "_jwt_dialog_shown": False,
     })
 
 
-# ─── Busca por username OU e-mail nos USUARIOS_DEMO ───────────────────────
 def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
     ident = identificador.strip().lower()
     if ident in USUARIOS_DEMO:
@@ -97,17 +88,7 @@ def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
     return None
 
 
-# ─── Busca parceiro no banco SQLite ─────────────────────────────────────────
 def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
-    """
-    Autentica parceiro via banco SQLite.
-
-    Ordem:
-      1. Tabela 'parceiros' com senha_hash SHA-256 (cadastros novos)
-      2. Tabela 'invites' com used=1 sem validar senha
-         (cadastros feitos ANTES da tabela parceiros existir)
-    """
-    # ─ Tentativa 1: tabela parceiros (cadastros novos) ───────────────────
     try:
         import sys
         from pathlib import Path
@@ -120,10 +101,6 @@ def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
             return result
     except Exception:
         pass
-
-    # ─ Tentativa 2: invite usado (cadastros antigos, sem tabela parceiros) ──
-    # Não valida senha pois o cadastro antigo nao a gravou no banco.
-    # Qualquer senha é aceita para quem tem convite marcado como usado.
     try:
         from lib.db_utils import get_db_session
         from sqlalchemy import text
@@ -147,13 +124,10 @@ def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
             db.close()
     except Exception:
         pass
-
     return None
 
 
-# ─── Login offline ───────────────────────────────────────────────────────────
 def _login_offline(identificador: str, password: str) -> bool:
-    # ─ 1. Seed/demo: valida senha exata ────────────────────────────────
     encontrado = _buscar_demo(identificador)
     if encontrado:
         uname, u = encontrado
@@ -164,9 +138,7 @@ def _login_offline(identificador: str, password: str) -> bool:
                 token=None, via_api=False, avatar_b64=None,
             )
             return True
-        return False  # usuário encontrado mas senha errada
-
-    # ─ 2. Banco SQLite (parceiros novos ou convites antigos) ─────────────
+        return False
     if "@" in identificador:
         parceiro = _buscar_parceiro_db(identificador, password)
         if parceiro:
@@ -183,7 +155,6 @@ def _login_offline(identificador: str, password: str) -> bool:
     return False
 
 
-# ─── Login público ───────────────────────────────────────────────────────────
 def fazer_login(identificador: str, password: str) -> tuple[bool, str]:
     if _login_offline(identificador, password):
         encontrado = _buscar_demo(identificador)
@@ -192,7 +163,6 @@ def fazer_login(identificador: str, password: str) -> tuple[bool, str]:
     return False, "Usuário/e-mail ou senha incorretos."
 
 
-# ─── require_auth ──────────────────────────────────────────────────────────
 def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     if st.query_params.get("logout") == "1":
         logout()
@@ -209,7 +179,7 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
     if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
-        st.error("🚫 Você não tem permissão para acessar esta página.")
+        st.error("�edd5 Você não tem permissão para acessar esta página.")
         st.stop()
     return usuario
 
@@ -218,15 +188,19 @@ def logout() -> None:
     for key in [
         "autenticado", "usuario", "perfil", "nome",
         "display_name", "email", "token", "via_api", "avatar_b64",
-        "session_start", "_jwt_dialog_shown",  # ← Skill JWT
+        "session_start", "_jwt_dialog_shown",
     ]:
         st.session_state.pop(key, None)
     st.query_params.clear()
     st.switch_page(_LOGIN_PAGE)
 
 
-# ─── Sidebar ────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────────
+# SIDEBAR PREMIUM — componentes reutilizáveis
+# ───────────────────────────────────────────────────────────────────────
+
 def sidebar_logo() -> None:
+    """Logo HIPNUS no topo da sidebar."""
     st.sidebar.html("""
     <div class="hip-sidebar-logo-wrap">
         <div class="hip-sidebar-logo-icon">H</div>
@@ -239,17 +213,15 @@ def sidebar_logo() -> None:
 
 
 def sidebar_user_info() -> None:
-    """
-    Card do usuário na sidebar com avatar circular.
-    O avatar_b64 será reutilizado futuramente no chat da 🤖 IA Consultora.
-    """
+    """Card premium do usuário logado na sidebar."""
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
     perfil       = st.session_state.get("perfil", "demo")
     via_api      = st.session_state.get("via_api", False)
     avatar_b64   = st.session_state.get("avatar_b64", None)
 
-    icone_fallback = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
+    icones = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}
+    icone_fallback = icones.get(perfil, "👤")
     fonte      = "API" if via_api else "offline"
     label      = display_name if display_name else nome
     role_label = perfil.replace("_", " ").upper()
@@ -257,70 +229,195 @@ def sidebar_user_info() -> None:
     if avatar_b64:
         avatar_html = (
             f'<img src="{avatar_b64}" '
-            f'style="width:52px;height:52px;border-radius:50%;object-fit:cover;'
-            f'border:2.5px solid rgba(255,255,255,.5);flex-shrink:0;" />'
+            'style="width:44px;height:44px;border-radius:50%;object-fit:cover;'
+            'border:2px solid rgba(185,131,255,.5);flex-shrink:0;" />'
         )
     else:
         avatar_html = (
-            f'<div style="width:52px;height:52px;border-radius:50%;'
-            f'background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);'
-            f'display:flex;align-items:center;justify-content:center;'
-            f'font-size:1.4rem;flex-shrink:0;">{icone_fallback}</div>'
+            f'<div style="width:44px;height:44px;border-radius:50%;'
+            'background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(185,131,255,.2));'
+            'border:2px solid rgba(185,131,255,.4);'
+            'display:flex;align-items:center;justify-content:center;'
+            f'font-size:1.3rem;flex-shrink:0;">{icone_fallback}</div>'
         )
 
-    st.sidebar.html(
-        f"""
-        <style>
-        section[data-testid="stSidebar"] .stHtml:has(.hip-sidebar-user) {{
-            margin-bottom: 0 !important; padding-bottom: 0 !important;
-        }}
-        </style>
-        <div class="hip-sidebar-user" style="
-            display:flex; align-items:center; gap:10px;
-            background:rgba(124,58,237,.18); border:1px solid rgba(124,58,237,.3);
-            border-radius:14px; padding:10px 12px; margin:0 0 4px;
-        ">
-            {avatar_html}
-            <div style="min-width:0;">
-                <div style="font-weight:700;font-size:.9rem;color:#fff;
-                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;"
-                     title="{label}">{label}</div>
-                <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
-                    <span style="background:rgba(124,58,237,.5);color:#e9d5ff;
-                                 font-size:.6rem;font-weight:700;letter-spacing:.8px;
-                                 padding:2px 8px;border-radius:999px;">{role_label}</span>
-                    <span style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);
-                                 font-size:.6rem;padding:2px 8px;border-radius:999px;">{fonte}</span>
-                </div>
-            </div>
+    st.sidebar.html(f"""
+    <div style="padding:0 4px 8px;">
+      <div style="
+        display:flex;align-items:center;gap:10px;
+        background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(185,131,255,.08));
+        border:1px solid rgba(185,131,255,.3);
+        border-radius:14px;padding:10px 12px;
+        transition:all .2s ease;
+      ">
+        {avatar_html}
+        <div style="min-width:0;flex:1;">
+          <div style="font-weight:700;font-size:.88rem;color:#fff;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                      max-width:140px;line-height:1.3;"
+               title="{label}">{label}</div>
+          <div style="display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center;">
+            <span style="background:linear-gradient(135deg,rgba(124,58,237,.6),rgba(91,33,182,.8));
+                         color:#e9d5ff;font-size:.58rem;font-weight:700;
+                         letter-spacing:.8px;padding:2px 9px;border-radius:999px;
+                         text-transform:uppercase;">{role_label}</span>
+            <span style="color:rgba(185,131,255,.5);font-size:.58rem;">• {fonte}</span>
+          </div>
         </div>
-        """
-    )
+      </div>
+    </div>
+    """)
+
+
+def sidebar_section_label(label: str) -> None:
+    """Cabeçalho de grupo de seção na sidebar."""
+    st.sidebar.html(f"""
+    <div style="
+      padding: 10px 16px 4px;
+      font-family:'Inter',sans-serif;
+      font-size:.6rem;font-weight:700;
+      letter-spacing:1.8px;text-transform:uppercase;
+      color:rgba(185,131,255,.45);
+      line-height:1;
+    ">{label}</div>
+    """)
+
+
+def sidebar_divider() -> None:
+    """Separador visual neon entre seções da sidebar."""
+    st.sidebar.html("""
+    <div style="
+      margin:8px 16px;
+      height:1px;
+      background:linear-gradient(90deg,transparent,rgba(185,131,255,.25),transparent);
+    "></div>
+    """)
+
+
+def sidebar_nav_highlight() -> None:
+    """CSS extra para garantir que os links do nav nativo fiquem legíveis e elegantes."""
+    st.sidebar.html("""
+    <style>
+    /* ─ Nav links: força cor branca e espaçamento ─ */
+    [data-testid="stSidebarNavLink"] {
+      color: rgba(255,255,255,.82) !important;
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 500 !important;
+      font-size: .88rem !important;
+      padding: 9px 16px !important;
+      border-radius: 10px !important;
+      margin: 1px 6px !important;
+      border: 1px solid transparent !important;
+      transition: all .2s ease !important;
+      letter-spacing: .1px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+    }
+    [data-testid="stSidebarNavLink"]:hover {
+      color: #fff !important;
+      background: rgba(185,131,255,.14) !important;
+      border-color: rgba(185,131,255,.28) !important;
+      text-shadow: 0 0 10px rgba(185,131,255,.4) !important;
+    }
+    [data-testid="stSidebarNavLink"][aria-current="page"] {
+      color: #fff !important;
+      background: rgba(124,58,237,.28) !important;
+      border-color: rgba(185,131,255,.45) !important;
+      box-shadow: 0 0 14px rgba(185,131,255,.18) !important;
+      font-weight: 600 !important;
+    }
+    /* ─ Sidebar nav list: padding uniforme ─ */
+    [data-testid="stSidebarNavItems"] {
+      padding: 4px 0 8px !important;
+    }
+    [data-testid="stSidebarNavItems"] li {
+      margin: 0 !important;
+    }
+    /* ─ Textos e captions da sidebar ─ */
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] label {
+      color: rgba(255,255,255,.75) !important;
+    }
+    section[data-testid="stSidebar"] strong {
+      color: #fff !important;
+    }
+    </style>
+    """)
 
 
 def sidebar_logout_button() -> None:
+    """Botão fixo Sair no rodapé da sidebar."""
     st.sidebar.html("""
     <style>
     #hip-logout-btn-wrap {
-        position: fixed; bottom: 20px; left: 0;
-        width: 244px; padding: 0 14px;
-        z-index: 99999; box-sizing: border-box;
+      position: fixed; bottom: 18px; left: 0;
+      width: 244px; padding: 0 14px;
+      z-index: 99999; box-sizing: border-box;
     }
     #hip-logout-btn {
-        display: flex; align-items: center; justify-content: center;
-        gap: 8px; width: 100%; padding: 12px 0;
-        background: #ffffff; color: #3d1a78;
-        border: 1.5px solid #d0c4f0; border-radius: 10px;
-        font-size: 1rem; font-weight: 700; cursor: pointer;
-        transition: background .18s, color .18s, border-color .18s;
-        text-decoration: none; letter-spacing: .01em; box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; width: 100%; padding: 11px 0;
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.8);
+      border: 1px solid rgba(185,131,255,.25);
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: .88rem; font-weight: 600;
+      cursor: pointer; letter-spacing: .01em;
+      box-sizing: border-box;
+      transition: all .18s ease;
+      text-decoration: none;
     }
-    #hip-logout-btn:hover { background: #3d1a78; color: #ffffff; border-color: #3d1a78; }
+    #hip-logout-btn:hover {
+      background: rgba(185,131,255,.18);
+      color: #fff;
+      border-color: rgba(185,131,255,.5);
+      box-shadow: 0 0 18px rgba(185,131,255,.2);
+    }
     </style>
     <div id="hip-logout-btn-wrap">
-        <a id="hip-logout-btn" href="?logout=1"
-           onclick="window.parent.location.href='?logout=1'; return false;">
-            🚶 Sair
-        </a>
+      <a id="hip-logout-btn" href="?logout=1"
+         onclick="window.parent.location.href='?logout=1'; return false;">
+        🚶 Sair
+      </a>
     </div>
     """)
+
+
+# ─── Função unificada: monta toda a sidebar de uma vez ────────────────────────────
+def build_sidebar(
+    show_cart: bool = True,
+    cart_count: int = 0,
+    cart_total: float = 0.0,
+) -> None:
+    """
+    Monta a sidebar premium completa em ordem:
+      1. Logo HIPNUS
+      2. Card do usuário
+      3. CSS nav highlight
+      4. [Menu nativo Streamlit — automático]
+      5. Separador
+      6. Resumo do carrinho (opcional)
+      7. Botão Sair (fixo no rodapé)
+    """
+    sidebar_logo()
+    sidebar_user_info()
+    sidebar_nav_highlight()
+    if show_cart and cart_count > 0:
+        sidebar_divider()
+        from .ui import brl
+        st.sidebar.html(f"""
+        <div style="
+          margin:4px 10px 6px;
+          background:rgba(124,58,237,.12);
+          border:1px solid rgba(185,131,255,.2);
+          border-radius:10px;padding:8px 12px;
+          display:flex;justify-content:space-between;align-items:center;
+        ">
+          <span style="color:rgba(255,255,255,.7);font-size:.78rem;">🛒 Carrinho</span>
+          <span style="color:#fff;font-weight:700;font-size:.82rem;">{brl(cart_total)}</span>
+        </div>
+        """)
+    sidebar_logout_button()
