@@ -19,6 +19,16 @@ Credenciais esperadas em .streamlit/secrets.toml:
   EMAIL_USE_TLS   = "true"
   EMAIL_USE_SSL   = "false"
   EMAIL_REMETENTE = "contato@oraculosia.site"
+
+Correcões v3:
+  - Adicionado MIMEText(text/plain) como fallback obrigatório antes do HTML.
+    Sem ele, clientes que bloqueiam HTML exibem mensagem vazia.
+  - Subject codificado via email.header.Header (RFC 2047) para suportar
+    UTF-8 sem quebrar servidores que rejeitam cabeçalhos com emojis.
+  - From codificado via email.utils.formataddr para evitar rejeicão
+    por caracteres especiais no nome do remetente.
+  - Adicionados headers anti-spam: X-Mailer, MIME-Version, Date.
+  - Emojis removidos do Subject (causa rejeicão/spam em muitos MTAs).
 """
 from __future__ import annotations
 
@@ -27,8 +37,10 @@ import ssl
 import sys
 import uuid
 from datetime import datetime, timedelta
+from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr, formatdate
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -55,7 +67,7 @@ if "_convites_gerados" not in st.session_state:
 def _gerar_token_convite(email: str, role: str, criado_por: str) -> dict:
     """
     Gera token UUID4 hex e monta o link de cadastro com APP_URL.
-    Usado tanto na Tab1 (com envio SMTP) quanto na Tab2 (offline).
+    Usado na Tab1 (com envio SMTP) e na Tab2 (offline).
     """
     token      = uuid.uuid4().hex
     signup_url = f"{APP_URL}/Cadastro_Parceiro?invite={token}"
@@ -77,17 +89,18 @@ def _enviar_email_smtp(destinatario: str, signup_url: str, role: str, token: str
     Envia e-mail de convite diretamente via SMTP usando as credenciais
     configuradas no bloco [email] dos Streamlit Secrets.
 
-    Suporta TLS (STARTTLS na porta 587) e SSL (porta 465).
+    Suporta STARTTLS (porta 587, padrão Hostinger) e SSL direto (porta 465).
+
+    Boas práticas de entrega aplicadas:
+      - MIMEMultipart('alternative') com text/plain ANTES do text/html.
+        Clientes que bloqueiam HTML recebem o conteúdo em texto puro.
+      - Subject codificado com email.header.Header (RFC 2047 / UTF-8).
+        Evita rejeicão por emojis ou acentos no assunto.
+      - From montado com email.utils.formataddr para codificar o nome
+        do remetente corretamente.
+      - Headers Date e X-Mailer adicionados (reduzem score de spam).
+
     Retorna (sucesso: bool, mensagem: str).
-
-    Parâmetros:
-      destinatario : e-mail do convidado
-      signup_url   : link de cadastro com token
-      role         : perfil do convidado (b2b, b2c, admin)
-      token        : token UUID do convite
-
-    Efeitos colaterais:
-      Envia e-mail real via SMTP Hostinger.
     """
     if not SMTP_USER or not SMTP_PASS:
         return False, (
@@ -98,99 +111,156 @@ def _enviar_email_smtp(destinatario: str, signup_url: str, role: str, token: str
     role_label = {"b2b": "Profissional / Salão", "b2c": "Cliente Final", "admin": "Administrador"}.get(role, role)
     expira     = (datetime.utcnow() + timedelta(days=7)).strftime("%d/%m/%Y")
 
-    # ── Corpo HTML do e-mail ──────────────────────────────────────────────────
-    html_body = f"""
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head><meta charset="UTF-8"></head>
-    <body style="margin:0;padding:0;background:#F6F4FB;font-family:Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#F6F4FB;padding:32px 0;">
-        <tr><td align="center">
-          <table width="560" cellpadding="0" cellspacing="0"
-                 style="background:#fff;border-radius:16px;overflow:hidden;
-                        box-shadow:0 2px 16px rgba(124,58,237,.10);">
-            <!-- Header -->
-            <tr>
-              <td style="background:linear-gradient(135deg,#7C3AED,#5B21B6);
-                         padding:32px 40px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:1px;">
-                  HIPNUS COSMÉTICOS
-                </h1>
-                <p style="color:#e9d5ff;margin:6px 0 0;font-size:13px;">
-                  Tratamento capilar profissional, direto da fonte.
-                </p>
-              </td>
-            </tr>
-            <!-- Body -->
-            <tr>
-              <td style="padding:36px 40px;">
-                <h2 style="color:#1A1430;font-size:18px;margin:0 0 12px;">Você foi convidado! 🎉</h2>
-                <p style="color:#4B4565;font-size:14px;line-height:1.6;margin:0 0 20px;">
-                  Você recebeu um convite exclusivo para se cadastrar na plataforma
-                  <strong>HIPNUS COSMÉTICOS</strong> como <strong>{role_label}</strong>.
-                </p>
-                <p style="color:#4B4565;font-size:14px;line-height:1.6;margin:0 0 28px;">
-                  Clique no botão abaixo para criar sua conta. O convite é válido até
-                  <strong>{expira}</strong>.
-                </p>
-                <!-- CTA Button -->
-                <table cellpadding="0" cellspacing="0" width="100%">
-                  <tr>
-                    <td align="center" style="padding:0 0 28px;">
-                      <a href="{signup_url}"
-                         style="display:inline-block;background:#7C3AED;color:#fff;
-                                text-decoration:none;font-size:15px;font-weight:700;
-                                padding:14px 36px;border-radius:8px;
-                                letter-spacing:.4px;">
-                        ✅ Criar minha conta
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-                <!-- Link alternativo -->
-                <p style="color:#6B6580;font-size:12px;margin:0 0 8px;">Ou copie e cole este link no navegador:</p>
-                <p style="background:#F6F4FB;border:1px solid #E7E3F2;border-radius:6px;
-                           padding:10px 14px;font-family:monospace;font-size:12px;
-                           color:#7C3AED;word-break:break-all;margin:0 0 24px;">
-                  {signup_url}
-                </p>
-                <hr style="border:none;border-top:1px solid #E7E3F2;margin:0 0 20px;">
-                <p style="color:#9CA3AF;font-size:11px;margin:0;">
-                  Se você não solicitou este convite, ignore este e-mail.<br>
-                  Token: <code>{token[:8]}…</code>
-                </p>
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="background:#F6F4FB;padding:18px 40px;text-align:center;">
-                <p style="color:#9CA3AF;font-size:11px;margin:0;">
-                  HIPNUS COSMÉTICOS · (31) 98321-3343 · www.hipnuscosmeticos.com.br
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
+    # ── Parte 1: texto plano (fallback obrigatório) ──────────────────────────
+    text_body = (
+        f"Voce foi convidado para a plataforma HIPNUS COSMETICOS!\n\n"
+        f"Perfil: {role_label}\n"
+        f"Validade: {expira}\n\n"
+        f"Acesse o link abaixo para criar sua conta:\n"
+        f"{signup_url}\n\n"
+        f"Se nao solicitou este convite, ignore este e-mail.\n"
+        f"HIPNUS COSMETICOS - www.hipnuscosmeticos.com.br"
+    )
+
+    # ── Parte 2: HTML rico ─────────────────────────────────────────────────
+    html_body = f"""\
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Convite HIPNUS</title>
+</head>
+<body style="margin:0;padding:0;background:#F6F4FB;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background:#F6F4FB;padding:32px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" border="0"
+             style="background:#ffffff;border-radius:16px;
+                    border:1px solid #E7E3F2;">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background:#7C3AED;padding:32px 40px;
+                     text-align:center;border-radius:16px 16px 0 0;">
+            <h1 style="color:#ffffff;margin:0;font-size:20px;
+                       letter-spacing:1px;font-family:Arial,sans-serif;">
+              HIPNUS COSM&#201;TICOS
+            </h1>
+            <p style="color:#e9d5ff;margin:6px 0 0;font-size:13px;">
+              Tratamento capilar profissional, direto da fonte.
+            </p>
+          </td>
+        </tr>
+
+        <!-- BODY -->
+        <tr>
+          <td style="padding:36px 40px;">
+            <h2 style="color:#1A1430;font-size:18px;margin:0 0 16px;
+                       font-family:Arial,sans-serif;">
+              Voce foi convidado!
+            </h2>
+            <p style="color:#4B4565;font-size:14px;line-height:1.7;
+                      margin:0 0 16px;font-family:Arial,sans-serif;">
+              Voce recebeu um convite exclusivo para se cadastrar na plataforma
+              <strong>HIPNUS COSM&#201;TICOS</strong> como
+              <strong>{role_label}</strong>.
+            </p>
+            <p style="color:#4B4565;font-size:14px;line-height:1.7;
+                      margin:0 0 28px;font-family:Arial,sans-serif;">
+              Clique no bot&#227;o abaixo para criar sua conta.
+              O convite &#233; v&#225;lido at&#233; <strong>{expira}</strong>.
+            </p>
+
+            <!-- CTA BUTTON -->
+            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td align="center" style="padding:0 0 32px;">
+                  <a href="{signup_url}"
+                     style="display:inline-block;background:#7C3AED;
+                            color:#ffffff;text-decoration:none;
+                            font-size:15px;font-weight:bold;
+                            padding:14px 40px;border-radius:8px;
+                            font-family:Arial,sans-serif;
+                            letter-spacing:.3px;">
+                    Criar minha conta
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <!-- LINK ALTERNATIVO -->
+            <p style="color:#6B6580;font-size:12px;margin:0 0 6px;
+                      font-family:Arial,sans-serif;">
+              Ou copie e cole este link no navegador:
+            </p>
+            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td style="background:#F6F4FB;border:1px solid #E7E3F2;
+                           border-radius:6px;padding:10px 14px;">
+                  <span style="font-family:Courier New,monospace;font-size:12px;
+                               color:#7C3AED;word-break:break-all;">
+                    {signup_url}
+                  </span>
+                </td>
+              </tr>
+            </table>
+
+            <hr style="border:none;border-top:1px solid #E7E3F2;
+                       margin:28px 0 20px;">
+            <p style="color:#9CA3AF;font-size:11px;margin:0;
+                      font-family:Arial,sans-serif;">
+              Se voc&#234; n&#227;o solicitou este convite, ignore este e-mail.<br>
+              Token de refer&#234;ncia: {token[:8]}...
+            </p>
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="background:#F6F4FB;padding:18px 40px;
+                     text-align:center;border-radius:0 0 16px 16px;
+                     border-top:1px solid #E7E3F2;">
+            <p style="color:#9CA3AF;font-size:11px;margin:0;
+                      font-family:Arial,sans-serif;">
+              HIPNUS COSM&#201;TICOS &middot; (31) 98321-3343
+              &middot; www.hipnuscosmeticos.com.br
+            </p>
+          </td>
+        </tr>
+
       </table>
-    </body>
-    </html>
-    """
+    </td></tr>
+  </table>
+</body>
+</html>"""
 
+    # ── Montagem da mensagem MIME ──────────────────────────────────────────
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🎉 Seu convite para a plataforma HIPNUS COSMÉTICOS"
-    msg["From"]    = f"HIPNUS COSMÉTICOS <{SMTP_REMETENTE}>"
-    msg["To"]      = destinatario
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    # Subject codificado RFC 2047 — sem emojis para máxima compatibilidade
+    msg["Subject"] = Header("Seu convite para a plataforma HIPNUS COSMETICOS", "utf-8").encode()
+
+    # From codificado corretamente para não ser rejeitado por acentos
+    msg["From"]    = formataddr(("HIPNUS COSMETICOS", SMTP_REMETENTE))
+    msg["To"]      = destinatario
+    msg["Date"]    = formatdate(localtime=False)
+    msg["X-Mailer"] = "HIPNUS-Convites/3.0"
+    msg["MIME-Version"] = "1.0"
+
+    # ORDEM IMPORTA: text/plain primeiro, text/html por último
+    # RFC 2046: clientes usam a última parte que conseguem renderizar
+    msg.attach(MIMEText(text_body, "plain", "utf-8"))
+    msg.attach(MIMEText(html_body, "html",  "utf-8"))
+
+    # ── Envio ───────────────────────────────────────────────────────────────
     try:
         if SMTP_USE_SSL:
-            # Porta 465 — SSL direto
             context = ssl.create_default_context()
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=15) as server:
                 server.login(SMTP_USER, SMTP_PASS)
                 server.sendmail(SMTP_REMETENTE, destinatario, msg.as_string())
         else:
-            # Porta 587 — STARTTLS (padrão Hostinger)
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
                 server.ehlo()
                 if SMTP_USE_TLS:
@@ -202,11 +272,11 @@ def _enviar_email_smtp(destinatario: str, signup_url: str, role: str, token: str
         return True, "E-mail enviado com sucesso."
 
     except smtplib.SMTPAuthenticationError:
-        return False, (
-            "Falha de autenticação SMTP. Verifique EMAIL_USERNAME e EMAIL_PASSWORD nos Secrets."
-        )
+        return False, "Falha de autenticacao SMTP. Verifique EMAIL_USERNAME e EMAIL_PASSWORD nos Secrets."
     except smtplib.SMTPConnectError:
-        return False, f"Não foi possível conectar ao servidor SMTP {SMTP_HOST}:{SMTP_PORT}."
+        return False, f"Nao foi possivel conectar ao servidor SMTP {SMTP_HOST}:{SMTP_PORT}."
+    except smtplib.SMTPRecipientsRefused:
+        return False, f"Destinatario recusado pelo servidor: {destinatario}. Verifique o e-mail informado."
     except smtplib.SMTPException as exc:
         return False, f"Erro SMTP: {exc}"
     except Exception as exc:
@@ -253,7 +323,7 @@ def _card_link(signup_url: str, role: str, criado_por: str, origem: str) -> None
 
 
 def _aviso_smtp_config() -> None:
-    """Exibe status da configuração SMTP no sidebar ou inline."""
+    """Exibe status da configuração SMTP."""
     if not SMTP_USER or not SMTP_PASS:
         st.html(f"""
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;
