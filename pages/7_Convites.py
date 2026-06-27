@@ -1,12 +1,5 @@
-import sys
-from pathlib import Path
-
-frontend = Path(__file__).resolve().parents[1] / "frontend"
-if str(frontend) not in sys.path:
-    sys.path.insert(0, str(frontend))
-
-# Skill 🔐 JWT Auto-Refresh
-from lib.session_guard import check_session_expiry
-check_session_expiry()
-
-exec(open(frontend / "pages" / "6_✉️_Convites.py", encoding="utf-8").read())
+from pathlib import Path; import sys
+_r = Path(__file__).resolve().parents[1]; _f = _r / "frontend"
+for _p in [str(_r), str(_f)]:
+    if _p not in sys.path: sys.path.insert(0, _p)
+exec((_f / "pages" / "6_Convites.py").read_text(encoding="utf-8"))
