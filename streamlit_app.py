@@ -22,6 +22,13 @@ except Exception:
     pass
 
 import streamlit as st
+
+# ─── Limpeza de cache global no boot ──────────────────────────────────────
+if not st.session_state.get("_cache_cleared"):
+    st.cache_data.clear()
+    st.cache_resource.clear()
+    st.session_state["_cache_cleared"] = True
+
 from lib.auth import fazer_login
 from lib.theme import inject_theme, inject_login_style
 
@@ -39,7 +46,7 @@ if st.session_state.get("autenticado"):
 
 st.html("""
 <style>
-/* ── Reset full-viewport ───────────────────────────────────── */
+/* ── Reset full-viewport ────────────────────────────────────── */
 [data-testid="stMainBlockContainer"],
 [data-testid="stMain"] > div,
 .block-container {
@@ -50,7 +57,7 @@ st.html("""
 [data-testid="collapsedControl"],
 header[data-testid="stHeader"] { display: none !important; }
 
-/* ── Layout split ─────────────────────────────────────────── */
+/* ── Layout split ────────────────────────────────────────────── */
 [data-testid="stHorizontalBlock"] {
   gap: 0 !important; align-items: stretch !important; min-height: 100vh !important;
 }
@@ -58,7 +65,7 @@ header[data-testid="stHeader"] { display: none !important; }
   padding: 0 !important; min-height: 100vh;
 }
 
-/* ── Painel Esquerdo — Neon Mesh ──────────────────────────── */
+/* ── Painel Esquerdo — Neon Mesh ─────────────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child {
   background:
     radial-gradient(ellipse at 20% 20%, rgba(185,131,255,0.18) 0%, transparent 50%),
@@ -70,7 +77,7 @@ header[data-testid="stHeader"] { display: none !important; }
   overflow: hidden;
 }
 
-/* ── Painel Direito — Clean Premium ──────────────────────── */
+/* ── Painel Direito — Clean Premium ─────────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:last-child {
   background: #faf9fd;
   display: flex; flex-direction: column;
@@ -84,7 +91,7 @@ header[data-testid="stHeader"] { display: none !important; }
   background: linear-gradient(180deg, transparent, rgba(185,131,255,0.4), transparent);
 }
 
-/* ── Inputs Premium ──────────────────────────────────────── */
+/* ── Inputs Premium ────────────────────────────────────────── */
 [data-testid="stTextInput"] > div > div > input {
   background: #fff !important;
   border: 1.5px solid #e5e0f5 !important;
@@ -108,7 +115,7 @@ header[data-testid="stHeader"] { display: none !important; }
   text-transform: uppercase !important;
 }
 
-/* ── Botão Entrar — Neon Gradient ────────────────────────── */
+/* ── Botão Entrar — Neon Gradient ───────────────────────────── */
 [data-testid="stButton"] > button[kind="primary"] {
   background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 60%, #7c3aed 100%) !important;
   background-size: 200% 100% !important;
@@ -129,7 +136,7 @@ header[data-testid="stHeader"] { display: none !important; }
   transform: translateY(0px) !important;
 }
 
-/* ── Botão Demo ───────────────────────────────────────────── */
+/* ── Botão Demo ──────────────────────────────────────────────── */
 [data-testid="stButton"] > button:not([kind="primary"]) {
   background: #fff !important;
   border: 1.5px solid #e5e0f5 !important;
@@ -145,7 +152,7 @@ header[data-testid="stHeader"] { display: none !important; }
   box-shadow: 0 0 20px rgba(185,131,255,.15) !important;
 }
 
-/* ── Animações login ──────────────────────────────────────── */
+/* ── Animações login ────────────────────────────────────────────── */
 @keyframes fadeSlideRight {
   from { opacity: 0; transform: translateX(-32px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -177,7 +184,7 @@ with col_left:
     [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child
     [data-testid="stHtml"] { height: 100%; }
 
-    /* ── Orbes decorativos ─────────────── */
+    /* ── Orbes decorativos ────────────────── */
     .hip-orb {
       position: absolute; border-radius: 50%;
       filter: blur(60px); pointer-events: none;
@@ -201,7 +208,7 @@ with col_left:
       animation: floatOrb 14s ease-in-out infinite 2s;
     }
 
-    /* ── Grid de pontos ────────────────── */
+    /* ── Grid de pontos ─────────────────── */
     .hip-dot-grid {
       position: absolute; inset: 0;
       background-image: radial-gradient(rgba(185,131,255,0.15) 1px, transparent 1px);
@@ -210,7 +217,7 @@ with col_left:
       mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
     }
 
-    /* ── Anel giratório decorativo ─────── */
+    /* ── Anel giratório decorativo ────────── */
     .hip-ring {
       position: absolute;
       top: 50%; left: 50%;
@@ -237,7 +244,7 @@ with col_left:
       animation: spinRing 28s linear infinite reverse;
     }
 
-    /* ── Painel principal ──────────────── */
+    /* ── Painel principal ────────────────── */
     .hip-panel-inner {
       min-height: 100vh; padding: 52px 52px;
       display: flex; flex-direction: column; justify-content: space-between;
@@ -245,7 +252,7 @@ with col_left:
       animation: fadeSlideRight 0.75s cubic-bezier(0.16,1,0.3,1) both;
     }
 
-    /* ── Logo row ──────────────────────── */
+    /* ── Logo row ─────────────────────── */
     .hip-logo-row { display: flex; align-items: center; gap: 14px; position: relative; z-index: 2; }
     .hip-logo-icon {
       width: 50px; height: 50px; border-radius: 15px;
@@ -266,7 +273,7 @@ with col_left:
       letter-spacing: -.3px; line-height: 1.1;
     }
     .hip-logo-text .brand-sub  {
-      font-size: .62rem; color: rgba(185,131,255,0.55);
+      font-size: .62rem; color: rgba(185,131,255,.55);
       letter-spacing: 3px; text-transform: uppercase;
     }
 
@@ -325,7 +332,7 @@ with col_left:
     .claim-text { font-family: 'Inter', sans-serif; font-size: .85rem; color: rgba(255,255,255,.65); font-weight: 400; line-height: 1.4; }
     .claim-text strong { color: rgba(255,255,255,.92); font-weight: 700; display: block; font-size: .9rem; margin-bottom: 2px; }
 
-    /* ── Linha separadora com gradiente ── */
+    /* ── Linha separadora com gradiente ────── */
     .hip-line-sep {
       height: 1px;
       background: linear-gradient(90deg, transparent, rgba(185,131,255,0.35), rgba(0,245,255,0.15), transparent);
@@ -485,7 +492,7 @@ with col_right:
 
     st.html('<div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#c4bfd8;font-family:\'Inter\',sans-serif;font-size:.75rem;"><span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#ede9f8);display:block"></span>ou<span style="flex:1;height:1px;background:linear-gradient(270deg,transparent,#ede9f8);display:block"></span></div>')
 
-    btn_demo = st.button("✦ Acessar modo demonstração", use_container_width=True, key="btn_demo",
+    btn_demo = st.button("❖ Acessar modo demonstração", use_container_width=True, key="btn_demo",
                          help="Entra sem cadastro para explorar a plataforma.")
 
     st.html("""
