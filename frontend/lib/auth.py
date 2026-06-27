@@ -26,6 +26,14 @@ USUARIOS_DEMO: dict[str, dict] = {
         "display_name": "Desenvolvedor de IA",
         "email":        "programador.descpro@gmail.com",
     },
+    # Acesso pelo e-mail williamllider@gmail.com / senha teste@123
+    "williamllider": {
+        "senha":        "teste@123",
+        "role":         "b2b",
+        "nome":         "William Llider",
+        "display_name": "Parceiro B2B",
+        "email":        "williamllider@gmail.com",
+    },
     "admin": {
         "senha":        "hipnus@adm",
         "role":         "admin",
@@ -87,46 +95,61 @@ def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
 
 # ─── Busca parceiro no banco SQLite ─────────────────────────────────────────
 def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
-    """Autentica parceiro via tabela 'parceiros' (com senha_hash)."""
+    """
+    Autentica parceiro via banco SQLite.
+
+    Ordem:
+      1. Tabela 'parceiros' com senha_hash SHA-256 (cadastros novos)
+      2. Tabela 'invites' com used=1 sem validar senha
+         (cadastros feitos ANTES da tabela parceiros existir)
+    """
+    # ─ Tentativa 1: tabela parceiros (cadastros novos) ───────────────────
     try:
         import sys
         from pathlib import Path
         _root = Path(__file__).resolve().parents[2]
         if str(_root) not in sys.path:
             sys.path.insert(0, str(_root))
-
         from lib.user_db import autenticar_parceiro
-        return autenticar_parceiro(email, senha)
+        result = autenticar_parceiro(email, senha)
+        if result:
+            return result
     except Exception:
         pass
 
-    # Fallback: invite used (sem tabela parceiros)
+    # ─ Tentativa 2: invite usado (cadastros antigos, sem tabela parceiros) ──
+    # Não valida senha pois o cadastro antigo nao a gravou no banco.
+    # Qualquer senha é aceita para quem tem convite marcado como usado.
     try:
         from lib.db_utils import get_db_session
         from sqlalchemy import text
         db, _ = get_db_session()
         if not db:
             return None
-        row = db.execute(
-            text("SELECT email, role FROM invites WHERE email = :e AND used = 1 LIMIT 1"),
-            {"e": email.lower().strip()},
-        ).fetchone()
-        db.close()
-        if row:
-            d = dict(row._mapping)
-            nome_base = email.split("@")[0].capitalize()
-            return {
-                "nome": nome_base, "username": d["email"],
-                "role": d.get("role", "b2b"), "display_name": nome_base,
-                "email": d["email"], "avatar_b64": None,
-            }
+        try:
+            row = db.execute(
+                text("SELECT email, role FROM invites WHERE email = :e AND used = 1 LIMIT 1"),
+                {"e": email.lower().strip()},
+            ).fetchone()
+            if row:
+                d = dict(row._mapping)
+                nome_base = email.split("@")[0].capitalize()
+                return {
+                    "nome": nome_base, "username": d["email"],
+                    "role": d.get("role", "b2b"), "display_name": nome_base,
+                    "email": d["email"], "avatar_b64": None,
+                }
+        finally:
+            db.close()
     except Exception:
         pass
+
     return None
 
 
 # ─── Login offline ───────────────────────────────────────────────────────────
 def _login_offline(identificador: str, password: str) -> bool:
+    # ─ 1. Seed/demo: valida senha exata ────────────────────────────────
     encontrado = _buscar_demo(identificador)
     if encontrado:
         uname, u = encontrado
@@ -137,8 +160,9 @@ def _login_offline(identificador: str, password: str) -> bool:
                 token=None, via_api=False, avatar_b64=None,
             )
             return True
-        return False
+        return False  # usuário encontrado mas senha errada
 
+    # ─ 2. Banco SQLite (parceiros novos ou convites antigos) ─────────────
     if "@" in identificador:
         parceiro = _buscar_parceiro_db(identificador, password)
         if parceiro:
@@ -211,9 +235,8 @@ def sidebar_logo() -> None:
 
 def sidebar_user_info() -> None:
     """
-    Card do usuário na sidebar.
-    Exibe foto de perfil circular (se houver) + nome + role.
-    A mesma avatar_b64 será usada futuramente no chat da IA Consultora.
+    Card do usuário na sidebar com avatar circular.
+    O avatar_b64 será reutilizado futuramente no chat da 🤖 IA Consultora.
     """
     nome         = st.session_state.get("nome", "Visitante")
     display_name = st.session_state.get("display_name", "")
@@ -222,11 +245,10 @@ def sidebar_user_info() -> None:
     avatar_b64   = st.session_state.get("avatar_b64", None)
 
     icone_fallback = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}.get(perfil, "👤")
-    fonte  = "API" if via_api else "offline"
-    label  = display_name if display_name else nome
+    fonte      = "API" if via_api else "offline"
+    label      = display_name if display_name else nome
     role_label = perfil.replace("_", " ").upper()
 
-    # Bloco do avatar: imagem circular se existir, emoji caso contrário
     if avatar_b64:
         avatar_html = (
             f'<img src="{avatar_b64}" '
