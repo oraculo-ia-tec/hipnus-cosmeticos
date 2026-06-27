@@ -62,6 +62,25 @@ def _ensure_table(db) -> None:
             pass
 
 
+# ─── Listar parceiros ─────────────────────────────────────────────────────
+def listar_parceiros() -> list[dict]:
+    """Retorna todos os parceiros cadastrados (para painel admin)."""
+    db, _ = get_db_session()
+    if not db:
+        return []
+    try:
+        _ensure_table(db)
+        rows = db.execute(text(
+            "SELECT id, username, nome, email, role, empresa, cidade, estado, "
+            "telefone, created_at, updated_at FROM parceiros ORDER BY created_at DESC"
+        )).fetchall()
+        return [dict(r._mapping) for r in rows]
+    except Exception:
+        return []
+    finally:
+        db.close()
+
+
 # ─── Criar parceiro ─────────────────────────────────────────────────────────
 def criar_parceiro(
     nome: str,
@@ -117,7 +136,7 @@ def criar_parceiro(
         db.close()
 
 
-# ─── Buscar parceiro por email ───────────────────────────────────────────────
+# ─── Buscar parceiro por email ───────────────────────────────────────────────────
 def buscar_por_email(email: str) -> dict | None:
     db, _ = get_db_session()
     if not db:
@@ -135,7 +154,7 @@ def buscar_por_email(email: str) -> dict | None:
         db.close()
 
 
-# ─── Buscar parceiro por email + senha ──────────────────────────────────────
+# ─── Buscar parceiro por email + senha ──────────────────────────────────────────
 def autenticar_parceiro(email: str, senha: str) -> dict | None:
     """Valida e-mail + senha. Retorna dados do parceiro ou None."""
     parceiro = buscar_por_email(email)
@@ -165,13 +184,13 @@ def atualizar_perfil(
     try:
         _ensure_table(db)
         sets, params = [], {"email": email.lower().strip()}
-        if nome      is not None: sets.append("nome = :nome");           params["nome"]      = nome
-        if username  is not None: sets.append("username = :username");   params["username"]  = username.lower().strip()
-        if telefone  is not None: sets.append("telefone = :telefone");   params["telefone"]  = telefone
-        if empresa   is not None: sets.append("empresa = :empresa");     params["empresa"]   = empresa
-        if cidade    is not None: sets.append("cidade = :cidade");       params["cidade"]    = cidade
-        if estado    is not None: sets.append("estado = :estado");       params["estado"]    = estado
-        if bio       is not None: sets.append("bio = :bio");             params["bio"]       = bio
+        if nome       is not None: sets.append("nome = :nome");            params["nome"]       = nome
+        if username   is not None: sets.append("username = :username");    params["username"]   = username.lower().strip()
+        if telefone   is not None: sets.append("telefone = :telefone");    params["telefone"]   = telefone
+        if empresa    is not None: sets.append("empresa = :empresa");      params["empresa"]    = empresa
+        if cidade     is not None: sets.append("cidade = :cidade");        params["cidade"]     = cidade
+        if estado     is not None: sets.append("estado = :estado");        params["estado"]     = estado
+        if bio        is not None: sets.append("bio = :bio");              params["bio"]        = bio
         if avatar_b64 is not None: sets.append("avatar_b64 = :avatar_b64"); params["avatar_b64"] = avatar_b64
         if not sets:
             return True, "Nada a atualizar."
@@ -187,7 +206,7 @@ def atualizar_perfil(
         db.close()
 
 
-# ─── Alterar senha ───────────────────────────────────────────────────────────
+# ─── Alterar senha ──────────────────────────────────────────────────────────────
 def alterar_senha(
     email: str, senha_atual: str, nova_senha: str
 ) -> tuple[bool, str]:
@@ -211,7 +230,7 @@ def alterar_senha(
         db.close()
 
 
-# ─── Encode/decode avatar ─────────────────────────────────────────────────────
+# ─── Encode/decode avatar ────────────────────────────────────────────────────────
 def image_to_b64(file_bytes: bytes, mime: str = "image/jpeg") -> str:
     """Converte bytes de imagem para data URI base64."""
     b64 = base64.b64encode(file_bytes).decode("utf-8")
