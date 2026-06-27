@@ -2,9 +2,6 @@
 10_🤖_IA_Consultora.py — HIPNUS COSMÉTICOS
 ===========================================
 Skill: IA Consultora
-
-Chat inteligente com contexto real da plataforma.
-Usa Groq (llama-3.3-70b-versatile) via endpoint OpenAI-compatible.
 """
 from __future__ import annotations
 
@@ -42,37 +39,34 @@ components.page_header(
     kicker="🤖 Powered by Groq · Llama 3.3 70B",
 )
 
-# ─── Verifica configuração GROQ ───────────────────────────────────────────────────
+# ─── Avatar do usuário para o chat ──────────────────────────────────────────
+perfil       = st.session_state.get("perfil", "b2c")
+avatar_b64   = st.session_state.get("avatar_b64", None)
+
+# Fallback por perfil quando não há foto
+_icones_perfil = {"super_admin": "⭐", "admin": "🛡️", "b2b": "🎤", "b2c": "👤", "demo": "👀"}
+USER_AVATAR = avatar_b64 if avatar_b64 else _icones_perfil.get(perfil, "👤")
+
+# ─── Verifica configuração GROQ ──────────────────────────────────────────
 status = groq_status()
 
 if not status["configured"]:
-    _emergency_key = ""
-    try:
-        _emergency_key = str(st.secrets["GROQ_API_KEY"]).strip()
-    except Exception:
-        pass
+    st.error(
+        "❌ **GROQ\_API\_KEY não encontrada.**\n\n"
+        "Adicione nos **Secrets do Streamlit Cloud**:\n"
+        "```toml\n[groq]\nGROQ_API_KEY = \"gsk_...\"\ n```"
+    )
+    st.stop()
 
-    if _emergency_key:
-        import os
-        os.environ["GROQ_API_KEY"] = _emergency_key
-        status["configured"] = True
-    else:
-        st.error(
-            "❌ **GROQ\_API\_KEY não encontrada.**\n\n"
-            "Adicione a seguinte chave nos **Secrets do Streamlit Cloud**:\n"
-            "```\nGROQ_API_KEY = \"sua-chave-aqui\"\n```"
-        )
-        st.stop()
-
-# ─── Contexto da sessão ────────────────────────────────────────────────────
-cart               = st.session_state.get("cart", {})
-historico_pedidos  = st.session_state.get("historico_pedidos", [])
-smtp_ok            = smtp_status().get("ready", False)
+# ─── Contexto da sessão ─────────────────────────────────────────────────
+cart              = st.session_state.get("cart", {})
+historico_pedidos = st.session_state.get("historico_pedidos", [])
+smtp_ok           = smtp_status().get("ready", False)
 
 usuario_ctx = {
     "nome":   st.session_state.get("nome")   or st.session_state.get("display_name", ""),
-    "perfil": st.session_state.get("perfil", ""),
-    "email":  st.session_state.get("email",  ""),
+    "perfil": perfil,
+    "email":  st.session_state.get("email", ""),
 }
 
 context_block = build_context(
@@ -82,13 +76,13 @@ context_block = build_context(
     smtp_ok=smtp_ok,
 )
 
-# ─── Histórico de chat na sessão ──────────────────────────────────────────────
+# ─── Histórico de chat na sessão ─────────────────────────────────────────────
 if "_ia_messages" not in st.session_state:
     st.session_state["_ia_messages"] = []
 
 messages: list[dict] = st.session_state["_ia_messages"]
 
-# ─── Sidebar: info + limpar ──────────────────────────────────────────────────
+# ─── Sidebar: info + limpar ───────────────────────────────────────────────
 smtp_label = "✅ ativo" if smtp_ok else "⚠️ inativo"
 with st.sidebar:
     st.markdown("### 🤖 IA Consultora")
@@ -101,7 +95,7 @@ with st.sidebar:
         st.session_state["_ia_messages"] = []
         st.rerun()
 
-# ─── Prompts rápidos ────────────────────────────────────────────────────
+# ─── Prompts rápidos ──────────────────────────────────────────────────
 PROMPTS_RAPIDOS = [
     ("🛒 O que tem no meu carrinho?",          "O que tem no meu carrinho?"),
     ("💳 Quais pedidos fiz nesta sessão?",      "Quais pedidos fiz nesta sessão?"),
@@ -120,15 +114,16 @@ if not messages:
                 st.session_state["_ia_messages"].append({"role": "user", "content": prompt})
                 st.rerun()
 
-# ─── Renderiza histórico ───────────────────────────────────────────────────
+# ─── Renderiza histórico ─────────────────────────────────────────────────
 for msg in messages:
-    with st.chat_message(msg["role"], avatar="🤖" if msg["role"] == "assistant" else "👤"):
+    av = "🤖" if msg["role"] == "assistant" else USER_AVATAR
+    with st.chat_message(msg["role"], avatar=av):
         st.markdown(msg["content"])
 
-# ─── Input do usuário ────────────────────────────────────────────────────
+# ─── Input do usuário ──────────────────────────────────────────────────
 if prompt_input := st.chat_input("Pergunte sobre pedidos, split, pagamentos..."):
     messages.append({"role": "user", "content": prompt_input})
-    with st.chat_message("user", avatar="👤"):
+    with st.chat_message("user", avatar=USER_AVATAR):
         st.markdown(prompt_input)
 
     with st.chat_message("assistant", avatar="🤖"):
