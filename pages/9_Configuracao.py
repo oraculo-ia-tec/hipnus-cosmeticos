@@ -24,6 +24,11 @@ from lib.user_db import atualizar_perfil, alterar_senha, buscar_por_email, image
 st.set_page_config(page_title="Configurações · HIPNUS", page_icon="⚙️", layout="wide")
 ui.inject_theme()
 usuario = require_auth()
+
+# Skill 🔐 JWT Auto-Refresh
+from lib.session_guard import check_session_expiry
+check_session_expiry()
+
 sidebar_logo()
 sidebar_user_info()
 sidebar_logout_button()
@@ -57,7 +62,7 @@ with tab_perfil:
     role_display = {"super_admin": "⭐ Super Admin", "admin": "🛡️ Admin",
                     "b2b": "🎤 Profissional", "b2c": "👤 Cliente", "demo": "👀 Demo"}.get(perfil_logado, perfil_logado)
     img_tag = (
-        f'<img src="{avatar_atual}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #7c3aed;"/>'
+        f'<img src="{avatar_atual}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #7c3aed;display:block;"/>'
         if avatar_atual else
         f'<div style="width:80px;height:80px;border-radius:50%;background:#f3f0ff;border:3px solid #7c3aed;'
         f'display:flex;align-items:center;justify-content:center;font-size:2.2rem;">{icone_map.get(perfil_logado, "👤")}</div>'

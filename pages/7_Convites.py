@@ -1,15 +1,12 @@
 import sys
 from pathlib import Path
 
-_ROOT     = Path(__file__).resolve().parents[1]
-_FRONTEND = _ROOT / "frontend"
-for _p in [str(_ROOT), str(_FRONTEND)]:
-    if _p not in sys.path:
-        sys.path.insert(0, _p)
+frontend = Path(__file__).resolve().parents[1] / "frontend"
+if str(frontend) not in sys.path:
+    sys.path.insert(0, str(frontend))
 
-# Passa __file__ do arquivo REAL para que Path(__file__).parents[]
-# funcione corretamente dentro do codigo executado.
-_target = _FRONTEND / "pages" / "6_Convites.py"
-_src    = open(_target, encoding="utf-8").read()
-_globs  = {**globals(), "__file__": str(_target)}
-exec(compile(_src, str(_target), "exec"), _globs)
+# Skill 🔐 JWT Auto-Refresh
+from lib.session_guard import check_session_expiry
+check_session_expiry()
+
+exec(open(frontend / "pages" / "6_✉️_Convites.py", encoding="utf-8").read())

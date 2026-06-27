@@ -5,4 +5,8 @@ frontend = Path(__file__).resolve().parents[1] / "frontend"
 if str(frontend) not in sys.path:
     sys.path.insert(0, str(frontend))
 
-exec(open(frontend / "pages" / "1_🛍️_Catálogo.py", encoding="utf-8").read())
+# Skill 🔐 JWT Auto-Refresh
+from lib.session_guard import check_session_expiry
+check_session_expiry()
+
+exec(open(frontend / "pages" / "1_📦_Catalogo.py", encoding="utf-8").read())
