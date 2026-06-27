@@ -10,7 +10,7 @@ Visão unificada de:
   - Histórico de pedidos da sessão atual
 
 Acesso restrito a super_admin e admin.
-Atualização manual via botão ↻ ou automática a cada 5 min com st.fragment.
+Atualização manual via botão ↻.
 """
 from __future__ import annotations
 
@@ -98,20 +98,42 @@ def _load_partners() -> list[dict]:
         return []
 
 
-# ─── Filtros ───────────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("### ⏱ Período")
+# ─── Filtro de período — painel principal (2 colunas, estilo dark) ───────────────────
+st.html("""
+<div style="
+  background: linear-gradient(135deg, rgba(15,10,30,.85), rgba(30,15,55,.75));
+  border: 1px solid rgba(185,131,255,.25);
+  border-radius: 16px;
+  padding: 18px 24px 14px;
+  margin-bottom: 4px;
+  backdrop-filter: blur(8px);
+">
+  <div style="
+    font-family:'Inter',sans-serif;
+    font-size:.65rem;font-weight:700;
+    letter-spacing:1.8px;text-transform:uppercase;
+    color:rgba(185,131,255,.55);margin-bottom:10px;
+  ">⏱ Filtro de período</div>
+</div>
+""")
+
+_f1, _f2 = st.columns([2, 1])
+with _f1:
     dias = st.selectbox(
-        "Cobranças dos últimos:",
+        "⏱ Cobranças dos últimos:",
         options=[7, 15, 30, 60, 90],
         index=2,
         format_func=lambda d: f"{d} dias",
         key="dash_dias",
     )
-    atualizar = st.button("↻ Atualizar dados", use_container_width=True)
+with _f2:
+    st.write("")
+    atualizar = st.button("↻ Atualizar dados", use_container_width=True, key="_btn_atualizar")
+
+st.html("<div style='margin-bottom:20px;'></div>")
 
 
-# ─── Cache de dados na sessão ─────────────────────────────────────────────────────────
+# ─── Cache de dados na sessão ────────────────────────────────────────────────────────
 cache_key = f"_dash_payments_{dias}"
 if atualizar or cache_key not in st.session_state:
     with st.spinner("Buscando cobranças na API Asaas..."):
@@ -124,8 +146,6 @@ else:
 
 invites  = _load_invites()
 partners = _load_partners()
-
-# Fallback: pedidos da sessão se a API não estiver configurada
 session_orders = st.session_state.get("historico_pedidos", [])
 
 
@@ -134,30 +154,27 @@ if asaas_error:
     st.warning(f"⚠️ API Asaas indisponível: {asaas_error}. Exibindo dados locais da sessão.")
 
 if payments:
-    total_recebido   = sum(Decimal(str(p.get("value", 0))) for p in payments if p.get("status") in ("RECEIVED", "CONFIRMED"))
-    total_pendente   = sum(Decimal(str(p.get("value", 0))) for p in payments if p.get("status") == "PENDING")
-    total_vencido    = sum(Decimal(str(p.get("value", 0))) for p in payments if p.get("status") == "OVERDUE")
-    n_recebido       = sum(1 for p in payments if p.get("status") in ("RECEIVED", "CONFIRMED"))
-    n_pendente       = sum(1 for p in payments if p.get("status") == "PENDING")
-    n_vencido        = sum(1 for p in payments if p.get("status") == "OVERDUE")
+    total_recebido = sum(Decimal(str(p.get("value", 0))) for p in payments if p.get("status") in ("RECEIVED", "CONFIRMED"))
+    total_pendente = sum(Decimal(str(p.get("value", 0))) for p in payments if p.get("status") == "PENDING")
+    total_vencido  = sum(Decimal(str(p.get("value", 0))) for p in payments if p.get("status") == "OVERDUE")
+    n_recebido     = sum(1 for p in payments if p.get("status") in ("RECEIVED", "CONFIRMED"))
+    n_pendente     = sum(1 for p in payments if p.get("status") == "PENDING")
+    n_vencido      = sum(1 for p in payments if p.get("status") == "OVERDUE")
 elif session_orders:
-    total_recebido   = sum(Decimal(str(o.get("totais", {}).get("total", 0))) for o in session_orders)
-    total_pendente   = Decimal("0")
-    total_vencido    = Decimal("0")
-    n_recebido       = len(session_orders)
-    n_pendente       = 0
-    n_vencido        = 0
+    total_recebido = sum(Decimal(str(o.get("totais", {}).get("total", 0))) for o in session_orders)
+    total_pendente = Decimal("0")
+    total_vencido  = Decimal("0")
+    n_recebido     = len(session_orders)
+    n_pendente     = 0
+    n_vencido      = 0
 else:
     total_recebido = total_pendente = total_vencido = Decimal("0")
     n_recebido = n_pendente = n_vencido = 0
 
-# Convites
 n_invites_total  = len(invites)
 n_invites_ativos = sum(1 for i in invites if not i.get("used"))
 n_invites_usado  = sum(1 for i in invites if i.get("used"))
-
-# Parceiros
-n_parceiros = len(partners)
+n_parceiros      = len(partners)
 
 components.section_title("Financeiro")
 k1, k2, k3, k4 = st.columns(4)
@@ -175,13 +192,13 @@ p3.metric("✅ Convites usados", n_invites_usado)
 p4.metric("📍 Convites totais", n_invites_total)
 
 
-# ─── Tabs de detalhe ──────────────────────────────────────────────────────────────────
+# ─── Tabs de detalhe ───────────────────────────────────────────────────────────────────
 components.divider()
 tab_cob, tab_inv, tab_par, tab_sess = st.tabs([
-    "💳 Cobranças", "📨 Convites", "🤝 Parceiros", "🛒 Sessão"
+    "💳 Cobranças", "📨 Convites", "🤝 Parceiros", "🛍 Sessão"
 ])
 
-# ═ TAB 1 ─ COBRANÇAS ─────────────────────────────────────────────────────────────────
+# ═ TAB 1 ─ COBRANÇAS ─────────────────────────────────────────────────────────────
 with tab_cob:
     components.section_title(f"Cobranças — últimos {dias} dias")
     if not payments:
@@ -222,7 +239,7 @@ with tab_cob:
                 </div>
             </div>""")
 
-# ═ TAB 2 ─ CONVITES ─────────────────────────────────────────────────────────────────
+# ═ TAB 2 ─ CONVITES ──────────────────────────────────────────────────────────────
 with tab_inv:
     components.section_title("Convites de parceiros")
     if not invites:
@@ -244,7 +261,7 @@ with tab_inv:
                 <div style="font-size:.82rem;font-weight:700;color:{'#16a34a' if usado else '#7c3aed'};">{badge_uso}</div>
             </div>""")
 
-# ═ TAB 3 ─ PARCEIROS ─────────────────────────────────────────────────────────────────
+# ═ TAB 3 ─ PARCEIROS ──────────────────────────────────────────────────────────────
 with tab_par:
     components.section_title("Parceiros cadastrados")
     if not partners:
@@ -269,12 +286,12 @@ with tab_par:
                 </div>
             </div>""")
 
-# ═ TAB 4 ─ PEDIDOS DA SESSÃO ───────────────────────────────────────────────────────────
+# ═ TAB 4 ─ PEDIDOS DA SESSÃO ────────────────────────────────────────────────────
 with tab_sess:
     components.section_title("Pedidos desta sessão")
     if not session_orders:
         components.empty_state(
-            icon="🛒",
+            icon="🛍",
             title="Nenhum pedido na sessão",
             message="Os pedidos finalizados no checkout aparecem aqui enquanto a sessão estiver ativa.",
         )
