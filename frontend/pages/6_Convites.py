@@ -5,12 +5,13 @@ Gerenciamento de convites de cadastro para parceiros e distribuidores.
 
 Fluxo de persistência (3 caminhos em ordem de prioridade):
   1. API disponível       → POST /api/v1/invites/ (persiste via FastAPI)
-  2. API indisponível     → persiste no banco DIRETAMENTE (SQLAlchemy) + SMTP direto
+  2. API indisponível     → persiste no banco DIRETAMENTE via invite_db
   3. API + banco falham   → token offline (não pode ser validado)
 
-Fix v7: usa lib.db_utils.get_db_session() que resolve o path SQLite
-para ABSOLUTO usando PROJECT_ROOT, garantindo que 6_Convites e
-7_Cadastro_Parceiro sempre usem o mesmo arquivo .db.
+Fix v8:
+  - signup_url corrigida para rota real do Streamlit Cloud
+  - usa lib.invite_db standalone (sem dependência do app/)
+  - token preservado na URL do e-mail com ?token= correto
 """
 from __future__ import annotations
 
@@ -36,9 +37,10 @@ from lib import ui
 from lib.auth import require_auth, sidebar_logo, sidebar_user_info, sidebar_logout_button
 from lib import components
 from lib.config import SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_USE_TLS, SMTP_USE_SSL, SMTP_REMETENTE
-from lib.db_utils import resolve_db_url, get_db_session
+from lib.db_utils import resolve_db_url
+from lib.invite_db import criar_invite_db  # camada DB standalone
 
-# ─── Setup ───────────────────────────────────────────────────────────────────
+# ─── Setup ────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="Convites · HIPNUS", page_icon="📨", layout="wide")
 ui.inject_theme()
 usuario = require_auth(perfis_permitidos=["super_admin", "admin"])
@@ -55,20 +57,34 @@ INVITE_EXPIRY_DAYS = 7
 
 def _resolve_app_url() -> str:
     import os
-    try:
-        val = st.secrets.get("APP_BASE_URL")
-        if val: return val.rstrip("/")
-    except Exception:
-        pass
-    try:
-        val = st.secrets["default"].get("APP_BASE_URL")
-        if val: return val.rstrip("/")
-    except Exception:
-        pass
+    for getter in [
+        lambda: st.secrets.get("APP_BASE_URL"),
+        lambda: st.secrets["default"].get("APP_BASE_URL"),
+    ]:
+        try:
+            val = getter()
+            if val:
+                return val.rstrip("/")
+        except Exception:
+            pass
     return os.environ.get("HIPNUS_APP_URL", "https://hipnus-cosmeticos.streamlit.app")
 
 
-# ─── Caminho 1: API ──────────────────────────────────────────────────────────────────
+def _signup_url(token: str) -> str:
+    """
+    Gera a URL correta de cadastro para o Streamlit Cloud.
+
+    Rota real da página 7_Cadastro_Parceiro.py no Streamlit Cloud:
+      /Cadastro_Parceiro  (o número '7_' é removido automaticamente)
+
+    O token é passado via query param ?token= e lido ANTES de
+    qualquer redirect de autenticação.
+    """
+    base = _resolve_app_url().rstrip("/")
+    return f"{base}/Cadastro_Parceiro?token={token}"
+
+
+# ─── Caminho 1: API ───────────────────────────────────────────────────────────────────
 def _criar_via_api(email: str, role: str, token_admin: str | None = None) -> dict | None:
     headers = {"Content-Type": "application/json"}
     if token_admin:
@@ -80,90 +96,92 @@ def _criar_via_api(email: str, role: str, token_admin: str | None = None) -> dic
             headers=headers, timeout=5,
         )
         if resp.status_code in (200, 201):
-            return resp.json()
+            data = resp.json()
+            # Garante que a signup_url usa a rota correta
+            if "token" in data:
+                data["signup_url"] = _signup_url(data["token"])
+            return data
     except Exception:
         pass
     return None
 
 
-# ─── Caminho 2: banco direto ──────────────────────────────────────────────────────────────
+# ─── Caminho 2: banco direto via invite_db ───────────────────────────────────────────
 def _criar_via_db(email: str, role: str, criado_por: str) -> dict | None:
-    db, err = get_db_session()
-    if not db:
-        return None
-    try:
-        from app.domains.invites.models import Invite
-        token      = uuid.uuid4().hex
-        expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=INVITE_EXPIRY_DAYS)
-        app_url    = _resolve_app_url()
-        signup_url = f"{app_url}/Cadastro_Parceiro?token={token}"
-        invite = Invite(
-            token=token, email=email, role=role,
-            created_by=criado_por, used=False, expires_at=expires_at,
-        )
-        db.add(invite)
-        db.commit()
-        db.refresh(invite)
-        return {
-            "token": invite.token, "email": invite.email, "role": invite.role,
-            "created_by": invite.created_by, "signup_url": signup_url,
-            "expires_at": invite.expires_at.isoformat(),
-            "email_sent": False, "origem": "db_direto",
-        }
-    except Exception:
-        db.rollback()
-        return None
-    finally:
-        db.close()
+    return criar_invite_db(
+        email=email,
+        role=role,
+        criado_por=criado_por,
+        app_url=_resolve_app_url(),
+    )
 
 
-# ─── Caminho 3: offline ──────────────────────────────────────────────────────────────
+# ─── Caminho 3: offline (sem banco, sem API) ──────────────────────────────────────
 def _criar_offline(email: str, role: str, criado_por: str) -> dict:
     token      = uuid.uuid4().hex
-    signup_url = f"{_resolve_app_url()}/Cadastro_Parceiro?token={token}"
+    signup_url = _signup_url(token)  # URL correta mesmo offline
     return {
-        "token": token, "email": email, "role": role, "created_by": criado_por,
+        "token":      token,
+        "email":      email,
+        "role":       role,
+        "created_by": criado_por,
         "signup_url": signup_url,
-        "expires_at": (datetime.utcnow() + timedelta(days=INVITE_EXPIRY_DAYS)).strftime("%d/%m/%Y"),
-        "email_sent": False, "origem": "offline",
+        "expires_at": (
+            datetime.utcnow() + timedelta(days=INVITE_EXPIRY_DAYS)
+        ).strftime("%d/%m/%Y"),
+        "email_sent": False,
+        "origem":     "offline",
     }
 
 
-# ─── SMTP ──────────────────────────────────────────────────────────────────
+# ─── SMTP ─────────────────────────────────────────────────────────────────────
 def _enviar_smtp(destinatario: str, signup_url: str, role: str) -> tuple[bool, str]:
     if not SMTP_USER or not SMTP_PASS:
         return False, "Credenciais SMTP não configuradas."
-    role_label = {"b2b": "Profissional / Salão", "b2c": "Cliente Final", "admin": "Administrador"}.get(role, role)
-    expira     = (datetime.utcnow() + timedelta(days=INVITE_EXPIRY_DAYS)).strftime("%d/%m/%Y")
-    text_body  = (
-        f"Voce foi convidado para HIPNUS COSMETICOS!\n\nPerfil: {role_label}\n"
-        f"Validade: {expira}\n\nLink:\n{signup_url}\n"
+    role_label = {
+        "b2b":   "Profissional / Salão",
+        "b2c":   "Cliente Final",
+        "admin": "Administrador",
+    }.get(role, role)
+    expira    = (datetime.utcnow() + timedelta(days=INVITE_EXPIRY_DAYS)).strftime("%d/%m/%Y")
+    text_body = (
+        f"Você foi convidado para HIPNUS COSMETICOS!\n\n"
+        f"Perfil: {role_label}\nVálidade: {expira}\n\nLink de cadastro:\n{signup_url}\n"
     )
     html_body = f"""\
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#F6F4FB;font-family:Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F6F4FB;padding:32px 0;">
 <tr><td align="center">
-<table width="560" cellpadding="0" cellspacing="0" border="0" style="background:#fff;border-radius:16px;border:1px solid #E7E3F2;">
+<table width="560" cellpadding="0" cellspacing="0" border="0"
+       style="background:#fff;border-radius:16px;border:1px solid #E7E3F2;">
 <tr><td style="background:#7C3AED;padding:28px 40px;text-align:center;border-radius:16px 16px 0 0;">
   <div style="font-size:1.3rem;font-weight:800;color:#fff;">HIPNUS COSM&#201;TICOS</div>
-  <div style="font-size:.72rem;color:rgba(255,255,255,.75);letter-spacing:2px;text-transform:uppercase;margin-top:4px;">Convite de Acesso</div>
+  <div style="font-size:.72rem;color:rgba(255,255,255,.75);letter-spacing:2px;
+              text-transform:uppercase;margin-top:4px;">Convite de Acesso</div>
 </td></tr>
 <tr><td style="padding:32px 40px;">
   <p style="font-size:1rem;color:#1A1430;margin:0 0 20px;line-height:1.6;">
-    Voc&#234; recebeu um convite exclusivo como <strong>{role_label}</strong>. V&#225;lido at&#233; <strong>{expira}</strong>.
+    Voc&#234; recebeu um convite exclusivo como <strong>{role_label}</strong>.
+    V&#225;lido at&#233; <strong>{expira}</strong>.
   </p>
   <table cellpadding="0" cellspacing="0" border="0" width="100%">
-  <tr><td align="center" style="padding:0 0 28px;">
-    <a href="{signup_url}" style="display:inline-block;background:#7C3AED;color:#fff;text-decoration:none;
-       font-size:15px;font-weight:bold;padding:14px 40px;border-radius:10px;">Concluir meu cadastro</a>
+  <tr><td align="center" style="padding:0 0 20px;">
+    <a href="{signup_url}"
+       style="display:inline-block;background:#7C3AED;color:#fff;text-decoration:none;
+              font-size:15px;font-weight:bold;padding:14px 40px;border-radius:10px;">
+      Concluir meu cadastro
+    </a>
   </td></tr></table>
+  <p style="font-size:.8rem;color:#6B6580;margin:0 0 8px;">Ou copie e cole o link no navegador:</p>
   <div style="background:#F6F4FB;border:1px solid #E7E3F2;border-radius:6px;padding:10px 14px;">
-    <span style="font-family:monospace;font-size:12px;color:#7C3AED;word-break:break-all;">{signup_url}</span>
+    <span style="font-family:monospace;font-size:12px;color:#7C3AED;
+                 word-break:break-all;">{signup_url}</span>
   </div>
 </td></tr>
-<tr><td style="background:#F6F4FB;padding:14px 40px;text-align:center;border-radius:0 0 16px 16px;border-top:1px solid #E7E3F2;">
-  <p style="color:#9CA3AF;font-size:11px;margin:0;">HIPNUS COSM&#201;TICOS</p>
+<tr><td style="background:#F6F4FB;padding:14px 40px;text-align:center;
+              border-radius:0 0 16px 16px;border-top:1px solid #E7E3F2;">
+  <p style="color:#9CA3AF;font-size:11px;margin:0;">HIPNUS COSM&#201;TICOS &copy; 2026</p>
 </td></tr></table></td></tr></table></body></html>"""
     msg = MIMEMultipart("alternative")
     msg["Subject"] = Header("Seu convite para HIPNUS COSMETICOS", "utf-8").encode()
@@ -174,14 +192,20 @@ def _enviar_smtp(destinatario: str, signup_url: str, role: str) -> tuple[bool, s
     msg.attach(MIMEText(html_body, "html",  "utf-8"))
     try:
         if SMTP_USE_SSL:
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context(), timeout=15) as s:
-                s.login(SMTP_USER, SMTP_PASS); s.sendmail(SMTP_REMETENTE, destinatario, msg.as_string())
+            with smtplib.SMTP_SSL(
+                SMTP_HOST, SMTP_PORT,
+                context=ssl.create_default_context(), timeout=15,
+            ) as s:
+                s.login(SMTP_USER, SMTP_PASS)
+                s.sendmail(SMTP_REMETENTE, destinatario, msg.as_string())
         else:
             with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as s:
                 s.ehlo()
                 if SMTP_USE_TLS:
-                    s.starttls(context=ssl.create_default_context()); s.ehlo()
-                s.login(SMTP_USER, SMTP_PASS); s.sendmail(SMTP_REMETENTE, destinatario, msg.as_string())
+                    s.starttls(context=ssl.create_default_context())
+                    s.ehlo()
+                s.login(SMTP_USER, SMTP_PASS)
+                s.sendmail(SMTP_REMETENTE, destinatario, msg.as_string())
         return True, "E-mail enviado."
     except smtplib.SMTPAuthenticationError:
         return False, "Falha de autenticação SMTP."
@@ -189,52 +213,65 @@ def _enviar_smtp(destinatario: str, signup_url: str, role: str) -> tuple[bool, s
         return False, str(exc)
 
 
-# ─── UI Helpers ──────────────────────────────────────────────────────────────────
+# ─── UI Helpers ───────────────────────────────────────────────────────────────────
 def _badge_role(role: str) -> str:
-    return {"b2b": "🎤 Profissional", "b2c": "👤 Cliente", "admin": "🛡️ Admin"}.get(role, role)
+    return {
+        "b2b": "🎤 Profissional", "b2c": "👤 Cliente", "admin": "🛡️ Admin",
+    }.get(role, role)
 
 def _badge_origem(origem: str) -> str:
-    return {"api": "🔵 API", "db_direto": "🟢 Banco Direto", "offline": "🟡 Offline"}.get(origem, origem)
+    return {
+        "api": "🔵 API", "db_direto": "🟢 Banco Direto", "offline": "🟡 Offline",
+    }.get(origem, origem)
 
 def _card_link(signup_url: str, role: str, criado_por: str, origem: str) -> None:
     st.html(f"""
-    <div style="background:#f3f0ff;border:1.5px solid #c4b5fd;border-radius:12px;padding:18px 20px;margin:12px 0;">
-        <div style="font-size:.72rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#7C3AED;margin-bottom:6px;">
+    <div style="background:#f3f0ff;border:1.5px solid #c4b5fd;border-radius:12px;
+                padding:18px 20px;margin:12px 0;">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.8px;
+                    text-transform:uppercase;color:#7C3AED;margin-bottom:6px;">
             🔗 Link de cadastro — expira em 7 dias
         </div>
         <div style="font-size:.88rem;color:#1A1430;word-break:break-all;background:#fff;
-                    padding:10px 14px;border-radius:8px;border:1px solid #ddd5f8;font-family:monospace;">
+                    padding:10px 14px;border-radius:8px;border:1px solid #ddd5f8;
+                    font-family:monospace;">
             {signup_url}
         </div>
         <div style="font-size:.75rem;color:#6B6580;margin-top:8px;">
-            Perfil: <strong>{_badge_role(role)}</strong> &nbsp;·&nbsp;
-            Criado por: <strong>{criado_por}</strong> &nbsp;·&nbsp;
-            Origem: {_badge_origem(origem)}
+            Perfil: <strong>{_badge_role(role)}</strong>
+            &nbsp;·&nbsp; Criado por: <strong>{criado_por}</strong>
+            &nbsp;·&nbsp; Origem: {_badge_origem(origem)}
         </div>
     </div>""")
-    st.text_area("Copie o link:", value=signup_url, height=75, key=f"_copy_{signup_url[-8:]}")
+    st.text_area(
+        "Copie o link:", value=signup_url,
+        height=75, key=f"_copy_{signup_url[-8:]}",
+    )
 
 def _aviso_smtp() -> None:
     if not SMTP_USER or not SMTP_PASS:
         st.warning("⚙️ SMTP não configurado. Verifique o bloco [email] nos Streamlit Secrets.")
     else:
-        st.html(f"""<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;
-            padding:10px 16px;font-size:.82rem;color:#166534;margin-bottom:12px;">
-            ✅ <strong>SMTP:</strong> {SMTP_HOST}:{SMTP_PORT} — {SMTP_REMETENTE}</div>""")
+        st.html(f"""
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;
+                    padding:10px 16px;font-size:.82rem;color:#166534;margin-bottom:12px;">
+            ✅ <strong>SMTP:</strong> {SMTP_HOST}:{SMTP_PORT} — {SMTP_REMETENTE}
+        </div>""")
 
 def _debug_info() -> None:
     db_url  = resolve_db_url()
     app_url = _resolve_app_url()
     with st.expander("🔧 Info técnica (admin)"):
         st.code(
-            f"API_URL:      {API_URL}\n"
-            f"DATABASE_URL: {db_url}\n"
-            f"APP_BASE_URL: {app_url}",
+            f"API_URL:         {API_URL}\n"
+            f"DATABASE_URL:    {db_url}\n"
+            f"APP_BASE_URL:    {app_url}\n"
+            f"SIGNUP_URL ex:   {_signup_url('TOKEN_EXEMPLO')}",
             language="text",
         )
 
 
-# ─── Header ──────────────────────────────────────────────────────────────────
+# ─── Header ────────────────────────────────────────────────────────────────────
 components.page_header(
     title="Convites de Parceiros",
     subtitle="Gerencie convites personalizados para novos distribuidores, salões e parceiros.",
@@ -245,7 +282,7 @@ _debug_info()
 tab1, tab2, tab3 = st.tabs(["📨 Enviar Convite", "🔗 Gerar Convite", "📋 Monitorar Convites"])
 
 
-# ══ TAB 1 — ENVIAR CONVITE ────────────────────────────────────────────────────────────────
+# ══ TAB 1 — ENVIAR CONVITE ─────────────────────────────────────────────────────────────────
 with tab1:
     components.section_title("Enviar convite por e-mail")
     st.caption("Prioridade: 1º API, 2º banco direto (path absoluto), 3º offline.")
@@ -258,21 +295,29 @@ with tab1:
         with col2:
             role_t1 = st.selectbox(
                 "Perfil", ["b2b", "b2c", "admin"],
-                format_func=lambda r: {"b2b": "Profissional / Salão", "b2c": "Cliente Final", "admin": "Administrador"}.get(r, r),
+                format_func=lambda r: {
+                    "b2b": "Profissional / Salão",
+                    "b2c": "Cliente Final",
+                    "admin": "Administrador",
+                }.get(r, r),
                 key="role_t1",
             )
-        submitted_t1 = st.form_submit_button("📨 Enviar convite", use_container_width=True, type="primary")
+        submitted_t1 = st.form_submit_button(
+            "📨 Enviar convite", use_container_width=True, type="primary",
+        )
 
     if submitted_t1:
         if not email_t1 or "@" not in email_t1:
             st.error("⚠️ Informe um e-mail válido.")
         else:
             criado_por = usuario.get("login", "admin")
-            # Caminho 1: API
             with st.spinner("Criando convite..."):
-                resultado = _criar_via_api(email_t1, role_t1, token_admin=st.session_state.get("_auth_token"))
+                resultado = _criar_via_api(
+                    email_t1, role_t1,
+                    token_admin=st.session_state.get("_auth_token"),
+                )
             if resultado:
-                convite = {**resultado, "origem": "api"}
+                convite = {**resultado, "origem": resultado.get("origem", "api")}
                 st.session_state["_convites_gerados"].insert(0, convite)
                 ok, msg = _enviar_smtp(email_t1, resultado["signup_url"], role_t1)
                 if ok:
@@ -281,26 +326,30 @@ with tab1:
                     st.warning(f"⚠️ Convite salvo, e-mail falhou: {msg}")
                 _card_link(resultado["signup_url"], role_t1, criado_por, "api")
             else:
-                # Caminho 2: banco direto (path absoluto)
-                with st.spinner("API indisponível. Salvando no banco (path absoluto)..."):
+                with st.spinner("API indisponível. Salvando no banco..."):
                     resultado = _criar_via_db(email_t1, role_t1, criado_por)
                 if resultado:
                     convite = {**resultado, "origem": "db_direto"}
                     st.session_state["_convites_gerados"].insert(0, convite)
                     ok, msg = _enviar_smtp(email_t1, resultado["signup_url"], role_t1)
                     if ok:
-                        st.success(f"✅ Convite salvo no banco + e-mail enviado para **{email_t1}**!")
+                        st.success(
+                            f"✅ Convite salvo no banco + e-mail enviado para **{email_t1}**!"
+                        )
                         convite["email_sent"] = True
                     else:
-                        st.warning(f"⚠️ Token salvo no banco, e-mail falhou: {msg}. Copie o link abaixo.")
+                        st.warning(
+                            f"⚠️ Token salvo no banco, e-mail falhou: {msg}. "
+                            "Copie o link abaixo."
+                        )
                     _card_link(resultado["signup_url"], role_t1, criado_por, "db_direto")
                 else:
-                    # Caminho 3: offline
                     convite = _criar_offline(email_t1, role_t1, criado_por)
                     st.session_state["_convites_gerados"].insert(0, convite)
                     st.error(
                         "❌ API e banco indisponíveis. Token offline — "
-                        "**o link NÃO será validado**. Verifique DATABASE_URL nos Streamlit Secrets."
+                        "**o link NÃO será validado**. "
+                        "Verifique DATABASE_URL nos Streamlit Secrets."
                     )
                     ok, _ = _enviar_smtp(email_t1, convite["signup_url"], role_t1)
                     if ok:
@@ -319,29 +368,43 @@ with tab2:
         with col2:
             role_t2 = st.selectbox(
                 "Perfil", ["b2b", "b2c", "admin"],
-                format_func=lambda r: {"b2b": "Profissional / Salão", "b2c": "Cliente Final", "admin": "Administrador"}.get(r, r),
+                format_func=lambda r: {
+                    "b2b": "Profissional / Salão",
+                    "b2c": "Cliente Final",
+                    "admin": "Administrador",
+                }.get(r, r),
                 key="role_t2",
             )
-        submitted_t2 = st.form_submit_button("🔗 Gerar link", use_container_width=True)
+        submitted_t2 = st.form_submit_button(
+            "🔗 Gerar link", use_container_width=True,
+        )
     if submitted_t2:
         if not email_t2 or "@" not in email_t2:
             st.error("⚠️ Informe um e-mail válido.")
         else:
             criado_por = usuario.get("login", "admin")
             with st.spinner("Gerando convite..."):
-                resultado = _criar_via_api(email_t2, role_t2, st.session_state.get("_auth_token")) \
-                         or _criar_via_db(email_t2, role_t2, criado_por)
+                resultado = (
+                    _criar_via_api(email_t2, role_t2, st.session_state.get("_auth_token"))
+                    or _criar_via_db(email_t2, role_t2, criado_por)
+                )
             if resultado:
-                convite = {**resultado, "email_sent": False, "origem": resultado.get("origem", "db_direto")}
+                convite = {
+                    **resultado,
+                    "email_sent": False,
+                    "origem":     resultado.get("origem", "db_direto"),
+                }
                 st.success("📋 Convite salvo no banco.")
             else:
                 convite = _criar_offline(email_t2, role_t2, criado_por)
                 st.warning("⚠️ Banco indisponível. Token offline.")
             st.session_state["_convites_gerados"].insert(0, convite)
-            _card_link(convite["signup_url"], role_t2, criado_por, convite["origem"])
+            _card_link(
+                convite["signup_url"], role_t2, criado_por, convite["origem"],
+            )
 
 
-# ══ TAB 3 — MONITORAR ────────────────────────────────────────────────────────────────────
+# ══ TAB 3 — MONITORAR ───────────────────────────────────────────────────────────────────
 with tab3:
     components.section_title("Monitorar convites da sessão")
     convites = st.session_state.get("_convites_gerados", [])
@@ -351,26 +414,35 @@ with tab3:
             st.session_state["_convites_gerados"] = []
             st.rerun()
     if not convites:
-        components.empty_state(icon="📨", title="Nenhum convite nesta sessão",
-                               message="Use 'Enviar Convite' ou 'Gerar Convite' para criar um link.")
+        components.empty_state(
+            icon="📨",
+            title="Nenhum convite nesta sessão",
+            message="Use 'Enviar Convite' ou 'Gerar Convite' para criar um link.",
+        )
     else:
-        total = len(convites)
+        total    = len(convites)
         enviados = sum(1 for c in convites if c.get("email_sent"))
         banco    = sum(1 for c in convites if c.get("origem") in ("api", "db_direto"))
         offline  = sum(1 for c in convites if c.get("origem") == "offline")
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Total", total); m2.metric("E-mail enviado", enviados)
-        m3.metric("Salvo no banco", banco); m4.metric("Offline", offline)
+        m1.metric("Total", total)
+        m2.metric("E-mail enviado", enviados)
+        m3.metric("Salvo no banco", banco)
+        m4.metric("Offline", offline)
         components.divider()
         for inv in convites:
             status_env = "✅ Enviado" if inv.get("email_sent") else "📋 Manual"
-            label = f"{inv.get('email','N/A')} — {status_env} · {_badge_role(inv.get('role',''))} · {_badge_origem(inv.get('origem',''))}"
+            label = (
+                f"{inv.get('email','N/A')} — {status_env} · "
+                f"{_badge_role(inv.get('role',''))} · "
+                f"{_badge_origem(inv.get('origem',''))}"
+            )
             with st.expander(label):
                 col_a, col_b = st.columns(2)
                 with col_a:
                     st.markdown(f"**Perfil:** {_badge_role(inv.get('role',''))}")
-                    st.markdown(f"**E-mail:** {'✅ Sim' if inv.get('email_sent') else '❌ Não'}")
-                    st.markdown(f"**Expira:** {inv.get('expires_at', '—')}")
+                    st.markdown(f"**E-mail:** {'\u2705 Sim' if inv.get('email_sent') else '\u274c N\u00e3o'}")
+                    st.markdown(f"**Expira:** {inv.get('expires_at', '\u2014')}")
                     st.markdown(f"**Origem:** {_badge_origem(inv.get('origem', ''))}")
                 with col_b:
                     st.markdown(f"**Token:** `{inv.get('token', 'N/A')}`")
