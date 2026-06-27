@@ -3,6 +3,10 @@ config.py — HIPNUS COSMÉTICOS
 ================================
 Configurações globais da aplicação via Pydantic Settings.
 Todas as variáveis são lidas do ambiente (.env) com valores padrão para dev.
+
+NOTA: Pydantic v2 preserva o nome do campo em lowercase.
+      Use sempre settings.database_url (minúsculo).
+      A property DATABASE_URL existe para retrocompatibilidade.
 """
 from __future__ import annotations
 
@@ -18,10 +22,10 @@ class Settings(BaseSettings):
     debug:       bool = True
 
     # JWT
-    secret_key:        str = "hipnus-dev-secret-change-in-production"
+    secret_key:           str = "hipnus-dev-secret-change-in-production"
     access_token_minutes: int = 480  # 8 horas
 
-    # Banco de dados
+    # Banco de dados (Pydantic v2: lowercase)
     database_url: str = "sqlite:///./data/hipnus.db"
 
     # Admin padrão (criado no startup se não existir)
@@ -31,8 +35,8 @@ class Settings(BaseSettings):
     admin_password: str = "hipnus@2026"
 
     # Asaas
-    asaas_api_key:  str = ""
-    asaas_base_url: str = "https://api-sandbox.asaas.com/v3"
+    asaas_api_key:     str = ""
+    asaas_base_url:    str = "https://api-sandbox.asaas.com/v3"
     partner_wallet_id: str = ""
 
     # SMTP Hostinger
@@ -44,6 +48,12 @@ class Settings(BaseSettings):
 
     # Frontend
     hipnus_api_url: str = "http://localhost:8000"
+
+    # ─── Retrocompatibilidade: permite settings.DATABASE_URL (maiúsculo) ───
+    @property
+    def DATABASE_URL(self) -> str:  # noqa: N802
+        """Alias maiúsculo para database_url — evita AttributeError em código legado."""
+        return self.database_url
 
 
 settings = Settings()

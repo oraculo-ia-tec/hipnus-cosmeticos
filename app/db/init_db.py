@@ -7,7 +7,7 @@ Deve ser chamado no startup do Streamlit (streamlit_app.py).
 Lógica de resolução do DATABASE_URL (em ordem de prioridade):
   1. st.secrets["DATABASE_URL"]  (Streamlit Cloud)
   2. os.environ["DATABASE_URL"]  (VPS / Docker)
-  3. settings.DATABASE_URL        (default do Pydantic: sqlite:///./data/hipnus.db)
+  3. settings.database_url       (default do Pydantic: sqlite:///./data/hipnus.db)
 
 Idempotente: só cria tabelas que ainda não existem, nunca destrói dados.
 """
@@ -25,7 +25,7 @@ def _resolve_database_url() -> str:
     Resolve o DATABASE_URL com prioridade:
       1. st.secrets (Streamlit Cloud)
       2. os.environ
-      3. Pydantic settings (default)
+      3. Pydantic settings (default lowercase)
     """
     # 1. Tenta st.secrets
     try:
@@ -41,10 +41,10 @@ def _resolve_database_url() -> str:
     if val:
         return val.strip()
 
-    # 3. Default do Pydantic settings
+    # 3. Default do Pydantic settings (Pydantic v2 = lowercase)
     try:
         from app.core.config import settings
-        return settings.DATABASE_URL
+        return settings.database_url  # <─ CORRIGIDO: lowercase
     except Exception:
         return "sqlite:///./data/hipnus.db"
 
@@ -62,14 +62,12 @@ def init_db() -> None:
         db_url = _resolve_database_url()
         logger.info("[init_db] DATABASE_URL resolvido: %s", db_url[:40])
 
-        # Importa Base e cria engine com a URL resolvida
         from sqlalchemy import create_engine
-        from sqlalchemy.orm import DeclarativeBase
 
         # Importa Base do projeto
         from app.db.base import Base
 
-        # Importa models para registrar no metadata (ordem importa)
+        # Importa models para registrar no metadata
         import app.domains.invites.models  # noqa: F401
         try:
             import app.domains.users.models    # noqa: F401
@@ -95,7 +93,6 @@ def init_db() -> None:
             db_path.parent.mkdir(parents=True, exist_ok=True)
             logger.info("[init_db] Diretório SQLite: %s", db_path.parent.resolve())
 
-        # Cria engine com a URL resolvida e executa create_all
         connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
         engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
         Base.metadata.create_all(bind=engine)

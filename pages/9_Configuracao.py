@@ -1,3 +1,6 @@
+# pages/9_Configuracao.py — HIPNUS COSMÉTICOS
+# Redireciona para a página real em frontend/pages/8_Configuracao.py
+# Padrão idêntico aos demais arquivos em pages/ (raiz do repositório).
 import sys
 from pathlib import Path
 
