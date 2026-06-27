@@ -24,7 +24,7 @@ from decimal import Decimal
 from typing import Generator
 
 
-# ─── Configuração ───────────────────────────────────────────────────────────────────
+# ─── Configuração ────────────────────────────────────────────────────────────
 GROQ_API_KEY  = ""
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
@@ -32,15 +32,27 @@ MAX_TOKENS    = 1024
 
 
 def _get_api_key() -> str:
-    """Lê GROQ_API_KEY do Streamlit Secrets ou variável de ambiente."""
+    """Lê GROQ_API_KEY: tenta st.secrets primeiro (acesso direto por chave),
+    depois variável de ambiente, depois a constante local."""
+    # 1) Streamlit Secrets — acesso direto por chave (mais confiável)
     try:
         import streamlit as st
-        val = st.secrets.get("GROQ_API_KEY", "")
+        # Tenta acesso direto via atributo (secrets.GROQ_API_KEY)
+        val = getattr(st.secrets, "GROQ_API_KEY", None)
+        if val:
+            return str(val)
+        # Fallback: acesso por índice (st.secrets["GROQ_API_KEY"])
+        val = st.secrets["GROQ_API_KEY"]
         if val:
             return str(val)
     except Exception:
         pass
-    return os.environ.get("GROQ_API_KEY", GROQ_API_KEY)
+    # 2) Variável de ambiente
+    val = os.environ.get("GROQ_API_KEY", "")
+    if val:
+        return val
+    # 3) Constante hardcoded (vazio por padrão; nunca expor em produção)
+    return GROQ_API_KEY
 
 
 def groq_status() -> dict:
@@ -53,7 +65,7 @@ def groq_status() -> dict:
     }
 
 
-# ─── Construtor de contexto ─────────────────────────────────────────────────────────────────
+# ─── Construtor de contexto ──────────────────────────────────────────────────
 def _brl(v) -> str:
     try:
         s = f"{Decimal(str(v)):,.2f}"
@@ -70,12 +82,6 @@ def build_context(
 ) -> str:
     """
     Monta o bloco de contexto dinâmico injetado no system prompt.
-
-    Parâmetros:
-        usuario           : dict com keys name, perfil, email (da sessão)
-        cart              : st.session_state["cart"] atual
-        historico_pedidos : st.session_state["historico_pedidos"]
-        smtp_ok           : resultado de smtp_status()["ready"]
     """
     linhas: list[str] = []
 
@@ -105,7 +111,7 @@ def build_context(
     # — Histórico de pedidos
     if historico_pedidos:
         pedidos_txt = []
-        for o in historico_pedidos[:5]:   # máx 5 para não inflar o prompt
+        for o in historico_pedidos[:5]:
             totais = o.get("totais", {})
             pedidos_txt.append(
                 f"  Ref {o.get('external_ref','?')} | "
@@ -125,7 +131,7 @@ def build_context(
     return "\n".join(linhas)
 
 
-# ─── System prompt ──────────────────────────────────────────────────────────────────────
+# ─── System prompt ───────────────────────────────────────────────────────────
 def _build_system_prompt(context_block: str) -> str:
     return f"""\
 Você é a **IA Consultora da HIPNUS COSMÉTICOS**, assistente especializada na plataforma.
@@ -158,24 +164,13 @@ Limitações honestas:
 """
 
 
-# ─── Chat via Groq ─────────────────────────────────────────────────────────────────────
+# ─── Chat via Groq ────────────────────────────────────────────────────────────
 def chat_stream(
     messages: list[dict],
     context_block: str,
 ) -> Generator[str, None, None]:
     """
     Envia o histórico de mensagens para a Groq API e retorna chunks em streaming.
-
-    Parâmetros:
-        messages      : lista de {"role": "user"|"assistant", "content": str}
-        context_block : saída de build_context()
-
-    Yields:
-        str — cada fragmento de texto recebido no stream
-
-    Raises:
-        RuntimeError se GROQ_API_KEY não estiver configurada
-        Exception com mensagem amigável em caso de erro da API
     """
     api_key = _get_api_key()
     if not api_key:
