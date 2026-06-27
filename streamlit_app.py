@@ -1,8 +1,9 @@
 """
-streamlit_app.py — HIPNUS COSMÉTICOS
-======================================
-Entrypoint do Streamlit Cloud — página de Login.
+streamlit_app.py — HIPNUS COSMÉTICOS  ·  Premium Neon Edition
+==============================================================
+Entrypoint do Streamlit Cloud — página de Login Premium.
 Aceita login por USERNAME ou E-MAIL.
+UI/UX Pro Max: fontes premium, neon glow, glassmorphism, animações, FAB.
 """
 import sys
 from pathlib import Path
@@ -38,6 +39,7 @@ if st.session_state.get("autenticado"):
 
 st.html("""
 <style>
+/* ── Reset full-viewport ───────────────────────────────────── */
 [data-testid="stMainBlockContainer"],
 [data-testid="stMain"] > div,
 .block-container {
@@ -47,60 +49,122 @@ st.html("""
 [data-testid="stSidebar"],
 [data-testid="collapsedControl"],
 header[data-testid="stHeader"] { display: none !important; }
+
+/* ── Layout split ─────────────────────────────────────────── */
 [data-testid="stHorizontalBlock"] {
   gap: 0 !important; align-items: stretch !important; min-height: 100vh !important;
 }
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
   padding: 0 !important; min-height: 100vh;
 }
+
+/* ── Painel Esquerdo — Neon Mesh ──────────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child {
-  background: linear-gradient(145deg, #1a0733 0%, #3b1278 40%, #6c2bd9 75%, #8b44f6 100%);
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(185,131,255,0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(0,245,255,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(255,110,247,0.08) 0%, transparent 40%),
+    linear-gradient(145deg, #0d0019 0%, #1a0733 35%, #2d1060 65%, #1a0733 100%);
+  background-size: 100% 100%;
+  position: relative;
+  overflow: hidden;
 }
+
+/* ── Painel Direito — Clean Premium ──────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:last-child {
-  background: #f8f7fc; display: flex; flex-direction: column;
+  background: #faf9fd;
+  display: flex; flex-direction: column;
   justify-content: center; padding: 48px 40px !important;
+  position: relative;
 }
+[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:last-child::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 1px; height: 100%;
+  background: linear-gradient(180deg, transparent, rgba(185,131,255,0.4), transparent);
+}
+
+/* ── Inputs Premium ──────────────────────────────────────── */
 [data-testid="stTextInput"] > div > div > input {
-  background: #fff !important; border: 1.5px solid #e5e0f5 !important;
-  border-radius: 12px !important; font-size: .96rem !important;
-  padding: 13px 16px !important; color: #1a0a2e !important;
-  transition: border-color .18s, box-shadow .18s !important;
+  background: #fff !important;
+  border: 1.5px solid #e5e0f5 !important;
+  border-radius: 14px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .95rem !important;
+  padding: 14px 18px !important;
+  color: #1a0a2e !important;
+  transition: border-color .2s ease, box-shadow .2s ease !important;
+  box-shadow: 0 2px 8px rgba(124,58,237,.04) !important;
 }
 [data-testid="stTextInput"] > div > div > input:focus {
   border-color: #7c3aed !important;
-  box-shadow: 0 0 0 4px rgba(124,58,237,.12) !important; outline: none !important;
+  box-shadow: 0 0 0 4px rgba(124,58,237,.1), 0 0 20px rgba(185,131,255,.12) !important;
+  outline: none !important;
 }
 [data-testid="stTextInput"] > label {
-  font-size: .8rem !important; font-weight: 600 !important;
-  color: #4b4567 !important; letter-spacing: .2px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .78rem !important; font-weight: 600 !important;
+  color: #6b5d8a !important; letter-spacing: .4px !important;
+  text-transform: uppercase !important;
 }
+
+/* ── Botão Entrar — Neon Gradient ────────────────────────── */
 [data-testid="stButton"] > button[kind="primary"] {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%) !important;
-  border: none !important; border-radius: 12px !important; height: 50px !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 60%, #7c3aed 100%) !important;
+  background-size: 200% 100% !important;
+  border: none !important; border-radius: 14px !important; height: 52px !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: .97rem !important; font-weight: 700 !important;
-  letter-spacing: .3px !important; color: #fff !important;
-  box-shadow: 0 4px 20px rgba(124,58,237,.35) !important;
-  transition: all .18s cubic-bezier(0.16,1,0.3,1) !important; width: 100% !important;
+  letter-spacing: .4px !important; color: #fff !important;
+  box-shadow: 0 4px 24px rgba(124,58,237,.4), 0 0 0 1px rgba(185,131,255,.2) !important;
+  transition: all .25s cubic-bezier(0.16,1,0.3,1) !important;
+  width: 100% !important;
 }
 [data-testid="stButton"] > button[kind="primary"]:hover {
-  box-shadow: 0 8px 28px rgba(124,58,237,.45) !important; transform: translateY(-1px) !important;
+  background-position: right center !important;
+  box-shadow: 0 8px 40px rgba(124,58,237,.55), 0 0 40px rgba(185,131,255,.25) !important;
+  transform: translateY(-2px) !important;
 }
+[data-testid="stButton"] > button[kind="primary"]:active {
+  transform: translateY(0px) !important;
+}
+
+/* ── Botão Demo ───────────────────────────────────────────── */
 [data-testid="stButton"] > button:not([kind="primary"]) {
-  background: #fff !important; border: 1.5px solid #e5e0f5 !important;
-  border-radius: 12px !important; height: 46px !important;
-  font-size: .87rem !important; font-weight: 600 !important;
-  color: #7c3aed !important; transition: all .18s ease !important; width: 100% !important;
+  background: #fff !important;
+  border: 1.5px solid #e5e0f5 !important;
+  border-radius: 14px !important; height: 48px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .88rem !important; font-weight: 600 !important;
+  color: #7c3aed !important;
+  transition: all .2s ease !important; width: 100% !important;
 }
 [data-testid="stButton"] > button:not([kind="primary"]):hover {
-  background: #f3f0ff !important; border-color: #7c3aed !important;
+  background: #f3f0ff !important;
+  border-color: rgba(124,58,237,.35) !important;
+  box-shadow: 0 0 20px rgba(185,131,255,.15) !important;
 }
+
+/* ── Animações login ──────────────────────────────────────── */
 @keyframes fadeSlideRight {
-  from { opacity: 0; transform: translateX(-24px); }
+  from { opacity: 0; transform: translateX(-32px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes fadeSlideLeft {
-  from { opacity: 0; transform: translateX(24px); }
+  from { opacity: 0; transform: translateX(32px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0) scale(1); opacity: .6; }
+  50%       { transform: translateY(-20px) scale(1.05); opacity: .9; }
+}
+@keyframes spinRing {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes shimmerBorder {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
 }
 </style>
 """)
@@ -112,61 +176,198 @@ with col_left:
     <style>
     [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child
     [data-testid="stHtml"] { height: 100%; }
+
+    /* ── Orbes decorativos ─────────────── */
+    .hip-orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(60px); pointer-events: none;
+    }
+    .hip-orb-1 {
+      width: 380px; height: 380px;
+      top: -80px; left: -80px;
+      background: radial-gradient(circle, rgba(185,131,255,0.2) 0%, transparent 70%);
+      animation: floatOrb 8s ease-in-out infinite;
+    }
+    .hip-orb-2 {
+      width: 280px; height: 280px;
+      bottom: 40px; right: -60px;
+      background: radial-gradient(circle, rgba(0,245,255,0.12) 0%, transparent 70%);
+      animation: floatOrb 11s ease-in-out infinite reverse;
+    }
+    .hip-orb-3 {
+      width: 200px; height: 200px;
+      top: 50%; left: 50%;
+      background: radial-gradient(circle, rgba(255,110,247,0.08) 0%, transparent 70%);
+      animation: floatOrb 14s ease-in-out infinite 2s;
+    }
+
+    /* ── Grid de pontos ────────────────── */
+    .hip-dot-grid {
+      position: absolute; inset: 0;
+      background-image: radial-gradient(rgba(185,131,255,0.15) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+    }
+
+    /* ── Anel giratório decorativo ─────── */
+    .hip-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 500px; height: 500px;
+      margin: -250px 0 0 -250px;
+      border-radius: 50%;
+      border: 1px solid rgba(185,131,255,0.06);
+      animation: spinRing 40s linear infinite;
+      pointer-events: none;
+    }
+    .hip-ring::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      width: 6px; height: 6px; margin-left: -3px;
+      border-radius: 50%;
+      background: rgba(185,131,255,0.5);
+      box-shadow: 0 0 12px rgba(185,131,255,0.8);
+    }
+    .hip-ring-2 {
+      width: 360px; height: 360px;
+      margin: -180px 0 0 -180px;
+      border-color: rgba(0,245,255,0.04);
+      animation: spinRing 28s linear infinite reverse;
+    }
+
+    /* ── Painel principal ──────────────── */
     .hip-panel-inner {
-      min-height: 100vh; padding: 56px 48px;
+      min-height: 100vh; padding: 52px 52px;
       display: flex; flex-direction: column; justify-content: space-between;
       position: relative; overflow: hidden;
-      animation: fadeSlideRight 0.7s cubic-bezier(0.16,1,0.3,1) both;
+      animation: fadeSlideRight 0.75s cubic-bezier(0.16,1,0.3,1) both;
     }
-    .hip-panel-inner::before {
-      content: ""; position: absolute; top: -120px; right: -120px;
-      width: 420px; height: 420px; border-radius: 50%;
-      background: rgba(255,255,255,0.04); pointer-events: none;
-    }
-    .hip-panel-inner::after {
-      content: ""; position: absolute; bottom: -80px; left: -80px;
-      width: 300px; height: 300px; border-radius: 50%;
-      background: rgba(255,255,255,0.03); pointer-events: none;
-    }
-    .hip-logo-row { display: flex; align-items: center; gap: 14px; }
+
+    /* ── Logo row ──────────────────────── */
+    .hip-logo-row { display: flex; align-items: center; gap: 14px; position: relative; z-index: 2; }
     .hip-logo-icon {
-      width: 48px; height: 48px; border-radius: 14px;
-      background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.25);
+      width: 50px; height: 50px; border-radius: 15px;
+      background: linear-gradient(135deg, rgba(185,131,255,0.2) 0%, rgba(124,58,237,0.3) 100%);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(185,131,255,0.35);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 1.4rem; color: #fff; letter-spacing: -1px; flex-shrink: 0;
+      font-family: 'Playfair Display', serif;
+      font-weight: 900; font-size: 1.45rem; color: #fff;
+      letter-spacing: -1px; flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(185,131,255,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
     }
-    .hip-logo-text .brand-name { font-weight: 800; font-size: 1.05rem; color: #fff; letter-spacing: -.3px; line-height: 1.1; }
-    .hip-logo-text .brand-sub  { font-size: .62rem; color: rgba(255,255,255,.55); letter-spacing: 2.5px; text-transform: uppercase; }
-    .hip-hero-block { padding: 0 0 16px; }
+    .hip-logo-text .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-weight: 800; font-size: 1.1rem;
+      background: linear-gradient(90deg, #fff 0%, rgba(185,131,255,0.9) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      letter-spacing: -.3px; line-height: 1.1;
+    }
+    .hip-logo-text .brand-sub  {
+      font-size: .62rem; color: rgba(185,131,255,0.55);
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+
+    /* ── Hero block ────────────────────── */
+    .hip-hero-block { padding: 0 0 16px; position: relative; z-index: 2; }
     .kicker-pill {
-      display: inline-block; background: rgba(255,255,255,.12);
-      border: 1px solid rgba(255,255,255,.2); color: rgba(255,255,255,.85);
-      font-size: .66rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-      padding: 5px 14px; border-radius: 999px; margin-bottom: 22px;
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(185,131,255,.1);
+      border: 1px solid rgba(185,131,255,.25);
+      color: rgba(185,131,255,.9);
+      font-family: 'Inter', sans-serif;
+      font-size: .64rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+      padding: 6px 16px; border-radius: 999px; margin-bottom: 28px;
+    }
+    .kicker-pill::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(185,131,255,0.8);
+      box-shadow: 0 0 8px rgba(185,131,255,0.8);
+      flex-shrink: 0;
     }
     .hip-hero-block h1 {
-      font-size: clamp(1.8rem, 2.5vw, 2.8rem); font-weight: 800;
-      color: #fff; line-height: 1.2; letter-spacing: -.5px; margin: 0 0 18px;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 2.8vw, 3.2rem);
+      font-weight: 900; color: #fff;
+      line-height: 1.15; letter-spacing: -.5px; margin: 0 0 20px;
     }
     .hip-hero-block h1 span {
-      background: linear-gradient(90deg, #e2b4ff, #b983ff);
+      background: linear-gradient(90deg, #e2b4ff 0%, #b983ff 40%, #00f5ff 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: shimmerBorder 4s linear infinite;
+    }
+    .hip-hero-block p {
+      color: rgba(255,255,255,.65); font-family: 'Inter', sans-serif;
+      font-size: .95rem; line-height: 1.7; max-width: 40ch; margin: 0 0 36px;
+    }
+
+    /* ── Claims ────────────────────────── */
+    .claims { display: flex; flex-direction: column; gap: 16px; }
+    .claim  { display: flex; align-items: flex-start; gap: 14px; }
+    .claim-icon {
+      width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+      background: rgba(185,131,255,.1);
+      border: 1px solid rgba(185,131,255,.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 12px rgba(185,131,255,0.1);
+      transition: all .2s ease;
+    }
+    .claim:hover .claim-icon {
+      background: rgba(185,131,255,.2);
+      border-color: rgba(185,131,255,.4);
+      box-shadow: 0 0 20px rgba(185,131,255,0.25);
+    }
+    .claim-text { font-family: 'Inter', sans-serif; font-size: .85rem; color: rgba(255,255,255,.65); font-weight: 400; line-height: 1.4; }
+    .claim-text strong { color: rgba(255,255,255,.92); font-weight: 700; display: block; font-size: .9rem; margin-bottom: 2px; }
+
+    /* ── Linha separadora com gradiente ── */
+    .hip-line-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(185,131,255,0.35), rgba(0,245,255,0.15), transparent);
+      margin: 32px 0;
+      position: relative; z-index: 2;
+    }
+
+    /* ── Stats row ─────────────────────── */
+    .hip-stats-row {
+      display: flex; gap: 24px;
+      position: relative; z-index: 2;
+    }
+    .hip-mini-stat .v {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem; font-weight: 800; color: #fff;
+      line-height: 1;
+    }
+    .hip-mini-stat .v span {
+      background: linear-gradient(90deg, #b983ff, #00f5ff);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .hip-hero-block p { color: rgba(255,255,255,.7); font-size: .95rem; line-height: 1.65; max-width: 38ch; margin: 0 0 32px; }
-    .claims { display: flex; flex-direction: column; gap: 14px; }
-    .claim  { display: flex; align-items: center; gap: 12px; }
-    .claim-icon {
-      width: 34px; height: 34px; border-radius: 10px;
-      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; flex-shrink: 0;
+    .hip-mini-stat .l { font-size: .68rem; color: rgba(185,131,255,.6); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+    /* ── Footer ────────────────────────── */
+    .hip-panel-footer {
+      font-family: 'Inter', sans-serif;
+      font-size: .66rem; color: rgba(185,131,255,.3);
+      letter-spacing: .8px;
+      position: relative; z-index: 2;
     }
-    .claim-text { font-size: .85rem; color: rgba(255,255,255,.8); font-weight: 500; line-height: 1.35; }
-    .claim-text strong { color: #fff; font-weight: 700; display: block; font-size: .88rem; }
-    .hip-panel-footer { font-size: .68rem; color: rgba(255,255,255,.35); letter-spacing: .5px; }
     </style>
+
     <div class="hip-panel-inner">
+      <!-- Orbes e decoração -->  
+      <div class="hip-orb hip-orb-1"></div>
+      <div class="hip-orb hip-orb-2"></div>
+      <div class="hip-orb hip-orb-3"></div>
+      <div class="hip-dot-grid"></div>
+      <div class="hip-ring"></div>
+      <div class="hip-ring hip-ring-2"></div>
+
+      <!-- Logo -->
       <div class="hip-logo-row">
         <div class="hip-logo-icon">H</div>
         <div class="hip-logo-text">
@@ -174,14 +375,16 @@ with col_left:
           <div class="brand-sub">Cosméticos</div>
         </div>
       </div>
+
+      <!-- Hero -->
       <div class="hip-hero-block">
-        <div class="kicker-pill">Plataforma Exclusiva</div>
+        <div class="kicker-pill">Plataforma Exclusiva B2B</div>
         <h1>Sua vitrine capilar<br><span>profissional</span></h1>
         <p>Acesse o catálogo completo, gerencie pedidos e explore condições exclusivas para parceiros e distribuidores Hipnus.</p>
         <div class="claims">
           <div class="claim">
             <div class="claim-icon">📦</div>
-            <div class="claim-text"><strong>Catálogo completo</strong>Todas as linhas, máscaras e tratamentos</div>
+            <div class="claim-text"><strong>Catálogo completo</strong>Todas as linhas, máscaras e tratamentos capilares</div>
           </div>
           <div class="claim">
             <div class="claim-icon">🏪</div>
@@ -193,26 +396,83 @@ with col_left:
           </div>
         </div>
       </div>
+
+      <!-- Linha + Stats -->
+      <div>
+        <div class="hip-line-sep"></div>
+        <div class="hip-stats-row">
+          <div class="hip-mini-stat">
+            <div class="v"><span>+500</span></div>
+            <div class="l">Produtos</div>
+          </div>
+          <div class="hip-mini-stat">
+            <div class="v"><span>B2B</span></div>
+            <div class="l">Plataforma</div>
+          </div>
+          <div class="hip-mini-stat">
+            <div class="v"><span>24/7</span></div>
+            <div class="l">Disponível</div>
+          </div>
+        </div>
+      </div>
+
       <div class="hip-panel-footer">&copy; 2026 HIPNUS COSMÉTICOS &mdash; Todos os direitos reservados</div>
     </div>
     """)
 
 with col_right:
     st.html("""
-    <div style="margin:0 auto 28px;max-width:360px;animation:fadeSlideLeft 0.6s 0.15s cubic-bezier(0.16,1,0.3,1) both;">
-      <div style="font-size:.72rem;font-weight:700;color:#7c3aed;letter-spacing:1.5px;text-transform:uppercase;
-                  margin-bottom:8px;display:flex;align-items:center;gap:8px;">
-        <span style="display:inline-block;width:18px;height:2px;background:#7c3aed;border-radius:1px;"></span>
-        Bem-vindo de volta
-      </div>
-      <h2 style="font-size:1.55rem;font-weight:800;color:#1a0a2e;letter-spacing:-.5px;line-height:1.2;margin:0 0 7px;">
-        Entrar na plataforma
-      </h2>
-      <p style="font-size:.85rem;color:#6b7280;line-height:1.5;margin:0;">Use seu usuário <strong>ou e-mail</strong> e senha para acessar.</p>
+    <style>
+    .hip-form-header {
+      max-width: 380px; margin: 0 auto 32px;
+      animation: fadeSlideLeft 0.65s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .hip-eyebrow {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Inter', sans-serif;
+      font-size: .7rem; font-weight: 700;
+      color: #7c3aed; letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .hip-eyebrow span {
+      display: inline-block; width: 22px; height: 2px;
+      background: linear-gradient(90deg, #7c3aed, #b983ff);
+      border-radius: 1px;
+      box-shadow: 0 0 6px rgba(124,58,237,0.6);
+    }
+    .hip-form-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.65rem; font-weight: 800;
+      color: #1a0a2e; letter-spacing: -.5px; line-height: 1.2; margin: 0 0 8px;
+    }
+    .hip-form-header p {
+      font-family: 'Inter', sans-serif;
+      font-size: .85rem; color: #6b7280; line-height: 1.55; margin: 0;
+    }
+    /* Anel decorativo topo direito */
+    .hip-corner-ring {
+      position: absolute; top: -80px; right: -80px;
+      width: 220px; height: 220px; border-radius: 50%;
+      border: 1px solid rgba(124,58,237,0.08);
+      pointer-events: none;
+    }
+    .hip-corner-ring::before {
+      content: '';
+      position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+      border-radius: 50%;
+      border: 1px solid rgba(185,131,255,0.06);
+    }
+    </style>
+
+    <div class="hip-corner-ring"></div>
+
+    <div class="hip-form-header">
+      <div class="hip-eyebrow"><span></span>Bem-vindo de volta</div>
+      <h2>Entrar na plataforma</h2>
+      <p>Use seu usuário <strong>ou e-mail</strong> e senha para acessar sua conta.</p>
     </div>
     """)
 
-    # Campo aceita username OU e-mail
     login_input = st.text_input(
         "Usuário ou e-mail",
         placeholder="usuario  ou  seu@email.com",
@@ -223,12 +483,24 @@ with col_right:
 
     btn_entrar = st.button("Entrar  →", use_container_width=True, type="primary", key="btn_entrar")
 
-    st.html('<div style="display:flex;align-items:center;gap:10px;margin:10px 0;color:#c4bfd8;font-size:.75rem;"><span style="flex:1;height:1px;background:#ede9f8;display:block"></span>ou<span style="flex:1;height:1px;background:#ede9f8;display:block"></span></div>')
+    st.html('<div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#c4bfd8;font-family:\'Inter\',sans-serif;font-size:.75rem;"><span style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#ede9f8);display:block"></span>ou<span style="flex:1;height:1px;background:linear-gradient(270deg,transparent,#ede9f8);display:block"></span></div>')
 
-    btn_demo = st.button("Acessar modo demonstração", use_container_width=True, key="btn_demo",
+    btn_demo = st.button("✦ Acessar modo demonstração", use_container_width=True, key="btn_demo",
                          help="Entra sem cadastro para explorar a plataforma.")
 
-    st.html('<div style="text-align:center;margin-top:24px;font-size:.7rem;color:#b0a9c8;line-height:1.7;">HIPNUS COSMÉTICOS &copy; 2026<br>Plataforma exclusiva da marca. Acesso restrito.</div>')
+    st.html("""
+    <div style="text-align:center;margin-top:32px;">
+      <div style="font-family:'Inter',sans-serif;font-size:.68rem;color:#c4bfd8;line-height:1.8;">
+        HIPNUS COSMÉTICOS &copy; 2026<br>
+        <span style="color:#d8b4fe;">Plataforma exclusiva da marca</span> &mdash; Acesso restrito
+      </div>
+      <div style="margin-top:12px;display:flex;justify-content:center;gap:6px;">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7c3aed;box-shadow:0 0 8px rgba(124,58,237,0.8);"></span>
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#b983ff;box-shadow:0 0 8px rgba(185,131,255,0.8);"></span>
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00f5ff;box-shadow:0 0 8px rgba(0,245,255,0.6);"></span>
+      </div>
+    </div>
+    """)
 
 if btn_entrar:
     if not login_input or not senha_input:
