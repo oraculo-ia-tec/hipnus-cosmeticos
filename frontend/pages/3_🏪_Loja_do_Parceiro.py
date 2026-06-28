@@ -7,7 +7,6 @@ import sys
 import os
 from pathlib import Path
 
-# ── path setup à prova de exec() ─────────────────────────────────────────────────────
 def _resolve_lib_root() -> Path:
     candidates = [
         Path(__file__).resolve().parent.parent,
@@ -46,7 +45,6 @@ st.set_page_config(
 apply_theme()
 check_session_expiry()
 
-# ── catálogo de produtos ──────────────────────────────────────────────────────────────
 CATALOG = [
     dict(id="oro-01", name="Sérum Facial Ouro 24K", linha="Linha Ouro", categoria="Facial",
          preco=189.90, preco_parceiro=142.00, estoque=48,
@@ -232,17 +230,6 @@ section.main > div { padding-top: 0 !important; }
 .detalhe-nome  { color:#f5d0fe; font-size:1.5rem; font-weight:800; margin:8px 0; }
 .detalhe-linha { color:#a855f7; font-size:.8rem; letter-spacing:.6px; font-weight:600; }
 .detalhe-desc  { color:#c4b5fd; font-size:.95rem; line-height:1.6; margin:12px 0; }
-.filtro-chip {
-    display:inline-block; background:rgba(124,58,237,.12);
-    border:1px solid rgba(124,58,237,.3); color:#c4b5fd;
-    border-radius:99px; padding:4px 14px; font-size:.78rem;
-    font-weight:500; margin:2px; cursor:pointer;
-    transition:all .15s ease;
-}
-.filtro-chip.ativo {
-    background:rgba(124,58,237,.35); border-color:rgba(168,85,247,.7);
-    color:#e879f9; font-weight:700;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -251,7 +238,6 @@ def _brl(v: float) -> str:
     return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# ── header com stats ──────────────────────────────────────────────────────────────────
 qty  = cart_total_qty()
 val  = cart_total_valor()
 n_prods  = len(CATALOG)
@@ -264,29 +250,17 @@ st.markdown(
       <div class="loja-hero-title">Loja HIPNUS</div>
       <p class="loja-hero-sub">Preços especiais para revendedores · Compre com condições exclusivas</p>
       <div class="loja-hero-stats">
-        <div class="loja-hero-stat">
-          <div class="loja-hero-stat-val">{n_prods}</div>
-          <div class="loja-hero-stat-lbl">Produtos</div>
-        </div>
-        <div class="loja-hero-stat">
-          <div class="loja-hero-stat-val">{n_linhas}</div>
-          <div class="loja-hero-stat-lbl">Linhas</div>
-        </div>
-        <div class="loja-hero-stat">
-          <div class="loja-hero-stat-val">{qty}</div>
-          <div class="loja-hero-stat-lbl">No carrinho</div>
-        </div>
-        <div class="loja-hero-stat">
-          <div class="loja-hero-stat-val">{_brl(val)}</div>
-          <div class="loja-hero-stat-lbl">Total atual</div>
-        </div>
+        <div class="loja-hero-stat"><div class="loja-hero-stat-val">{n_prods}</div><div class="loja-hero-stat-lbl">Produtos</div></div>
+        <div class="loja-hero-stat"><div class="loja-hero-stat-val">{n_linhas}</div><div class="loja-hero-stat-lbl">Linhas</div></div>
+        <div class="loja-hero-stat"><div class="loja-hero-stat-val">{qty}</div><div class="loja-hero-stat-lbl">No carrinho</div></div>
+        <div class="loja-hero-stat"><div class="loja-hero-stat-val">{_brl(val)}</div><div class="loja-hero-stat-lbl">Total atual</div></div>
       </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# ── navegação de view ─────────────────────────────────────────────────────────────────
+# ── VIEW DETALHE ─────────────────────────────────────────────────────────────
 if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_detalhe:
     if st.button("← Voltar à loja", key="btn_back"):
         st.session_state.loja_view = "loja"
@@ -312,7 +286,7 @@ if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_det
           <p class="detalhe-desc">{prod['descricao']}</p>
           <div style="color:#9ca3af;font-size:.82rem;margin-bottom:8px;">
             📦 Volume: <strong style="color:#c4b5fd;">{prod['volume']}</strong>
-            &nbsp;&nbsp;·&nbsp;&nbsp;
+            &nbsp;·&nbsp;
             🏷 Estoque: <strong style="color:#c4b5fd;">{prod['estoque']} un</strong>
           </div>
           <div class="prod-beneficios">{beneficios_html}</div>
@@ -340,15 +314,13 @@ if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_det
         in_cart = st.session_state.loja_cart.get(prod["id"], 0)
         if in_cart:
             st.markdown(
-                f'<div style="padding:8px 0;color:#10b981;font-weight:600;font-size:.9rem;">'
-                f'✅ {in_cart} unidade(s) no carrinho — {_brl(prod["preco_parceiro"] * in_cart)}</div>',
+                f'<div style="padding:8px 0;color:#10b981;font-weight:600;font-size:.9rem;">✅ {in_cart} unidade(s) no carrinho — {_brl(prod["preco_parceiro"] * in_cart)}</div>',
                 unsafe_allow_html=True,
             )
-
     st.stop()
 
 
-# ── VIEW LOJA (principal) ─────────────────────────────────────────────────────────────
+# ── VIEW LOJA PRINCIPAL ───────────────────────────────────────────────────────────
 left, right = st.columns([3, 1])
 
 with left:
@@ -361,8 +333,8 @@ with left:
         st.session_state.loja_busca = busca
         st.rerun()
 
-    st.markdown("<div style='margin:8px 0 4px;color:#9ca3af;font-size:.78rem;font-weight:600;'"
-                ">FILTRAR POR LINHA:</div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin:8px 0 4px;color:#9ca3af;font-size:.78rem;font-weight:600;'>FILTRAR POR LINHA:</div>",
+                unsafe_allow_html=True)
     fcols = st.columns(len(LINHAS))
     for i, linha in enumerate(LINHAS):
         with fcols[i]:
@@ -390,8 +362,7 @@ with left:
 
     produtos = get_filtered_products()
     st.markdown(
-        f"<div style='color:#9ca3af;font-size:.8rem;margin:8px 0 16px;'>"
-        f"{len(produtos)} produto(s) encontrado(s)</div>",
+        f"<div style='color:#9ca3af;font-size:.8rem;margin:8px 0 16px;'>{len(produtos)} produto(s) encontrado(s)</div>",
         unsafe_allow_html=True,
     )
 
@@ -404,6 +375,8 @@ with left:
             unsafe_allow_html=True,
         )
     else:
+        # GRID de produtos — 3 por linha
+        # IMPORTANTE: não usar st.columns() dentro de `with col` para evitar aninhamento
         for row_start in range(0, len(produtos), 3):
             row = produtos[row_start:row_start + 3]
             cols = st.columns(3)
@@ -439,19 +412,18 @@ with left:
                         """,
                         unsafe_allow_html=True,
                     )
-                    bc1, bc2 = st.columns(2)
-                    with bc1:
-                        if st.button("🛒 Adicionar", key=f"add_{prod['id']}",
-                                     use_container_width=True):
-                            add_to_cart(prod["id"])
-                            st.rerun()
-                    with bc2:
-                        if st.button("🔍 Detalhes", key=f"det_{prod['id']}",
-                                     use_container_width=True):
-                            st.session_state.loja_view = "detalhe"
-                            st.session_state.loja_produto_detalhe = prod["id"]
-                            st.rerun()
+                    # botões empilhados (sem st.columns aninhado)
+                    if st.button("🛒 Adicionar ao carrinho", key=f"add_{prod['id']}",
+                                 use_container_width=True, type="primary"):
+                        add_to_cart(prod["id"])
+                        st.rerun()
+                    if st.button("🔍 Ver detalhes", key=f"det_{prod['id']}",
+                                 use_container_width=True):
+                        st.session_state.loja_view = "detalhe"
+                        st.session_state.loja_produto_detalhe = prod["id"]
+                        st.rerun()
 
+# ── CARRINHO (sidebar direita) ───────────────────────────────────────────────────
 with right:
     st.markdown("<div style='color:#a855f7;font-size:.9rem;font-weight:700;margin-bottom:12px;'>🛒 Carrinho</div>",
                 unsafe_allow_html=True)
@@ -509,7 +481,6 @@ with right:
             """,
             unsafe_allow_html=True,
         )
-
         st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
 
         if st.button("💳 Ir para Checkout", type="primary", use_container_width=True, key="btn_checkout"):
