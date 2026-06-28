@@ -60,7 +60,6 @@ with tab_novo:
 
 # ── Aba 2: Gerar + Enviar por E-mail ──────────────────────────────────────────────
 with tab_email:
-    # Diagnóstico SMTP discreto
     smtp = smtp_status()
     if not smtp["ready"]:
         st.warning(
@@ -98,15 +97,12 @@ with tab_email:
             st.error("Informe um e-mail válido.")
         else:
             try:
-                # 1. Gera o token no banco
                 token = criar_invite_db(
                     email=email_dest,
                     role=role_dest,
                     dias=int(dias_dest),
                 )
-                # 2. Monta o link completo
                 signup_url = f"{signup_base.rstrip('/')}?token={token}"
-                # 3. Dispara o e-mail
                 with st.spinner("Enviando e-mail..."):
                     ok, msg = send_invite_email(
                         destinatario=email_dest,
@@ -115,7 +111,7 @@ with tab_email:
                     )
                 if ok:
                     st.success(f"✅ Convite enviado para **{email_dest}**!")
-                    st.info(🔗 Link gerado: `{signup_url}`")
+                    st.info(f"🔗 Link gerado: `{signup_url}`")
                 else:
                     st.error(f"❌ Falha ao enviar e-mail: {msg}")
                     st.code(token, language="text")
