@@ -34,7 +34,7 @@ if str(_lib_root) not in sys.path:
 
 import streamlit as st
 from lib.session_guard import check_session_expiry
-from lib.theme import apply_theme
+from lib.theme import inject_theme as apply_theme
 
 st.set_page_config(
     page_title="Loja do Parceiro · HIPNUS",
@@ -200,356 +200,337 @@ section.main > div { padding-top: 0 !important; }
     color:#c4b5fd; border-radius:6px; padding:2px 8px; font-size:.7rem;
 }
 .prod-precos { display:flex; align-items:baseline; gap:10px; margin-bottom:14px; }
-.prod-preco-parceiro {
-    font-size:1.3rem; font-weight:800;
-    background:linear-gradient(90deg,#e879f9,#a855f7);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+.prod-preco-cheio { color:#6b7280; font-size:.85rem; text-decoration:line-through; }
+.prod-preco-parc  { color:#e879f9; font-size:1.15rem; font-weight:800; }
+.prod-economy     { color:#10b981; font-size:.75rem; font-weight:600; }
+.prod-estoque     { color:#9ca3af; font-size:.72rem; }
+.cart-badge {
+    background:linear-gradient(90deg,#7c3aed,#a855f7);
+    color:#fff; border-radius:99px;
+    padding:4px 16px; font-size:.82rem; font-weight:700;
+    display:inline-flex; align-items:center; gap:6px;
 }
-.prod-preco-cheio { color:#6b7280; font-size:.82rem; text-decoration:line-through; }
-.prod-economia {
-    background:rgba(34,197,94,.15); border:1px solid rgba(34,197,94,.3);
-    color:#86efac; border-radius:6px; padding:2px 8px; font-size:.72rem;
+.cart-mini {
+    background:#1c1626; border:1px solid rgba(168,85,247,.25);
+    border-radius:14px; padding:16px 18px; margin-bottom:12px;
 }
-.prod-estoque      { color:#6b7280; font-size:.72rem; margin-bottom:14px; }
-.prod-estoque.baixo { color:#fbbf24; }
-.section-title {
-    color:#f5d0fe; font-size:1.1rem; font-weight:700;
-    border-left:3px solid #7c3aed; padding-left:10px; margin-bottom:16px;
+.cart-item-name { color:#f5d0fe; font-size:.88rem; font-weight:600; }
+.cart-item-sub  { color:#9ca3af; font-size:.75rem; }
+.cart-total {
+    background:linear-gradient(135deg,rgba(124,58,237,.12),rgba(168,85,247,.06));
+    border:1px solid rgba(168,85,247,.3); border-radius:12px;
+    padding:14px 18px; display:flex; justify-content:space-between;
+    align-items:center; margin-top:8px;
 }
-.resumo-box {
+.cart-total-lbl { color:#9ca3af; font-size:.85rem; }
+.cart-total-val { color:#e879f9; font-size:1.2rem; font-weight:800; }
+.detalhe-hero {
     background:linear-gradient(135deg,#1a0f2e,#2d1558);
-    border:1px solid rgba(168,85,247,.3); border-radius:16px; padding:24px;
+    border:1px solid rgba(168,85,247,.25); border-radius:20px;
+    padding:32px 32px 28px; margin-bottom:20px;
 }
-.resumo-linha {
-    display:flex; justify-content:space-between; color:#c4b5fd;
-    font-size:.9rem; padding:6px 0; border-bottom:1px solid rgba(168,85,247,.1);
+.detalhe-nome  { color:#f5d0fe; font-size:1.5rem; font-weight:800; margin:8px 0; }
+.detalhe-linha { color:#a855f7; font-size:.8rem; letter-spacing:.6px; font-weight:600; }
+.detalhe-desc  { color:#c4b5fd; font-size:.95rem; line-height:1.6; margin:12px 0; }
+.filtro-chip {
+    display:inline-block; background:rgba(124,58,237,.12);
+    border:1px solid rgba(124,58,237,.3); color:#c4b5fd;
+    border-radius:99px; padding:4px 14px; font-size:.78rem;
+    font-weight:500; margin:2px; cursor:pointer;
+    transition:all .15s ease;
 }
-.resumo-total       { display:flex; justify-content:space-between; margin-top:12px; }
-.resumo-total-label { color:#f5d0fe; font-size:1rem; font-weight:700; }
-.resumo-total-val {
-    font-size:1.4rem; font-weight:800;
-    background:linear-gradient(90deg,#e879f9,#a855f7);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-}
-.checkout-section {
-    background:#1c1626; border:1px solid rgba(168,85,247,.2);
-    border-radius:16px; padding:24px; margin-bottom:20px;
-}
-.checkout-section-title {
-    color:#e879f9; font-size:.9rem; font-weight:700;
-    letter-spacing:.5px; text-transform:uppercase; margin-bottom:16px;
+.filtro-chip.ativo {
+    background:rgba(124,58,237,.35); border-color:rgba(168,85,247,.7);
+    color:#e879f9; font-weight:700;
 }
 </style>
 """, unsafe_allow_html=True)
 
 
-def render_loja():
-    user = st.session_state.get("user", {})
-    nome = user.get("nome", "Parceiro") if isinstance(user, dict) else "Parceiro"
+def _brl(v: float) -> str:
+    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-    col_logo, col_cart = st.columns([8, 2])
-    with col_logo:
-        st.markdown('<div style="font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#e879f9,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🏪 HIPNUS · Loja do Parceiro</div>', unsafe_allow_html=True)
-    with col_cart:
-        qty = cart_total_qty()
-        label = "ns" if qty != 1 else ""
-        if st.button(f"🛒 {qty} item{label}", key="go_cart_top", use_container_width=True):
-            st.session_state.loja_view = "carrinho"
-            st.rerun()
+
+# ── header fixo com carrinho ───────────────────────────────────────────────────────
+qty  = cart_total_qty()
+val  = cart_total_valor()
+n_prods = len(CATALOG)
+n_linhas = len(LINHAS)
+
+st.markdown(
+    f"""
+    <div class="loja-hero">
+      <div class="loja-hero-badge">🏪 Área Exclusiva Parceiro</div>
+      <div class="loja-hero-title">Loja HIPNUS</div>
+      <p class="loja-hero-sub">Preços especiais para revendedores · Compre com condições exclusivas</p>
+      <div class="loja-hero-stats">
+        <div class="loja-hero-stat">
+          <div class="loja-hero-stat-val">{n_prods}</div>
+          <div class="loja-hero-stat-lbl">Produtos</div>
+        </div>
+        <div class="loja-hero-stat">
+          <div class="loja-hero-stat-val">{n_linhas}</div>
+          <div class="loja-hero-stat-lbl">Linhas</div>
+        </div>
+        <div class="loja-hero-stat">
+          <div class="loja-hero-stat-val">{qty}</div>
+          <div class="loja-hero-stat-lbl">No carrinho</div>
+        </div>
+        <div class="loja-hero-stat">
+          <div class="loja-hero-stat-val">{_brl(val)}</div>
+          <div class="loja-hero-stat-lbl">Total atual</div>
+        </div>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# ── navegação de view ──────────────────────────────────────────────────────────────
+if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_detalhe:
+    # ── VIEW DETALHE ────────────────────────────────────────────────────────────────
+    if st.button("← Voltar à loja", key="btn_back"):
+        st.session_state.loja_view = "loja"
+        st.session_state.loja_produto_detalhe = None
+        st.rerun()
+
+    prod = next((p for p in CATALOG if p["id"] == st.session_state.loja_produto_detalhe), None)
+    if not prod:
+        st.warning("Produto não encontrado.")
+        st.stop()
+
+    economy = prod["preco"] - prod["preco_parceiro"]
+    pct     = int(economy / prod["preco"] * 100)
 
     st.markdown(
-        '<div class="loja-hero">'
-        '<div class="loja-hero-badge">✨ EXCLUSIVO PARCEIROS</div>'
-        f'<h1 class="loja-hero-title">Bem-vindo(a), {nome}!</h1>'
-        '<p class="loja-hero-sub">Preços especiais de parceiro em toda a linha HIPNUS.<br>'
-        'Descontos de até 35% e frete grátis acima de R$ 500.</p>'
-        '<div class="loja-hero-stats">'
-        f'<div class="loja-hero-stat"><div class="loja-hero-stat-val">{len(CATALOG)}</div><div class="loja-hero-stat-lbl">Produtos</div></div>'
-        f'<div class="loja-hero-stat"><div class="loja-hero-stat-val">{len(LINHAS)}</div><div class="loja-hero-stat-lbl">Linhas</div></div>'
-        '<div class="loja-hero-stat"><div class="loja-hero-stat-val">25%</div><div class="loja-hero-stat-lbl">Desconto médio</div></div>'
-        '</div></div>',
+        f"""
+        <div class="detalhe-hero">
+          <div class="detalhe-linha">{prod['linha'].upper()} · {prod['categoria'].upper()}</div>
+          <div class="detalhe-nome">{prod['name']}</div>
+          <p class="detalhe-desc">{prod['descricao']}</p>
+          <div style="color:#9ca3af;font-size:.82rem;margin-bottom:8px;">
+            📦 Volume: <strong style="color:#c4b5fd;">{prod['volume']}</strong>
+            &nbsp;&nbsp;·&nbsp;&nbsp;
+            🏷 Estoque: <strong style="color:#c4b5fd;">{prod['estoque']} un</strong>
+          </div>
+          <div class="prod-beneficios">
+            {''.join(f"<span class='prod-benefit-tag'>{b}</span>" for b in prod['beneficios'])}
+          </div>
+          <div class="prod-precos">
+            <span class="prod-preco-cheio">{_brl(prod['preco'])}</span>
+            <span class="prod-preco-parc">{_brl(prod['preco_parceiro'])}</span>
+            <span class="prod-economy">-{pct}% ({_brl(economy)} de economia)</span>
+          </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    with st.expander("🔍 Busca · Filtros", expanded=True):
-        col_busca, col_cat = st.columns([3, 2])
-        with col_busca:
-            busca = st.text_input("Buscar", value=st.session_state.loja_busca,
-                                  placeholder="nome, benefício...", label_visibility="collapsed")
-            st.session_state.loja_busca = busca
-        with col_cat:
-            idx_cat = CATEGORIAS.index(st.session_state.loja_filtro_cat) if st.session_state.loja_filtro_cat in CATEGORIAS else 0
-            cat = st.selectbox("Categoria", CATEGORIAS, index=idx_cat, label_visibility="collapsed")
-            st.session_state.loja_filtro_cat = cat
-        linhas_sel = st.multiselect("Linhas", LINHAS, default=st.session_state.loja_filtro_linha)
-        st.session_state.loja_filtro_linha = linhas_sel
-
-    prods = get_filtered_products()
-    col_res, col_ord = st.columns([6, 2])
-    with col_res:
-        st.caption(f"{len(prods)} produto(s) encontrado(s)")
-    with col_ord:
-        ordem = st.selectbox("Ordenar", ["Destaque", "Menor preço", "Maior preço", "Nome A-Z"],
-                             label_visibility="collapsed")
-    if ordem == "Menor preço":
-        prods = sorted(prods, key=lambda p: p["preco_parceiro"])
-    elif ordem == "Maior preço":
-        prods = sorted(prods, key=lambda p: p["preco_parceiro"], reverse=True)
-    elif ordem == "Nome A-Z":
-        prods = sorted(prods, key=lambda p: p["name"])
-
-    if not prods:
-        st.info("🔍 Nenhum produto encontrado. Tente outro filtro.")
-        if st.button("Limpar filtros"):
-            st.session_state.loja_busca = ""
-            st.session_state.loja_filtro_cat = "Todas"
-            st.session_state.loja_filtro_linha = []
+    d1, d2, d3 = st.columns([1, 1, 2])
+    qty_input = d1.number_input("Quantidade", min_value=1, max_value=prod["estoque"],
+                                value=1, step=1, key=f"det_qty_{prod['id']}")
+    with d2:
+        st.write("")
+        st.write("")
+        if st.button("🛒 Adicionar", key=f"det_add_{prod['id']}", type="primary"):
+            add_to_cart(prod["id"], qty_input)
+            st.success(f"{qty_input}x {prod['name']} adicionado!")
             st.rerun()
-        return
+    with d3:
+        in_cart = st.session_state.loja_cart.get(prod["id"], 0)
+        if in_cart:
+            st.markdown(
+                f'<div style="padding:8px 0;color:#10b981;font-weight:600;font-size:.9rem;">'
+                f'✅ {in_cart} unidade(s) no carrinho — {_brl(prod["preco_parceiro"] * in_cart)}</div>',
+                unsafe_allow_html=True,
+            )
 
-    for row_start in range(0, len(prods), 3):
-        row = prods[row_start:row_start + 3]
-        cols = st.columns(3)
-        for col, prod in zip(cols, row):
-            with col:
-                economia = prod["preco"] - prod["preco_parceiro"]
-                estoque_cls = "baixo" if prod["estoque"] < 20 else ""
-                badge_html = f'<div class="prod-badge">{prod["badge"]}</div>' if prod["badge"] else ""
-                bens = "".join(f'<span class="prod-benefit-tag">{b}</span>' for b in prod["beneficios"])
-                est_icon = "⚠️" if prod["estoque"] < 20 else "✅"
-                economia_fmt = f"R$ {economia:.0f}"
-                st.markdown(
-                    f'<div class="prod-card">{badge_html}'
-                    f'<div class="prod-linha">🌿 {prod["linha"]}</div>'
-                    f'<div class="prod-name">{prod["name"]}</div>'
-                    f'<div class="prod-desc">{prod["descricao"]}</div>'
-                    f'<div class="prod-volume">📦 {prod["volume"]}</div>'
-                    f'<div class="prod-beneficios">{bens}</div>'
-                    f'<div class="prod-precos">'
-                    f'<span class="prod-preco-parceiro">R$ {prod["preco_parceiro"]:.2f}</span>'
-                    f'<span class="prod-preco-cheio">R$ {prod["preco"]:.2f}</span>'
-                    f'<span class="prod-economia">-{economia_fmt}</span></div>'
-                    f'<div class="prod-estoque {estoque_cls}">{est_icon} {prod["estoque"]} em estoque</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-                b1, b2 = st.columns([3, 1])
-                with b1:
-                    if st.button("🛒 Adicionar", key=f"add_{prod['id']}", use_container_width=True):
-                        add_to_cart(prod["id"])
-                        st.toast(f"✅ {prod['name']} adicionado!", icon="🛒")
-                        st.rerun()
-                with b2:
-                    q_cart = st.session_state.loja_cart.get(prod["id"], 0)
-                    if q_cart:
-                        st.markdown(
-                            f'<div style="text-align:center;color:#a855f7;font-weight:800;padding-top:6px">{q_cart}</div>',
-                            unsafe_allow_html=True,
-                        )
+    st.stop()
 
 
-def render_carrinho():
-    c1, c2, c3 = st.columns([2, 5, 2])
-    with c1:
-        if st.button("← Loja", key="cart_back"):
-            st.session_state.loja_view = "loja"; st.rerun()
-    with c2:
-        st.markdown('<div class="section-title" style="font-size:1.3rem">🛒 Carrinho</div>', unsafe_allow_html=True)
-    with c3:
-        if st.session_state.loja_cart:
-            if st.button("🗑️ Limpar", key="clear_cart"):
-                st.session_state.loja_cart = {}; st.rerun()
+# ── VIEW LOJA (principal) ──────────────────────────────────────────────────────────
+left, right = st.columns([3, 1])
+
+with left:
+    # busca
+    busca = st.text_input(
+        "🔍 Buscar produto...", value=st.session_state.loja_busca,
+        placeholder="Ex: sérum, ouro, protetor…", key="_busca_input",
+        label_visibility="collapsed",
+    )
+    if busca != st.session_state.loja_busca:
+        st.session_state.loja_busca = busca
+        st.rerun()
+
+    # filtros de linha
+    st.markdown("<div style='margin:8px 0 4px;color:#9ca3af;font-size:.78rem;font-weight:600;'"
+                ">FILTRAR POR LINHA:</div>", unsafe_allow_html=True)
+    fcols = st.columns(len(LINHAS))
+    for i, linha in enumerate(LINHAS):
+        with fcols[i]:
+            ativo = linha in st.session_state.loja_filtro_linha
+            label = ("✓ " if ativo else "") + linha.replace("Linha ", "")
+            if st.button(label, key=f"fl_{linha}",
+                         type="primary" if ativo else "secondary",
+                         use_container_width=True):
+                fl = list(st.session_state.loja_filtro_linha)
+                if ativo:
+                    fl.remove(linha)
+                else:
+                    fl.append(linha)
+                st.session_state.loja_filtro_linha = fl
+                st.rerun()
+
+    # filtro categoria
+    cat = st.selectbox(
+        "Categoria:", options=CATEGORIAS,
+        index=CATEGORIAS.index(st.session_state.loja_filtro_cat),
+        key="_sel_cat", label_visibility="collapsed",
+    )
+    if cat != st.session_state.loja_filtro_cat:
+        st.session_state.loja_filtro_cat = cat
+        st.rerun()
+
+    produtos = get_filtered_products()
+    st.markdown(
+        f"<div style='color:#9ca3af;font-size:.8rem;margin:8px 0 16px;'>"
+        f"{len(produtos)} produto(s) encontrado(s)</div>",
+        unsafe_allow_html=True,
+    )
+
+    if not produtos:
+        st.markdown(
+            """<div style='text-align:center;padding:48px 24px;color:#6b7280;'>
+            <div style='font-size:2.5rem;margin-bottom:12px;'>🔍</div>
+            <div style='font-size:1rem;font-weight:600;color:#9ca3af;'>Nenhum produto encontrado</div>
+            <div style='font-size:.85rem;margin-top:6px;'>Tente ajustar os filtros ou a busca.</div></div>""",
+            unsafe_allow_html=True,
+        )
+    else:
+        for row_start in range(0, len(produtos), 3):
+            row = produtos[row_start:row_start + 3]
+            cols = st.columns(3)
+            for col, prod in zip(cols, row):
+                with col:
+                    economy = prod["preco"] - prod["preco_parceiro"]
+                    pct     = int(economy / prod["preco"] * 100)
+                    badge_html = (
+                        f'<div class="prod-badge">{prod["badge"]}</div>'
+                        if prod["badge"] else ""
+                    )
+                    beneficios_html = "".join(
+                        f'<span class="prod-benefit-tag">{b}</span>'
+                        for b in prod["beneficios"]
+                    )
+                    st.markdown(
+                        f"""
+                        <div class="prod-card">
+                          {badge_html}
+                          <div class="prod-linha">{prod['linha'].upper()}</div>
+                          <div class="prod-name">{prod['name']}</div>
+                          <div class="prod-desc">{prod['descricao'][:90]}{'...' if len(prod['descricao']) > 90 else ''}</div>
+                          <div class="prod-volume">📦 {prod['volume']}</div>
+                          <div class="prod-beneficios">{beneficios_html}</div>
+                          <div class="prod-precos">
+                            <span class="prod-preco-cheio">{_brl(prod['preco'])}</span>
+                            <span class="prod-preco-parc">{_brl(prod['preco_parceiro'])}</span>
+                          </div>
+                          <div class="prod-economy">✨ -{}% · economia de {_brl(economy)}</div>
+                          <div class="prod-estoque" style="margin-top:6px;">🏷 {prod['estoque']} em estoque</div>
+                        </div>
+                        """.format(pct),
+                        unsafe_allow_html=True,
+                    )
+                    bc1, bc2 = st.columns(2)
+                    with bc1:
+                        if st.button("🛒 Adicionar", key=f"add_{prod['id']}",
+                                     use_container_width=True):
+                            add_to_cart(prod["id"])
+                            st.rerun()
+                    with bc2:
+                        if st.button("🔍 Detalhes", key=f"det_{prod['id']}",
+                                     use_container_width=True):
+                            st.session_state.loja_view = "detalhe"
+                            st.session_state.loja_produto_detalhe = prod["id"]
+                            st.rerun()
+
+with right:
+    st.markdown("<div style='color:#a855f7;font-size:.9rem;font-weight:700;margin-bottom:12px;'>🛒 Carrinho</div>",
+                unsafe_allow_html=True)
 
     cart = st.session_state.loja_cart
     if not cart:
-        st.info("🛒 Carrinho vazio. Adicione produtos na loja.")
-        if st.button("← Ir para a loja", key="back_to_loja_empty"):
-            st.session_state.loja_view = "loja"; st.rerun()
-        return
-
-    col_itens, col_resumo = st.columns([3, 2])
-    with col_itens:
-        st.markdown('<div class="section-title">Itens</div>', unsafe_allow_html=True)
+        st.markdown(
+            """<div style='text-align:center;padding:24px 12px;color:#6b7280;'>
+            <div style='font-size:1.8rem;'>🛒</div>
+            <div style='font-size:.82rem;margin-top:6px;'>Carrinho vazio</div></div>""",
+            unsafe_allow_html=True,
+        )
+    else:
         for pid, qty in list(cart.items()):
             prod = next((p for p in CATALOG if p["id"] == pid), None)
             if not prod:
                 continue
             subtotal = prod["preco_parceiro"] * qty
             st.markdown(
-                f'<div style="background:#1c1626;border:1px solid rgba(168,85,247,.2);'
-                f'border-radius:12px;padding:14px;margin-bottom:10px">'
-                f'<div style="color:#9ca3af;font-size:.75rem">{prod["linha"]} · {prod["volume"]}</div>'
-                f'<div style="color:#f5d0fe;font-weight:700">{prod["name"]}</div>'
-                f'<div style="color:#a855f7;font-weight:800">R$ {subtotal:.2f}</div></div>',
+                f"""
+                <div class="cart-mini">
+                  <div class="cart-item-name">{prod['name']}</div>
+                  <div class="cart-item-sub">
+                    {qty}x {_brl(prod['preco_parceiro'])} = <strong style="color:#e879f9;">{_brl(subtotal)}</strong>
+                  </div>
+                </div>
+                """,
                 unsafe_allow_html=True,
             )
-            ca, cb, cc, cd = st.columns([1, 2, 1, 1])
-            with ca:
-                if st.button("−", key=f"dec_{pid}"):
-                    update_cart_qty(pid, qty - 1); st.rerun()
-            with cb:
-                preco_fmt = f"R$ {prod['preco_parceiro']:.2f}"
-                st.markdown(
-                    f'<div style="text-align:center;color:#e879f9;font-weight:700;padding-top:4px">{qty}x · {preco_fmt}</div>',
-                    unsafe_allow_html=True,
-                )
-            with cc:
-                if st.button("+", key=f"inc_{pid}"):
-                    update_cart_qty(pid, qty + 1); st.rerun()
-            with cd:
-                if st.button("🗑", key=f"del_{pid}"):
-                    remove_from_cart(pid); st.rerun()
+            c1, c2, c3 = st.columns([1, 1, 1])
+            with c1:
+                if st.button("-", key=f"dec_{pid}", use_container_width=True):
+                    update_cart_qty(pid, qty - 1)
+                    st.rerun()
+            with c2:
+                if st.button("+", key=f"inc_{pid}", use_container_width=True):
+                    update_cart_qty(pid, qty + 1)
+                    st.rerun()
+            with c3:
+                if st.button("🗑", key=f"rm_{pid}", use_container_width=True):
+                    remove_from_cart(pid)
+                    st.rerun()
 
-    with col_resumo:
-        st.markdown('<div class="section-title">Resumo</div>', unsafe_allow_html=True)
-        total = cart_total_valor()
-        total_cheio = sum(
-            next((p for p in CATALOG if p["id"] == pid), {}).get("preco", 0) * qty
-            for pid, qty in cart.items()
-        )
-        economia = total_cheio - total
-        frete = 0.0 if total >= 500 else 29.90
-        frete_cor = "#86efac" if frete == 0 else "#f5d0fe"
-        frete_str = "GRATIS" if frete == 0 else f"R$ {frete:.2f}"
-        frete_msg = "Frete gratis!" if frete == 0 else f"Falta R$ {500-total:.0f} para frete gratis"
-        itens_html = "".join(
-            '<div class="resumo-linha">'
-            '<span>' + next((p["name"] for p in CATALOG if p["id"]==pid), pid)[:28] + '</span>'
-            '<span>R$ ' + f"{next((p for p in CATALOG if p['id']==pid), {}).get('preco_parceiro', 0)*q:.2f}" + '</span></div>'
-            for pid, q in cart.items()
-        )
+        total_val = cart_total_valor()
+        total_qty = cart_total_qty()
         st.markdown(
-            f'<div class="resumo-box">{itens_html}'
-            f'<div class="resumo-linha"><span>🏷️ Economia</span><span style="color:#86efac">-R$ {economia:.2f}</span></div>'
-            f'<div class="resumo-linha"><span>🚚 Frete</span><span style="color:{frete_cor}">{frete_str}</span></div>'
-            f'<p style="color:#a855f7;font-size:.75rem;margin:8px 0 0">{frete_msg}</p>'
-            f'<div class="resumo-total"><span class="resumo-total-label">Total</span>'
-            f'<span class="resumo-total-val">R$ {total+frete:.2f}</span></div></div>',
+            f"""
+            <div class="cart-total">
+              <div>
+                <div class="cart-total-lbl">{total_qty} item(s)</div>
+                <div class="cart-total-val">{_brl(total_val)}</div>
+              </div>
+              <div style="color:#10b981;font-size:.78rem;font-weight:600;">Preço parceiro</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💳 Finalizar Pedido", key="go_checkout", use_container_width=True):
-            st.session_state.loja_view = "checkout"; st.rerun()
 
+        st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
 
-def render_checkout():
-    c1, c2 = st.columns([2, 7])
-    with c1:
-        if st.button("← Carrinho", key="checkout_back"):
-            st.session_state.loja_view = "carrinho"; st.rerun()
-    with c2:
-        st.markdown('<div class="section-title" style="font-size:1.3rem">💳 Finalizar Pedido</div>', unsafe_allow_html=True)
+        if st.button("💳 Ir para Checkout", type="primary", use_container_width=True, key="btn_checkout"):
+            # Serializa carrinho para session_state de checkout
+            items = []
+            for pid, qty in cart.items():
+                prod = next((p for p in CATALOG if p["id"] == pid), None)
+                if prod:
+                    items.append({
+                        "id":             pid,
+                        "name":           prod["name"],
+                        "preco_unitario": prod["preco_parceiro"],
+                        "quantidade":     qty,
+                        "subtotal":       prod["preco_parceiro"] * qty,
+                    })
+            st.session_state["checkout_items"]  = items
+            st.session_state["checkout_total"]   = cart_total_valor()
+            st.switch_page("pages/5_💳_Checkout.py")
 
-    user = st.session_state.get("user", {})
-    nome_user  = user.get("nome",  "") if isinstance(user, dict) else ""
-    email_user = user.get("email", "") if isinstance(user, dict) else ""
-
-    col_form, col_resumo = st.columns([3, 2])
-    with col_form:
-        st.markdown('<div class="checkout-section"><div class="checkout-section-title">📦 Dados de Entrega</div>', unsafe_allow_html=True)
-        nome  = st.text_input("Nome completo",   value=nome_user,  key="co_nome")
-        email = st.text_input("E-mail",           value=email_user, key="co_email")
-        ct, cc = st.columns(2)
-        with ct: tel = st.text_input("Telefone", key="co_tel", placeholder="(11) 9xxxx-xxxx")
-        with cc: cpf = st.text_input("CPF",      key="co_cpf", placeholder="000.000.000-00")
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown('<div class="checkout-section"><div class="checkout-section-title">🏠 Endereço</div>', unsafe_allow_html=True)
-        cep_col, _ = st.columns([2, 3])
-        with cep_col: cep = st.text_input("CEP", key="co_cep", placeholder="00000-000")
-        rua = st.text_input("Rua / Av.", key="co_rua")
-        cn, cc2 = st.columns([1, 3])
-        with cn:  num  = st.text_input("Num",          key="co_num")
-        with cc2: comp = st.text_input("Complemento", key="co_comp")
-        cb, cci, cuf = st.columns([2, 3, 1])
-        with cb:  bairro = st.text_input("Bairro",  key="co_bairro")
-        with cci: cidade = st.text_input("Cidade",  key="co_cidade")
-        with cuf: uf     = st.text_input("UF",      key="co_uf", max_chars=2)
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.markdown('<div class="checkout-section"><div class="checkout-section-title">💳 Pagamento</div>', unsafe_allow_html=True)
-        metodo = st.radio("Pagamento", ["💠 PIX", "📄 Boleto", "💳 Cartao de Credito"],
-                          key="co_metodo", horizontal=True)
-        if "Cartao" in metodo:
-            cnn, cvv = st.columns([3, 1])
-            with cnn: st.text_input("Numero do cartao", key="co_card_num", placeholder="0000 0000 0000 0000")
-            with cvv: st.text_input("CVV", key="co_cvv", placeholder="123", max_chars=3)
-            cnm, cvc = st.columns(2)
-            with cnm: st.text_input("Nome no cartao", key="co_card_nome")
-            with cvc: st.text_input("Validade", key="co_venc", placeholder="MM/AA")
-            st.selectbox("Parcelamento", [f"{i}x sem juros" for i in range(1, 7)], key="co_parcelas")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col_resumo:
-        st.markdown('<div class="section-title">Resumo</div>', unsafe_allow_html=True)
-        cart  = st.session_state.loja_cart
-        total = cart_total_valor()
-        frete = 0.0 if total >= 500 else 29.90
-        grand = total + frete
-        frete_cor = "#86efac" if frete == 0 else "#f5d0fe"
-        frete_str = "GRATIS" if frete == 0 else f"R$ {frete:.2f}"
-        itens_resumo = "".join(
-            '<div class="resumo-linha">'
-            '<span>' + next((p["name"] for p in CATALOG if p["id"]==pid), pid)[:22] + f'... x{q}</span>'
-            '<span>R$ ' + f"{next((p for p in CATALOG if p['id']==pid), {}).get('preco_parceiro', 0)*q:.2f}" + '</span></div>'
-            for pid, q in cart.items()
-        )
-        st.markdown(
-            f'<div class="resumo-box">{itens_resumo}'
-            f'<div class="resumo-linha"><span>🚚 Frete</span><span style="color:{frete_cor}">{frete_str}</span></div>'
-            f'<div class="resumo-total"><span class="resumo-total-label">Total</span>'
-            f'<span class="resumo-total-val">R$ {grand:.2f}</span></div></div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown("<br>", unsafe_allow_html=True)
-        campos_ok = all([nome, email, tel, cpf, cep, rua, num, bairro, cidade, uf])
-        if not campos_ok:
-            st.warning("Preencha todos os campos obrigatorios.", icon="⚠️")
-        if st.button("✅ Confirmar Pedido", key="confirmar_pedido",
-                     use_container_width=True, disabled=not campos_ok):
-            pedido = {
-                "items": [{"id": pid, "name": next((p["name"] for p in CATALOG if p["id"]==pid), pid),
-                           "price": next((p["preco_parceiro"] for p in CATALOG if p["id"]==pid), 0),
-                           "qty": q} for pid, q in cart.items()],
-                "cliente": {"nome": nome, "email": email, "tel": tel, "cpf": cpf},
-                "endereco": {"cep": cep, "rua": rua, "num": num, "comp": comp,
-                             "bairro": bairro, "cidade": cidade, "uf": uf},
-                "pagamento": metodo, "total": grand, "frete": frete,
-            }
-            st.session_state["loja_pedido_confirmado"] = pedido
+        if st.button("🗑 Limpar carrinho", use_container_width=True, key="btn_clear"):
             st.session_state.loja_cart = {}
-            st.session_state.loja_view = "confirmado"
             st.rerun()
-
-
-def render_confirmado():
-    pedido  = st.session_state.get("loja_pedido_confirmado", {})
-    total   = pedido.get("total", 0)
-    metodo  = pedido.get("pagamento", "")
-    cliente = pedido.get("cliente", {})
-    nome_cli = cliente.get("nome", "")
-    email_cli = cliente.get("email", "")
-    st.balloons()
-    st.markdown(
-        '<div style="text-align:center;padding:60px 20px">'
-        '<div style="font-size:4rem">🎉</div>'
-        '<h1 style="background:linear-gradient(90deg,#e879f9,#a855f7);-webkit-background-clip:text;'
-        '-webkit-text-fill-color:transparent;font-size:2rem;margin:16px 0 8px">Pedido Confirmado!</h1>'
-        f'<p style="color:#c4b5fd;font-size:1.05rem">Obrigado, <strong>{nome_cli}</strong>!<br>'
-        f'Pedido de <strong>R$ {total:.2f}</strong> via <strong>{metodo}</strong> recebido.</p>'
-        f'<p style="color:#9ca3af;font-size:.85rem;margin-top:12px">Confirmacao enviada para {email_cli}</p>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🏪 Continuar comprando", key="cont_comprando", use_container_width=True):
-            st.session_state.loja_view = "loja"
-            st.session_state.loja_pedido_confirmado = {}
-            st.rerun()
-    with col2:
-        if st.button("📊 Ver Dashboard", key="go_dash", use_container_width=True):
-            st.switch_page("pages/0_Dashboard.py")
-
-
-_VIEW_MAP = {"loja": render_loja, "carrinho": render_carrinho,
-             "checkout": render_checkout, "confirmado": render_confirmado}
-_VIEW_MAP.get(st.session_state.loja_view, render_loja)()
