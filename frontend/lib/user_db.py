@@ -62,7 +62,7 @@ def _ensure_table(db) -> None:
             pass
 
 
-# ─── Listar parceiros ─────────────────────────────────────────────────────
+# ─── Listar parceiros ─────────────────────────────────────────────────────────────
 def listar_parceiros() -> list[dict]:
     """Retorna todos os parceiros cadastrados (para painel admin)."""
     db, _ = get_db_session()
@@ -81,7 +81,7 @@ def listar_parceiros() -> list[dict]:
         db.close()
 
 
-# ─── Criar parceiro ─────────────────────────────────────────────────────────
+# ─── Criar parceiro ──────────────────────────────────────────────────────────────────
 def criar_parceiro(
     nome: str,
     email: str,
@@ -136,7 +136,48 @@ def criar_parceiro(
         db.close()
 
 
-# ─── Buscar parceiro por email ───────────────────────────────────────────────────
+# ─── Alias: cadastrar_parceiro (compat) ───────────────────────────────────────
+def cadastrar_parceiro(
+    nome: str,
+    email: str,
+    senha: str,
+    perfil: str = "b2b",
+    cidade: str = "",
+    estado: str = "",
+    **kwargs,
+) -> None:
+    """Alias de criar_parceiro() para compatibilidade com as páginas.
+    Lança Exception em caso de erro para que o form exiba st.error().
+    """
+    ok, msg = criar_parceiro(
+        nome=nome, email=email, senha=senha,
+        role=perfil, cidade=cidade, estado=estado, **kwargs,
+    )
+    if not ok:
+        raise ValueError(msg)
+
+
+# ─── Deletar parceiro ───────────────────────────────────────────────────────────────
+def deletar_parceiro(email: str) -> None:
+    """Remove parceiro pelo e-mail. Lança Exception em caso de erro."""
+    db, err = get_db_session()
+    if not db:
+        raise RuntimeError(f"Banco indisponível: {err}")
+    try:
+        _ensure_table(db)
+        db.execute(
+            text("DELETE FROM parceiros WHERE email = :email"),
+            {"email": email.lower().strip()},
+        )
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        raise exc
+    finally:
+        db.close()
+
+
+# ─── Buscar parceiro por email ───────────────────────────────────────────────────────────
 def buscar_por_email(email: str) -> dict | None:
     db, _ = get_db_session()
     if not db:
@@ -154,7 +195,7 @@ def buscar_por_email(email: str) -> dict | None:
         db.close()
 
 
-# ─── Buscar parceiro por email + senha ──────────────────────────────────────────
+# ─── Autenticar parceiro ──────────────────────────────────────────────────────────────────
 def autenticar_parceiro(email: str, senha: str) -> dict | None:
     """Valida e-mail + senha. Retorna dados do parceiro ou None."""
     parceiro = buscar_por_email(email)
@@ -165,7 +206,7 @@ def autenticar_parceiro(email: str, senha: str) -> dict | None:
     return parceiro
 
 
-# ─── Atualizar perfil ──────────────────────────────────────────────────────────
+# ─── Atualizar perfil ────────────────────────────────────────────────────────────────────
 def atualizar_perfil(
     email: str,
     nome: str | None = None,
@@ -177,20 +218,19 @@ def atualizar_perfil(
     bio: str | None = None,
     avatar_b64: str | None = None,
 ) -> tuple[bool, str]:
-    """Atualiza campos de perfil. Campos None sao ignorados."""
     db, err = get_db_session()
     if not db:
         return False, f"Banco indisponível: {err}"
     try:
         _ensure_table(db)
         sets, params = [], {"email": email.lower().strip()}
-        if nome       is not None: sets.append("nome = :nome");            params["nome"]       = nome
-        if username   is not None: sets.append("username = :username");    params["username"]   = username.lower().strip()
-        if telefone   is not None: sets.append("telefone = :telefone");    params["telefone"]   = telefone
-        if empresa    is not None: sets.append("empresa = :empresa");      params["empresa"]    = empresa
-        if cidade     is not None: sets.append("cidade = :cidade");        params["cidade"]     = cidade
-        if estado     is not None: sets.append("estado = :estado");        params["estado"]     = estado
-        if bio        is not None: sets.append("bio = :bio");              params["bio"]        = bio
+        if nome       is not None: sets.append("nome = :nome");             params["nome"]       = nome
+        if username   is not None: sets.append("username = :username");     params["username"]   = username.lower().strip()
+        if telefone   is not None: sets.append("telefone = :telefone");     params["telefone"]   = telefone
+        if empresa    is not None: sets.append("empresa = :empresa");       params["empresa"]    = empresa
+        if cidade     is not None: sets.append("cidade = :cidade");         params["cidade"]     = cidade
+        if estado     is not None: sets.append("estado = :estado");         params["estado"]     = estado
+        if bio        is not None: sets.append("bio = :bio");               params["bio"]        = bio
         if avatar_b64 is not None: sets.append("avatar_b64 = :avatar_b64"); params["avatar_b64"] = avatar_b64
         if not sets:
             return True, "Nada a atualizar."
@@ -206,10 +246,8 @@ def atualizar_perfil(
         db.close()
 
 
-# ─── Alterar senha ──────────────────────────────────────────────────────────────
-def alterar_senha(
-    email: str, senha_atual: str, nova_senha: str
-) -> tuple[bool, str]:
+# ─── Alterar senha ──────────────────────────────────────────────────────────────────────
+def alterar_senha(email: str, senha_atual: str, nova_senha: str) -> tuple[bool, str]:
     parceiro = autenticar_parceiro(email, senha_atual)
     if not parceiro:
         return False, "Senha atual incorreta."
@@ -230,15 +268,13 @@ def alterar_senha(
         db.close()
 
 
-# ─── Encode/decode avatar ────────────────────────────────────────────────────────
+# ─── Encode/decode avatar ──────────────────────────────────────────────────────────────────
 def image_to_b64(file_bytes: bytes, mime: str = "image/jpeg") -> str:
-    """Converte bytes de imagem para data URI base64."""
     b64 = base64.b64encode(file_bytes).decode("utf-8")
     return f"data:{mime};base64,{b64}"
 
 
 def b64_to_html_img(b64_data_uri: str, size: int = 48, cls: str = "") -> str:
-    """Retorna tag <img> circular pronta para st.html()."""
     return (
         f'<img src="{b64_data_uri}" '
         f'style="width:{size}px;height:{size}px;border-radius:50%;'

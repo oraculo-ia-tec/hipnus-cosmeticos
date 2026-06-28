@@ -3,16 +3,7 @@ invite_db.py — HIPNUS COSMÉTICOS
 ===================================
 Camada de acesso ao banco de dados para o domínio de Convites.
 
-Versão standalone para uso direto no Streamlit, SEM dependência
-do app/ (FastAPI). Toda a lógica de leitura/escrita de convites
-está aqui, pronta para importar a partir de qualquer página.
-
-Funciona em 2 modos:
-  - Com banco SQLite local (Streamlit Cloud): persiste e valida tokens
-  - Sem banco (fallback): retorna None (6_Convites cai no modo offline)
-
-Uso:
-    from lib.invite_db import validar_token_db, usar_token_db, criar_invite_db
+Funciona standalone (sem FastAPI).
 """
 from __future__ import annotations
 
@@ -21,7 +12,6 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# Garante PROJECT_ROOT e frontend/ no sys.path
 _ROOT     = Path(__file__).resolve().parents[2]
 _FRONTEND = Path(__file__).resolve().parents[1]
 for _p in [str(_ROOT), str(_FRONTEND)]:
@@ -32,15 +22,22 @@ from lib.db_utils import get_db_session, resolve_db_url  # noqa: E402
 
 INVITE_EXPIRY_DAYS = 7
 
+_CREATE_INVITES = """
+CREATE TABLE IF NOT EXISTS invites (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    token      VARCHAR(64)  NOT NULL UNIQUE,
+    email      VARCHAR(180) NOT NULL,
+    role       VARCHAR(30)  NOT NULL DEFAULT 'b2b',
+    created_by VARCHAR(60)  NOT NULL DEFAULT 'system',
+    used       BOOLEAN      NOT NULL DEFAULT 0,
+    used_at    DATETIME,
+    expires_at DATETIME     NOT NULL,
+    created_at DATETIME     DEFAULT CURRENT_TIMESTAMP
+)
+"""
 
-# ─── Garantir tabela invites (idempotente) ──────────────────────────────────────
+
 def _ensure_invite_table(engine) -> bool:
-    """
-    Cria a tabela 'invites' se ainda nao existir.
-    Usa SQLAlchemy Core puro como fallback se os modelos ORM nao carregarem.
-    Retorna True se a tabela estiver pronta.
-    """
-    # Tentativa 1: via modelos ORM
     try:
         from app.db.base import Base
         import app.domains.invites.models  # noqa: F401
@@ -48,159 +45,184 @@ def _ensure_invite_table(engine) -> bool:
         return True
     except Exception:
         pass
-
-    # Tentativa 2: via SQL puro (fallback robusto)
     try:
         from sqlalchemy import text
         with engine.connect() as conn:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS invites (
-                    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                    token      VARCHAR(64)  NOT NULL UNIQUE,
-                    email      VARCHAR(180) NOT NULL,
-                    role       VARCHAR(30)  NOT NULL DEFAULT 'b2b',
-                    created_by VARCHAR(60)  NOT NULL DEFAULT 'system',
-                    used       BOOLEAN      NOT NULL DEFAULT 0,
-                    used_at    DATETIME,
-                    expires_at DATETIME     NOT NULL,
-                    created_at DATETIME     DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
+            conn.execute(text(_CREATE_INVITES))
             conn.commit()
         return True
     except Exception:
         return False
 
 
-# ─── Criar convite ────────────────────────────────────────────────────────────
-def criar_invite_db(
-    email: str,
-    role: str,
-    criado_por: str,
-    app_url: str,
-) -> dict | None:
-    """
-    Cria um novo convite no banco e retorna os dados.
-    Garante que a tabela exista antes de inserir (create_all idempotente).
-    Retorna None em caso de falha.
-    """
-    db, err = get_db_session()
-    if not db:
-        return None
-
+def _ensure_table_db(db) -> None:
+    """Garante tabela usando a sessão já aberta."""
     try:
-        # Garante tabela antes de qualquer INSERT
-        _ensure_invite_table(db.get_bind())
-
-        token      = uuid.uuid4().hex
-        expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=INVITE_EXPIRY_DAYS)
-        signup_url = f"{app_url.rstrip('/')}/Cadastro_Parceiro?token={token}"
-
-        # Tenta via ORM primeiro
-        try:
-            from app.domains.invites.models import Invite
-            invite = Invite(
-                token=token, email=email, role=role,
-                created_by=criado_por, used=False, expires_at=expires_at,
-            )
-            db.add(invite)
-            db.commit()
-            db.refresh(invite)
-            return {
-                "token":      invite.token,
-                "email":      invite.email,
-                "role":       invite.role,
-                "created_by": invite.created_by,
-                "signup_url": signup_url,
-                "expires_at": invite.expires_at.isoformat(),
-                "email_sent": False,
-                "origem":     "db_direto",
-            }
-        except Exception:
-            db.rollback()
-
-        # Fallback: INSERT via SQL puro
         from sqlalchemy import text
-        expires_str = expires_at.strftime("%Y-%m-%d %H:%M:%S")
-        with db.get_bind().connect() as conn:
-            conn.execute(text("""
-                INSERT INTO invites (token, email, role, created_by, used, expires_at)
-                VALUES (:token, :email, :role, :created_by, 0, :expires_at)
-            """), {
-                "token":      token,
-                "email":      email,
-                "role":       role,
-                "created_by": criado_por,
-                "expires_at": expires_str,
-            })
-            conn.commit()
-
-        return {
-            "token":      token,
-            "email":      email,
-            "role":       role,
-            "created_by": criado_por,
-            "signup_url": signup_url,
-            "expires_at": expires_at.isoformat(),
-            "email_sent": False,
-            "origem":     "db_direto",
-        }
-
+        db.execute(text(_CREATE_INVITES))
+        db.commit()
     except Exception:
         try:
             db.rollback()
         except Exception:
             pass
-        return None
-    finally:
-        db.close()
 
 
-# ─── Validar token ───────────────────────────────────────────────────────────
-def validar_token_db(token: str) -> dict | None:
+# ─── Criar convite (assinatura flexível) ────────────────────────────────────────
+def criar_invite_db(
+    email: str,
+    role: str = "b2b",
+    dias: int | None = None,
+    criado_por: str = "admin",
+    app_url: str = "",
+) -> str:
     """
-    Valida um token de convite diretamente no banco.
-    Tenta via ORM; se falhar, usa SQL puro.
-    Retorna dict com dados do convite ou None se invalido/expirado/usado.
+    Cria um convite no banco. Retorna o token gerado.
+    A página 6_Convites chama: criar_invite_db(email=, role=, dias=)
     """
     db, err = get_db_session()
     if not db:
-        return None
-
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
-
-    # Tentativa 1: ORM
+        raise RuntimeError(f"Banco indisponível: {err}")
     try:
-        from app.domains.invites.models import Invite
-        invite = db.query(Invite).filter(Invite.token == token).first()
-        if not invite or invite.used:
-            return None
-        if invite.expires_at < now:
-            return None
-        return {
-            "id":         invite.id,
-            "token":      invite.token,
-            "email":      invite.email,
-            "role":       invite.role,
-            "created_by": invite.created_by,
-            "used":       invite.used,
-            "expires_at": invite.expires_at.isoformat(),
-            "created_at": invite.created_at.isoformat() if invite.created_at else "",
-        }
-    except Exception:
-        pass
+        _ensure_table_db(db)
+        from sqlalchemy import text
+        token      = uuid.uuid4().hex
+        expiry     = dias if dias is not None else INVITE_EXPIRY_DAYS
+        expires_at = (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=expiry))
+        expires_str = expires_at.strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(text("""
+            INSERT INTO invites (token, email, role, created_by, used, expires_at)
+            VALUES (:token, :email, :role, :created_by, 0, :expires_at)
+        """), {
+            "token":      token,
+            "email":      email.lower().strip(),
+            "role":       role,
+            "created_by": criado_por,
+            "expires_at": expires_str,
+        })
+        db.commit()
+        return token
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise exc
     finally:
         db.close()
 
-    # Tentativa 2: SQL puro
-    db2, _ = get_db_session()
-    if not db2:
-        return None
+
+# ─── Listar convites ─────────────────────────────────────────────────────────────────────
+def listar_invites_db() -> list[dict]:
+    """Lista todos os convites (para painel admin)."""
+    db, err = get_db_session()
+    if not db:
+        return []
     try:
+        _ensure_table_db(db)
+        try:
+            from app.domains.invites.models import Invite
+            invites = db.query(Invite).order_by(Invite.created_at.desc()).all()
+            return [
+                {
+                    "id":         i.id,
+                    "token":      i.token,
+                    "email":      i.email,
+                    "role":       i.role,
+                    "created_by": i.created_by,
+                    "used":       i.used,
+                    "used_at":    i.used_at.isoformat() if i.used_at else None,
+                    "expires_at": i.expires_at.isoformat(),
+                    "created_at": i.created_at.isoformat() if i.created_at else "",
+                }
+                for i in invites
+            ]
+        except Exception:
+            pass
         from sqlalchemy import text
-        row = db2.execute(
-            text("SELECT * FROM invites WHERE token = :token"),
-            {"token": token},
+        rows = db.execute(
+            text("SELECT * FROM invites ORDER BY created_at DESC")
+        ).fetchall()
+        return [dict(r._mapping) for r in rows]
+    except Exception:
+        return []
+    finally:
+        db.close()
+
+
+# ─── Deletar convite ─────────────────────────────────────────────────────────────────────
+def deletar_invite_db(token: str) -> None:
+    """Remove convite pelo token. Lança Exception em caso de erro."""
+    db, err = get_db_session()
+    if not db:
+        raise RuntimeError(f"Banco indisponível: {err}")
+    try:
+        _ensure_table_db(db)
+        from sqlalchemy import text
+        db.execute(text("DELETE FROM invites WHERE token = :token"), {"token": token})
+        db.commit()
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise exc
+    finally:
+        db.close()
+
+
+# ─── Reativar convite ─────────────────────────────────────────────────────────────────────
+def reativar_invite_db(token: str, dias: int = 30) -> None:
+    """Reseta convite já utilizado, estendendo a validade. Lança Exception em erro."""
+    db, err = get_db_session()
+    if not db:
+        raise RuntimeError(f"Banco indisponível: {err}")
+    try:
+        _ensure_table_db(db)
+        from sqlalchemy import text
+        nova_expiracao = (
+            datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=dias)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(text("""
+            UPDATE invites
+            SET used = 0, used_at = NULL, expires_at = :exp
+            WHERE token = :token
+        """), {"exp": nova_expiracao, "token": token})
+        db.commit()
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise exc
+    finally:
+        db.close()
+
+
+# ─── Validar token ──────────────────────────────────────────────────────────────────────
+def validar_token_db(token: str) -> dict | None:
+    db, err = get_db_session()
+    if not db:
+        return None
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    try:
+        try:
+            from app.domains.invites.models import Invite
+            invite = db.query(Invite).filter(Invite.token == token).first()
+            if not invite or invite.used or invite.expires_at < now:
+                return None
+            return {
+                "id": invite.id, "token": invite.token,
+                "email": invite.email, "role": invite.role,
+                "created_by": invite.created_by, "used": invite.used,
+                "expires_at": invite.expires_at.isoformat(),
+                "created_at": invite.created_at.isoformat() if invite.created_at else "",
+            }
+        except Exception:
+            pass
+        from sqlalchemy import text
+        row = db.execute(
+            text("SELECT * FROM invites WHERE token = :token"), {"token": token}
         ).fetchone()
         if not row:
             return None
@@ -214,40 +236,31 @@ def validar_token_db(token: str) -> dict | None:
             if exp < now:
                 return None
         return {
-            "id":         row_dict.get("id"),
-            "token":      row_dict.get("token"),
-            "email":      row_dict.get("email", ""),
-            "role":       row_dict.get("role", "b2b"),
+            "id": row_dict.get("id"), "token": row_dict.get("token"),
+            "email": row_dict.get("email", ""), "role": row_dict.get("role", "b2b"),
             "created_by": row_dict.get("created_by", ""),
-            "used":       bool(row_dict.get("used", False)),
+            "used": bool(row_dict.get("used", False)),
             "expires_at": exp.isoformat() if exp else "",
             "created_at": row_dict.get("created_at", ""),
         }
     except Exception:
         return None
     finally:
-        db2.close()
+        db.close()
 
 
-# ─── Usar token (marcar como utilizado) ───────────────────────────────────────
+# ─── Usar token ───────────────────────────────────────────────────────────────────────────
 def usar_token_db(token: str, dados: dict) -> tuple[bool, str]:
-    """
-    Marca o token como usado apos o cadastro ser concluido.
-    Tenta via ORM; se falhar, usa SQL puro.
-    Retorna (True, msg) em sucesso ou (False, erro) em falha.
-    """
     now_str = datetime.now(timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%d %H:%M:%S")
-
-    # Tentativa 1: ORM
     db, err = get_db_session()
     if db:
         try:
             from app.domains.invites.models import Invite
             invite = db.query(Invite).filter(Invite.token == token).first()
             if not invite:
-                raise ValueError("Token nao encontrado via ORM.")
+                raise ValueError("Token não encontrado via ORM.")
             if invite.used:
-                return False, "Este convite ja foi utilizado."
+                return False, "Este convite já foi utilizado."
             invite.used    = True
             invite.used_at = datetime.now(timezone.utc).replace(tzinfo=None)
             db.commit()
@@ -258,16 +271,13 @@ def usar_token_db(token: str, dados: dict) -> tuple[bool, str]:
             db.rollback()
         finally:
             db.close()
-
-    # Tentativa 2: SQL puro
     db2, err2 = get_db_session()
     if not db2:
         return False, f"Banco indisponível: {err2}"
     try:
         from sqlalchemy import text
         result = db2.execute(
-            text("SELECT used FROM invites WHERE token = :token"),
-            {"token": token},
+            text("SELECT used FROM invites WHERE token = :token"), {"token": token}
         ).fetchone()
         if not result:
             return False, "Token não encontrado."
@@ -282,51 +292,5 @@ def usar_token_db(token: str, dados: dict) -> tuple[bool, str]:
     except Exception as exc:
         db2.rollback()
         return False, str(exc)
-    finally:
-        db2.close()
-
-
-# ─── Listar convites ───────────────────────────────────────────────────────────
-def listar_invites_db() -> list[dict]:
-    """Lista todos os convites do banco (para painel admin)."""
-    db, err = get_db_session()
-    if not db:
-        return []
-
-    # Tentativa 1: ORM
-    try:
-        from app.domains.invites.models import Invite
-        invites = db.query(Invite).order_by(Invite.created_at.desc()).all()
-        return [
-            {
-                "id":         i.id,
-                "token":      i.token,
-                "email":      i.email,
-                "role":       i.role,
-                "created_by": i.created_by,
-                "used":       i.used,
-                "used_at":    i.used_at.isoformat() if i.used_at else None,
-                "expires_at": i.expires_at.isoformat(),
-                "created_at": i.created_at.isoformat() if i.created_at else "",
-            }
-            for i in invites
-        ]
-    except Exception:
-        pass
-    finally:
-        db.close()
-
-    # Tentativa 2: SQL puro
-    db2, _ = get_db_session()
-    if not db2:
-        return []
-    try:
-        from sqlalchemy import text
-        rows = db2.execute(
-            text("SELECT * FROM invites ORDER BY created_at DESC")
-        ).fetchall()
-        return [dict(r._mapping) for r in rows]
-    except Exception:
-        return []
     finally:
         db2.close()
