@@ -1,5 +1,6 @@
 from pathlib import Path; import sys
 _r = Path(__file__).resolve().parents[1]; _f = _r / "frontend"
-for _p in [str(_r), str(_f)]:
+for _p in [str(_r), str(_f), str(_f / "lib")]:
     if _p not in sys.path: sys.path.insert(0, _p)
-exec((_f / "pages" / "0_🏠_Home.py").read_text(encoding="utf-8"))
+_target = _f / "pages" / "0_🏠_Home.py"
+exec(compile(_target.read_text(encoding="utf-8"), str(_target), "exec"), {"__file__": str(_target)})
