@@ -21,8 +21,8 @@ HOME_PAGE   = "pages/1_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
-# ─── Flag de debug — mude para False em produção ──────────────────
-DEBUG_SIDEBAR = True
+# ─── Flag de debug ────────────────────────────────────────────
+DEBUG_SIDEBAR = False  # True apenas para diagnosticar problemas
 
 
 # ─── Usuários demo/seed ──────────────────────────────────────────────
@@ -67,7 +67,6 @@ USUARIOS_DEMO: dict[str, dict] = {
 
 # ─── Normalização de perfil ────────────────────────────────────────
 def _normalize_role(role: str | None) -> str:
-    """Normaliza variações de nome de perfil para o valor canônico."""
     role = (role or "demo").strip().lower()
     aliases = {
         "super user":  "super_admin",
@@ -225,13 +224,8 @@ def logout() -> None:
 
 # ───────────────────────────────────────────────────────────────────────
 # SIDEBAR PRO REDESIGN 2026
-# Nomes REAIS dos arquivos em pages/ (confirmados no repositório):
-#   0_Dashboard.py, 1_Home.py, 2_Catalogo.py, 3_Linhas.py,
-#   4_Loja_Parceiro.py, 5_Carrinho.py, 6_Checkout.py, 7_Convites.py,
-#   8_Cadastro_Parceiro.py, 9_Configuracao.py, 10_Usuarios.py, 11_IA_Consultora.py
 # ───────────────────────────────────────────────────────────────────────
 
-# Lista flat: (page_path, label, roles_permitidos)
 _NAV_ITEMS = [
     ("pages/11_IA_Consultora.py",      "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/1_Home.py",                "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
@@ -248,18 +242,13 @@ _NAV_ITEMS = [
 ]
 
 
-# ─── Debug helpers ─────────────────────────────────────────────────
+# ─── Helpers internos ─────────────────────────────────────────────────
 def _page_exists(page_path: str) -> bool:
-    """
-    Verifica se o arquivo da página existe.
-    Tenta múltiplos roots para funcionar tanto localmente
-    quanto no Streamlit Cloud.
-    """
     try:
         candidates = [
-            Path.cwd() / page_path,                           # raiz de execução (Streamlit Cloud)
-            Path(__file__).resolve().parents[2] / page_path,  # 2 níveis acima de frontend/lib/
-            Path(__file__).resolve().parents[1] / page_path,  # fallback 1 nível acima
+            Path.cwd() / page_path,
+            Path(__file__).resolve().parents[2] / page_path,
+            Path(__file__).resolve().parents[1] / page_path,
         ]
         return any(p.exists() for p in candidates)
     except Exception:
@@ -267,7 +256,6 @@ def _page_exists(page_path: str) -> bool:
 
 
 def _debug_sidebar_state(perfil: str) -> None:
-    """Painel de diagnóstico visível apenas quando DEBUG_SIDEBAR=True."""
     if not DEBUG_SIDEBAR:
         return
     with st.sidebar.expander("🧪 Debug Sidebar", expanded=False):
@@ -276,7 +264,6 @@ def _debug_sidebar_state(perfil: str) -> None:
         st.write("**autenticado:**", st.session_state.get("autenticado"))
         st.write("**usuario:**", st.session_state.get("usuario"))
         st.write("**cwd:**", str(Path.cwd()))
-
         rows = []
         for page_path, label, roles_ok in _NAV_ITEMS:
             rows.append({
@@ -287,7 +274,6 @@ def _debug_sidebar_state(perfil: str) -> None:
                 "roles_ok":       ", ".join(sorted(roles_ok)),
             })
         st.dataframe(rows, use_container_width=True)
-
         if st.checkbox("Ver session_state completo", key="dbg_ss_full"):
             st.json(dict(st.session_state))
 
@@ -329,31 +315,25 @@ def _inject_sidebar_css() -> None:
       border-color: rgba(185,131,255,.45) !important;
       font-weight: 600 !important; box-shadow: 0 0 14px rgba(185,131,255,.15) !important;
     }
-
     .hip-sidebar-divider {
       height: 1px; margin: 14px 16px 10px;
       background: linear-gradient(90deg, transparent, rgba(185,131,255,.45), rgba(0,245,255,.15), transparent);
       border: none;
     }
-
     section[data-testid="stSidebar"] div.block-container div.stButton > button {
-      width: 100% !important;
-      background: rgba(255,255,255,.05) !important;
+      width: 100% !important; background: rgba(255,255,255,.05) !important;
       color: rgba(255,255,255,.78) !important;
       border: 1px solid rgba(185,131,255,.22) !important;
-      border-radius: 11px !important;
-      font-family: 'Inter', sans-serif !important;
+      border-radius: 11px !important; font-family: 'Inter', sans-serif !important;
       font-weight: 600 !important; font-size: .86rem !important;
       padding: 10px 0 !important; min-height: 42px !important;
       transition: all .18s ease !important; margin-top: 4px !important;
     }
     section[data-testid="stSidebar"] div.block-container div.stButton > button:hover {
-      background: rgba(239,68,68,.18) !important;
-      color: #fca5a5 !important;
+      background: rgba(239,68,68,.18) !important; color: #fca5a5 !important;
       border-color: rgba(239,68,68,.45) !important;
       box-shadow: 0 0 16px rgba(239,68,68,.2) !important;
     }
-
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
     section[data-testid="stSidebar"] label,
@@ -373,16 +353,12 @@ def build_sidebar(
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """Sidebar Pro 2026 — menus flat sem grupos, todos expostos diretamente."""
-
-    # Normaliza perfil ao entrar na sidebar
+    """Sidebar Pro 2026 — menu completo, persistente em todas as páginas."""
     perfil = _normalize_role(st.session_state.get("perfil", "demo"))
     st.session_state["perfil"] = perfil
 
     _inject_sidebar_css()
-
-    # Debug panel (recolhido por padrão)
-    _debug_sidebar_state(perfil)
+    _debug_sidebar_state(perfil)  # no-op quando DEBUG_SIDEBAR=False
 
     # Logo
     st.sidebar.html("""
@@ -434,85 +410,49 @@ def build_sidebar(
     </div>
     """)
 
-    # Menus flat — loop com erros visíveis em modo debug
-    rendered = 0
+    # Menus flat
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
             continue
-
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
-
-        if DEBUG_SIDEBAR and not _page_exists(page_path):
-            st.sidebar.warning(f"⚠️ Arquivo não encontrado: `{page_path}`")
-            continue
-
         try:
             st.sidebar.page_link(page_path, label=lbl)
-            rendered += 1
-        except Exception as e:
-            if DEBUG_SIDEBAR:
-                st.sidebar.error(f"Erro: {label}")
-                st.sidebar.exception(e)
+        except Exception:
+            pass
 
-    if DEBUG_SIDEBAR and rendered == 0:
-        st.sidebar.error("⛔ Nenhum menu renderizado! Verifique perfil e caminhos no debug acima.")
-
-    # Divider neon + Botão SAIR
+    # Divider + botão SAIR
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
         if st.button("🚪  SAIR", key="sb_logout_btn", use_container_width=True):
             logout()
 
 
-# ───────────────────────────────────────────────────────────────────────
-# ALIASES DE COMPATIBILIDADE
-# ───────────────────────────────────────────────────────────────────────
-
-_sidebar_built: set = set()
-
-
+# ─── Aliases de compatibilidade ────────────────────────────────────────────────
 def sidebar_logo() -> None:
-    """Legado: renderiza logo. Agora delegado a build_sidebar()."""
     _maybe_build_sidebar()
 
-
 def sidebar_user_info() -> None:
-    """Legado: renderiza card do usuário. Agora delegado a build_sidebar()."""
     pass
-
 
 def sidebar_logout_button() -> None:
-    """Legado: botão de logout. Agora delegado a build_sidebar()."""
     pass
-
 
 def sidebar_nav_highlight() -> None:
-    """Legado: injetava CSS dos links. Agora delegado a build_sidebar()."""
     pass
-
 
 def sidebar_section_label(label: str) -> None:
-    """Legado: label de seção. No-op."""
     pass
-
 
 def sidebar_divider() -> None:
-    """Legado: divisor visual. No-op."""
     pass
-
 
 def _maybe_build_sidebar(
     show_cart: bool = True,
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """Garante que build_sidebar() seja chamada no máximo uma vez por rerun."""
     run_id = id(st.session_state)
     key = f"_sb_done_{run_id}"
     if not st.session_state.get(key):
         st.session_state[key] = True
-        build_sidebar(
-            show_cart=show_cart,
-            cart_count=cart_count,
-            cart_total=cart_total,
-        )
+        build_sidebar(show_cart=show_cart, cart_count=cart_count, cart_total=cart_total)
