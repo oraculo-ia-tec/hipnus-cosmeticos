@@ -10,6 +10,7 @@ Funções legadas mantidas como aliases para compatibilidade:
 """
 from __future__ import annotations
 
+from pathlib import Path
 import streamlit as st
 
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
@@ -19,6 +20,9 @@ LOGIN_PAGE  = "streamlit_app.py"
 HOME_PAGE   = "pages/0_🏠_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
+
+# ─── Flag de debug — mude para False em produção ──────────────────
+DEBUG_SIDEBAR = True
 
 
 # ─── Usuários demo/seed ──────────────────────────────────────────────
@@ -61,6 +65,24 @@ USUARIOS_DEMO: dict[str, dict] = {
 }
 
 
+# ─── Normalização de perfil ────────────────────────────────────────
+def _normalize_role(role: str | None) -> str:
+    """Normaliza variações de nome de perfil para o valor canônico."""
+    role = (role or "demo").strip().lower()
+    aliases = {
+        "super user":  "super_admin",
+        "superuser":   "super_admin",
+        "super-admin": "super_admin",
+        "super admin": "super_admin",
+        "superadmin":  "super_admin",
+        "admin":       "admin",
+        "b2b":         "b2b",
+        "b2c":         "b2c",
+        "demo":        "demo",
+    }
+    return aliases.get(role, role)
+
+
 # ─── Helpers de sessão ────────────────────────────────────────────
 def _gravar_sessao(
     nome: str, username: str, role: str,
@@ -72,7 +94,7 @@ def _gravar_sessao(
         "autenticado":       True,
         "usuario":           username,
         "nome":              nome,
-        "perfil":            role,
+        "perfil":            _normalize_role(role),
         "display_name":      display_name,
         "email":             email,
         "token":             token,
@@ -96,7 +118,6 @@ def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
 def _buscar_parceiro_db(email: str, senha: str) -> dict | None:
     try:
         import sys
-        from pathlib import Path
         _root = Path(__file__).resolve().parents[2]
         if str(_root) not in sys.path:
             sys.path.insert(0, str(_root))
@@ -175,7 +196,7 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         st.switch_page(_LOGIN_PAGE)
     usuario = {
         "login":        st.session_state.get("usuario", ""),
-        "perfil":       st.session_state.get("perfil",  "demo"),
+        "perfil":       _normalize_role(st.session_state.get("perfil", "demo")),
         "nome":         st.session_state.get("nome",    "Visitante"),
         "display_name": st.session_state.get("display_name", ""),
         "email":        st.session_state.get("email",   ""),
@@ -183,7 +204,11 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "via_api":      st.session_state.get("via_api", False),
         "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
-    if perfis_permitidos and usuario["perfil"] not in perfis_imitidos:
+    # Garante que o perfil normalizado fique gravado na sessão
+    st.session_state["perfil"] = usuario["perfil"]
+
+    # ── FIX: typo perfis_imitidos → perfis_permitidos ──────────────
+    if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
         st.error("🚫 Você não tem permissão para acessar esta página.")
         st.stop()
     return usuario
@@ -205,7 +230,6 @@ def logout() -> None:
 # ───────────────────────────────────────────────────────────────────────
 
 # Lista flat: (page_path, label, roles_permitidos)
-# Sem grupos — todos os menus expostos diretamente na sidebar
 _NAV_ITEMS = [
     ("pages/10_🤖_IA_Consultora.py",   "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/0_🏠_Home.py",             "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
@@ -220,6 +244,42 @@ _NAV_ITEMS = [
     ("pages/8_Configuracao.py",         "⚙️  Configurações",     {"super_admin","admin"}),
     ("pages/9_👥_Usuarios.py",          "👥  Usuários",          {"super_admin"}),
 ]
+
+
+# ─── Debug helpers ─────────────────────────────────────────────────
+def _page_exists(page_path: str) -> bool:
+    """Verifica se o arquivo da página existe no disco."""
+    try:
+        root = Path(__file__).resolve().parents[2]
+        return (root / page_path).exists()
+    except Exception:
+        return False
+
+
+def _debug_sidebar_state(perfil: str) -> None:
+    """Painel de diagnóstico visível apenas quando DEBUG_SIDEBAR=True."""
+    if not DEBUG_SIDEBAR:
+        return
+    with st.sidebar.expander("🧪 Debug Sidebar", expanded=True):
+        st.write("**perfil_raw:**", st.session_state.get("perfil"))
+        st.write("**perfil_normalizado:**", perfil)
+        st.write("**autenticado:**", st.session_state.get("autenticado"))
+        st.write("**usuario:**", st.session_state.get("usuario"))
+        st.write("**nome:**", st.session_state.get("nome"))
+
+        rows = []
+        for page_path, label, roles_ok in _NAV_ITEMS:
+            rows.append({
+                "label":          label,
+                "page_path":      page_path,
+                "existe_arquivo": _page_exists(page_path),
+                "permitido":      perfil in roles_ok,
+                "roles_ok":       ", ".join(sorted(roles_ok)),
+            })
+        st.dataframe(rows, use_container_width=True)
+
+        if st.checkbox("Ver session_state completo", key="dbg_ss_full"):
+            st.json(dict(st.session_state))
 
 
 def _inject_sidebar_css() -> None:
@@ -307,8 +367,15 @@ def build_sidebar(
     cart_total: float = 0.0,
 ) -> None:
     """Sidebar Pro 2026 — menus flat sem grupos, todos expostos diretamente."""
-    perfil = st.session_state.get("perfil", "demo")
+
+    # ── Normaliza perfil ao entrar na sidebar ──────────────────────
+    perfil = _normalize_role(st.session_state.get("perfil", "demo"))
+    st.session_state["perfil"] = perfil
+
     _inject_sidebar_css()
+
+    # ── Debug panel (visível apenas com DEBUG_SIDEBAR=True) ────────
+    _debug_sidebar_state(perfil)
 
     # Logo
     st.sidebar.html("""
@@ -360,17 +427,30 @@ def build_sidebar(
     </div>
     """)
 
-    # ── Menus flat — sem labels de grupo, sem separadores entre itens ──
+    # ── Menus flat — loop com erros visíveis em modo debug ──────────
+    rendered = 0
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
             continue
+
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
+
+        if DEBUG_SIDEBAR and not _page_exists(page_path):
+            st.sidebar.warning(f"⚠️ Arquivo não encontrado: `{page_path}`")
+            continue
+
         try:
             st.sidebar.page_link(page_path, label=lbl)
-        except Exception:
-            pass
+            rendered += 1
+        except Exception as e:
+            if DEBUG_SIDEBAR:
+                st.sidebar.error(f"Erro: {label}")
+                st.sidebar.exception(e)
 
-    # ── Divider neon + Botão SAIR ──────────────────────────────────────
+    if DEBUG_SIDEBAR and rendered == 0:
+        st.sidebar.error("⛔ Nenhum menu foi renderizado! Verifique perfil e caminhos acima.")
+
+    # ── Divider neon + Botão SAIR ──────────────────────────────────
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
         if st.button("🚪  SAIR", key="sb_logout_btn", use_container_width=True):
