@@ -17,7 +17,7 @@ ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
 LOGIN_PAGE  = "streamlit_app.py"
-HOME_PAGE   = "pages/0_🏠_Home.py"
+HOME_PAGE   = "pages/1_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
@@ -204,10 +204,8 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "via_api":      st.session_state.get("via_api", False),
         "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
-    # Garante que o perfil normalizado fique gravado na sessão
     st.session_state["perfil"] = usuario["perfil"]
 
-    # ── FIX: typo perfis_imitidos → perfis_permitidos ──────────────
     if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
         st.error("🚫 Você não tem permissão para acessar esta página.")
         st.stop()
@@ -227,31 +225,43 @@ def logout() -> None:
 
 # ───────────────────────────────────────────────────────────────────────
 # SIDEBAR PRO REDESIGN 2026
+# Nomes REAIS dos arquivos em pages/ (confirmados no repositório):
+#   0_Dashboard.py, 1_Home.py, 2_Catalogo.py, 3_Linhas.py,
+#   4_Loja_Parceiro.py, 5_Carrinho.py, 6_Checkout.py, 7_Convites.py,
+#   8_Cadastro_Parceiro.py, 9_Configuracao.py, 10_Usuarios.py, 11_IA_Consultora.py
 # ───────────────────────────────────────────────────────────────────────
 
 # Lista flat: (page_path, label, roles_permitidos)
 _NAV_ITEMS = [
-    ("pages/10_🤖_IA_Consultora.py",   "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
-    ("pages/0_🏠_Home.py",             "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
-    ("pages/0_📊_Dashboard.py",         "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
-    ("pages/1_🛍️_Catálogo.py",         "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
-    ("pages/2_✨_Linhas.py",            "✨  Linhas",            {"super_admin","admin","b2b","b2c"}),
-    ("pages/3_🏪_Loja_do_Parceiro.py", "🏪  Loja Parceiro",     {"super_admin","admin","b2b"}),
-    ("pages/4_🛒_Carrinho.py",          "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
-    ("pages/5_💳_Checkout.py",          "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
-    ("pages/6_Convites.py",             "✉️  Convites",          {"super_admin","admin"}),
-    ("pages/7_Cadastro_Parceiro.py",    "➕  Cadastro Parceiro", {"super_admin","admin"}),
-    ("pages/8_Configuracao.py",         "⚙️  Configurações",     {"super_admin","admin"}),
-    ("pages/9_👥_Usuarios.py",          "👥  Usuários",          {"super_admin"}),
+    ("pages/11_IA_Consultora.py",      "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/1_Home.py",                "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/0_Dashboard.py",           "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/2_Catalogo.py",            "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
+    ("pages/3_Linhas.py",              "✨  Linhas",            {"super_admin","admin","b2b","b2c"}),
+    ("pages/4_Loja_Parceiro.py",       "🏪  Loja Parceiro",     {"super_admin","admin","b2b"}),
+    ("pages/5_Carrinho.py",            "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
+    ("pages/6_Checkout.py",            "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
+    ("pages/7_Convites.py",            "✉️  Convites",          {"super_admin","admin"}),
+    ("pages/8_Cadastro_Parceiro.py",   "➕  Cadastro Parceiro", {"super_admin","admin"}),
+    ("pages/9_Configuracao.py",        "⚙️  Configurações",     {"super_admin","admin"}),
+    ("pages/10_Usuarios.py",           "👥  Usuários",          {"super_admin"}),
 ]
 
 
 # ─── Debug helpers ─────────────────────────────────────────────────
 def _page_exists(page_path: str) -> bool:
-    """Verifica se o arquivo da página existe no disco."""
+    """
+    Verifica se o arquivo da página existe.
+    Tenta múltiplos roots para funcionar tanto localmente
+    quanto no Streamlit Cloud.
+    """
     try:
-        root = Path(__file__).resolve().parents[2]
-        return (root / page_path).exists()
+        candidates = [
+            Path.cwd() / page_path,                           # raiz de execução (Streamlit Cloud)
+            Path(__file__).resolve().parents[2] / page_path,  # 2 níveis acima de frontend/lib/
+            Path(__file__).resolve().parents[1] / page_path,  # fallback 1 nível acima
+        ]
+        return any(p.exists() for p in candidates)
     except Exception:
         return False
 
@@ -260,12 +270,12 @@ def _debug_sidebar_state(perfil: str) -> None:
     """Painel de diagnóstico visível apenas quando DEBUG_SIDEBAR=True."""
     if not DEBUG_SIDEBAR:
         return
-    with st.sidebar.expander("🧪 Debug Sidebar", expanded=True):
+    with st.sidebar.expander("🧪 Debug Sidebar", expanded=False):
         st.write("**perfil_raw:**", st.session_state.get("perfil"))
         st.write("**perfil_normalizado:**", perfil)
         st.write("**autenticado:**", st.session_state.get("autenticado"))
         st.write("**usuario:**", st.session_state.get("usuario"))
-        st.write("**nome:**", st.session_state.get("nome"))
+        st.write("**cwd:**", str(Path.cwd()))
 
         rows = []
         for page_path, label, roles_ok in _NAV_ITEMS:
@@ -320,15 +330,12 @@ def _inject_sidebar_css() -> None:
       font-weight: 600 !important; box-shadow: 0 0 14px rgba(185,131,255,.15) !important;
     }
 
-    /* ── Divider neon antes do botão SAIR ── */
     .hip-sidebar-divider {
-      height: 1px;
-      margin: 14px 16px 10px;
+      height: 1px; margin: 14px 16px 10px;
       background: linear-gradient(90deg, transparent, rgba(185,131,255,.45), rgba(0,245,255,.15), transparent);
       border: none;
     }
 
-    /* ── Botão SAIR ── */
     section[data-testid="stSidebar"] div.block-container div.stButton > button {
       width: 100% !important;
       background: rgba(255,255,255,.05) !important;
@@ -368,13 +375,13 @@ def build_sidebar(
 ) -> None:
     """Sidebar Pro 2026 — menus flat sem grupos, todos expostos diretamente."""
 
-    # ── Normaliza perfil ao entrar na sidebar ──────────────────────
+    # Normaliza perfil ao entrar na sidebar
     perfil = _normalize_role(st.session_state.get("perfil", "demo"))
     st.session_state["perfil"] = perfil
 
     _inject_sidebar_css()
 
-    # ── Debug panel (visível apenas com DEBUG_SIDEBAR=True) ────────
+    # Debug panel (recolhido por padrão)
     _debug_sidebar_state(perfil)
 
     # Logo
@@ -427,7 +434,7 @@ def build_sidebar(
     </div>
     """)
 
-    # ── Menus flat — loop com erros visíveis em modo debug ──────────
+    # Menus flat — loop com erros visíveis em modo debug
     rendered = 0
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
@@ -448,9 +455,9 @@ def build_sidebar(
                 st.sidebar.exception(e)
 
     if DEBUG_SIDEBAR and rendered == 0:
-        st.sidebar.error("⛔ Nenhum menu foi renderizado! Verifique perfil e caminhos acima.")
+        st.sidebar.error("⛔ Nenhum menu renderizado! Verifique perfil e caminhos no debug acima.")
 
-    # ── Divider neon + Botão SAIR ──────────────────────────────────
+    # Divider neon + Botão SAIR
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
         if st.button("🚪  SAIR", key="sb_logout_btn", use_container_width=True):
