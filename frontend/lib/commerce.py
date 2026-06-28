@@ -12,17 +12,18 @@ import re
 import streamlit as st
 from . import tokens as T
 
+# Caminho exato da página de checkout (Streamlit exige o nome real do arquivo)
+_CHECKOUT_PAGE = "frontend/pages/5_💳_Checkout.py"
+
 
 # ── Helpers internos de carrinho ──────────────────────────────────────────────────────
 def _cart() -> dict:
-    """Retorna sempre session_state['cart'] como dict, inicializando se necessário."""
     if "cart" not in st.session_state or not isinstance(st.session_state["cart"], dict):
         st.session_state["cart"] = {}
     return st.session_state["cart"]
 
 
 def _cart_as_list() -> list:
-    """Converte o cart dict para lista de itens."""
     return list(_cart().values())
 
 
@@ -36,7 +37,7 @@ def brl(value) -> str:
 
 # ── Ícone de categoria ─────────────────────────────────────────────────────────────────────
 def category_icon(category: str | None) -> str:
-    _CATEGORY_ICON: dict[str, str] = {
+    _MAP: dict[str, str] = {
         "Mascara Liquida":        "💧",
         "Tratamento Obrigatorio": "✨",
         "Home Care":              "🏠",
@@ -49,14 +50,12 @@ def category_icon(category: str | None) -> str:
         "Diversos":               "🧴",
         "Geral":                  "🧴",
     }
-    return _CATEGORY_ICON.get(category or "", "🧴")
+    return _MAP.get(category or "", "🧴")
 
 
 # ── Validação de CPF/CNPJ ──────────────────────────────────────────────────────────────────
 def _limpar_doc(doc: str) -> str:
-    """Remove pontuação e espaços do CPF/CNPJ."""
     return re.sub(r"[^\d]", "", doc.strip())
-
 
 def _validar_cpf(cpf: str) -> bool:
     c = _limpar_doc(cpf)
@@ -64,11 +63,9 @@ def _validar_cpf(cpf: str) -> bool:
         return False
     for i in range(9, 11):
         soma = sum(int(c[j]) * (i + 1 - j) for j in range(i))
-        digito = (soma * 10 % 11) % 10
-        if digito != int(c[i]):
+        if (soma * 10 % 11) % 10 != int(c[i]):
             return False
     return True
-
 
 def _validar_cnpj(cnpj: str) -> bool:
     c = _limpar_doc(cnpj)
@@ -83,9 +80,7 @@ def _validar_cnpj(cnpj: str) -> bool:
             return False
     return True
 
-
 def _validar_documento(doc: str) -> tuple[bool, str]:
-    """Retorna (valido, doc_limpo). Aceita CPF (11 dígitos) ou CNPJ (14 dígitos)."""
     c = _limpar_doc(doc)
     if len(c) == 11:
         return _validar_cpf(c), c
@@ -157,19 +152,14 @@ def cart_total_block(total: float, key_checkout: str = "go_checkout") -> bool:
 
 
 # ── cart_view ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-def cart_view(
-    cart=None,
-    on_remove=None,
-    on_clear=None,
-) -> None:
-    """Renderiza a página completa do carrinho."""
+def cart_view(cart=None, on_remove=None, on_clear=None) -> None:
     from . import ui
     items = _cart_as_list()
 
     if not items:
         st.info("🛒 Carrinho vazio. Adicione produtos pelo Catálogo ou Loja do Parceiro.")
         if st.button("← Ver Catálogo", key="cart_back_catalog"):
-            st.switch_page("pages/2_Catalogo.py")
+            st.switch_page("frontend/pages/1_🛙️_Catálogo.py")
         return
 
     total = sum(i.get("price", 0) * i.get("qty", 1) for i in items)
@@ -193,16 +183,15 @@ def cart_view(
         st.rerun()
 
     st.divider()
-    checkout_clicked = cart_total_block(total)
-    if checkout_clicked:
-        st.switch_page("pages/5_💳_Checkout.py")
+    if cart_total_block(total):
+        st.switch_page(_CHECKOUT_PAGE)
 
 
 # ── checkout_view ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 def checkout_view(usuario: dict) -> None:
     """
     Fluxo de Checkout em 2 etapas:
-      Etapa 1 — Dados do comprador (CPF/CNPJ obrigatório + confirmação)
+      Etapa 1 — Dados do comprador (CPF/CNPJ obrigatório + validação)
       Etapa 2 — Forma de pagamento (PIX ou Cartão de Crédito) + confirmar
     """
     try:
@@ -212,12 +201,12 @@ def checkout_view(usuario: dict) -> None:
         if not cart:
             st.warning("🛒 Seu carrinho está vazio. Adicione produtos antes de finalizar.")
             if st.button("← Voltar ao Catálogo"):
-                st.switch_page("pages/2_Catalogo.py")
+                st.switch_page("frontend/pages/1_🛙️_Catálogo.py")
             return
 
         total = sum(i.get("price", 0) * i.get("qty", 1) for i in cart)
 
-        # ─── Resumo do pedido ──────────────────────────────────────────────────
+        # Resumo
         with st.expander("🛋️ Resumo do pedido — " + brl(total), expanded=True):
             for item in cart:
                 st.markdown(
@@ -228,11 +217,10 @@ def checkout_view(usuario: dict) -> None:
 
         st.divider()
 
-        # ─── Etapa 1: Dados do comprador ─────────────────────────────────────
+        # ─── Etapa 1: Dados do comprador
         st.markdown("### 👤 Etapa 1 — Dados do comprador")
         st.caption("Preencha os dados abaixo para emissão da cobrança. CPF ou CNPJ é obrigatório.")
 
-        # Pré-preenche com dados salvos anteriormente na sessão
         _saved = st.session_state.get("checkout_dados", {})
 
         col1, col2 = st.columns(2)
@@ -264,7 +252,6 @@ def checkout_view(usuario: dict) -> None:
                 key="co_telefone",
             )
 
-        # Validação em tempo real
         doc_ok, doc_limpo = _validar_documento(cpf_cnpj_raw)
         if cpf_cnpj_raw.strip() and not doc_ok:
             st.error("❌ CPF ou CNPJ inválido. Verifique e tente novamente.")
@@ -272,31 +259,26 @@ def checkout_view(usuario: dict) -> None:
             tipo_doc = "CPF" if len(doc_limpo) == 11 else "CNPJ"
             st.success(f"✅ {tipo_doc} válido")
 
-        dados_ok = (
-            nome.strip()
-            and email.strip() and "@" in email
-            and doc_ok
-        )
+        dados_ok = nome.strip() and email.strip() and "@" in email and doc_ok
 
         if not dados_ok:
             st.info("🔒 Preencha todos os campos obrigatórios (*) corretamente para continuar.")
-            return  # não mostra a etapa 2 enquanto dados incompletos
+            return
 
-        # Salva dados confirmados na sessão
+        # Salva dados na sessão
         st.session_state["checkout_dados"] = {
             "nome":     nome.strip(),
             "email":    email.strip(),
             "cpf_cnpj": doc_limpo,
             "telefone": telefone.strip(),
         }
-        # Atualiza também o dict do usuário na sessão para reuso futuro
         if "usuario" in st.session_state:
             st.session_state["usuario"]["cpf_cnpj"] = doc_limpo
             st.session_state["usuario"]["phone"]    = telefone.strip()
 
         st.divider()
 
-        # ─── Etapa 2: Forma de pagamento ──────────────────────────────────────
+        # ─── Etapa 2: Forma de pagamento
         st.markdown("### 💳 Etapa 2 — Forma de pagamento")
 
         metodo = st.selectbox(
@@ -339,8 +321,7 @@ def checkout_view(usuario: dict) -> None:
                 if resultado.get("pix_qrcode"):
                     st.markdown("#### QR Code PIX")
                     import base64
-                    qr_bytes = base64.b64decode(resultado["pix_qrcode"])
-                    st.image(qr_bytes, caption="Escaneie para pagar", width=280)
+                    st.image(base64.b64decode(resultado["pix_qrcode"]), caption="Escaneie para pagar", width=280)
 
                 if resultado.get("pix_payload"):
                     st.text_area("📋 Pix Copia e Cola", resultado["pix_payload"], height=80)
@@ -348,7 +329,6 @@ def checkout_view(usuario: dict) -> None:
                 if resultado.get("invoice_url"):
                     st.link_button("📎 Acessar fatura / link de pagamento", resultado["invoice_url"])
 
-                # Salva no histórico
                 hist = st.session_state.get("historico_pedidos", [])
                 hist.append({
                     "external_ref": resultado.get("external_ref", ""),
@@ -358,8 +338,8 @@ def checkout_view(usuario: dict) -> None:
                     "totais":       {"total": total},
                 })
                 st.session_state["historico_pedidos"] = hist
-                st.session_state["cart"] = {}            # limpa carrinho
-                st.session_state.pop("checkout_dados", None)  # limpa dados temporários
+                st.session_state["cart"] = {}
+                st.session_state.pop("checkout_dados", None)
             else:
                 st.error(f"❌ Erro no pagamento: {resultado.get('erro', 'Tente novamente.')}")
 
