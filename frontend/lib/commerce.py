@@ -196,6 +196,7 @@ def checkout_view(usuario: dict) -> None:
     """
     try:
         from lib.checkout_service import processar_checkout
+        from lib.user_db import atualizar_cpf_phone
 
         cart = _cart_as_list()
         if not cart:
@@ -222,6 +223,8 @@ def checkout_view(usuario: dict) -> None:
         st.caption("Preencha os dados abaixo para emissão da cobrança. CPF ou CNPJ é obrigatório.")
 
         _saved = st.session_state.get("checkout_dados", {})
+        if not isinstance(_saved, dict):
+            _saved = {}
 
         col1, col2 = st.columns(2)
         with col1:
@@ -272,9 +275,12 @@ def checkout_view(usuario: dict) -> None:
             "cpf_cnpj": doc_limpo,
             "telefone": telefone.strip(),
         }
-        if "usuario" in st.session_state:
-            st.session_state["usuario"]["cpf_cnpj"] = doc_limpo
-            st.session_state["usuario"]["phone"]    = telefone.strip()
+
+        # ── Atualiza session_state["usuario"] com segurança (guard isinstance)
+        usuario_state = st.session_state.get("usuario")
+        if isinstance(usuario_state, dict):
+            usuario_state["cpf_cnpj"] = doc_limpo
+            usuario_state["phone"]    = telefone.strip()
 
         st.divider()
 
@@ -302,7 +308,7 @@ def checkout_view(usuario: dict) -> None:
             with st.spinner("Processando pagamento..."):
                 dados = st.session_state["checkout_dados"]
                 usuario_checkout = {
-                    **usuario,
+                    **(usuario if isinstance(usuario, dict) else {}),
                     "name":     dados["nome"],
                     "email":    dados["email"],
                     "cpf_cnpj": dados["cpf_cnpj"],
@@ -315,6 +321,15 @@ def checkout_view(usuario: dict) -> None:
                 )
 
             if resultado.get("ok"):
+                # ── Persiste CPF/CNPJ e phone no banco (silencioso, não bloqueia)
+                email_usuario = dados.get("email") or usuario.get("email", "")
+                if email_usuario:
+                    atualizar_cpf_phone(
+                        email=email_usuario,
+                        cpf_cnpj=dados["cpf_cnpj"],
+                        phone=dados["telefone"],
+                    )
+
                 st.success("✅ Pedido realizado com sucesso!")
                 st.balloons()
 

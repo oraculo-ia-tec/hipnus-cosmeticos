@@ -62,6 +62,19 @@ def _ensure_table(db) -> None:
             pass
 
 
+def _ensure_column(db, column: str, col_type: str = "VARCHAR(60)") -> None:
+    """Adiciona coluna na tabela parceiros se ainda não existir (SQLite-safe)."""
+    try:
+        db.execute(text(f"ALTER TABLE parceiros ADD COLUMN {column} {col_type}"))
+        db.commit()
+    except Exception:
+        # Coluna já existe ou erro ignorável
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+
 # ─── Listar parceiros ─────────────────────────────────────────────────────────────
 def listar_parceiros() -> list[dict]:
     """Retorna todos os parceiros cadastrados (para painel admin)."""
@@ -241,6 +254,59 @@ def atualizar_perfil(
         return True, "Perfil atualizado!"
     except Exception as exc:
         db.rollback()
+        return False, str(exc)
+    finally:
+        db.close()
+
+
+# ─── Persistir CPF/CNPJ e telefone vindos do checkout ─────────────────────────
+def atualizar_cpf_phone(
+    email: str,
+    cpf_cnpj: str | None = None,
+    phone: str | None = None,
+) -> tuple[bool, str]:
+    """
+    Persiste CPF/CNPJ e telefone no registro do parceiro após confirmação no checkout.
+
+    - Garante que as colunas `cpf_cnpj` e `phone` existem na tabela (cria via
+      ALTER TABLE se necessário — seguro para SQLite).
+    - Nunca sobrescreve campos de login (senha_hash, role, email) — apenas
+      enriquece dados complementares do perfil.
+    - Silencioso em caso de banco indisponível (não bloqueia o checkout).
+    """
+    if not email:
+        return False, "E-mail ausente."
+    db, err = get_db_session()
+    if not db:
+        return False, f"Banco indisponível: {err}"
+    try:
+        _ensure_table(db)
+        # Garante que as colunas extras existem (idempotente)
+        _ensure_column(db, "cpf_cnpj", "VARCHAR(14)")
+        _ensure_column(db, "phone",    "VARCHAR(30)")
+
+        sets, params = [], {"email": email.lower().strip()}
+        if cpf_cnpj:
+            sets.append("cpf_cnpj = :cpf_cnpj")
+            params["cpf_cnpj"] = cpf_cnpj
+        if phone:
+            sets.append("phone = :phone")
+            params["phone"] = phone
+        if not sets:
+            return True, "Nada a persistir."
+        sets.append("updated_at = :updated_at")
+        params["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(
+            text(f"UPDATE parceiros SET {', '.join(sets)} WHERE email = :email"),
+            params,
+        )
+        db.commit()
+        return True, "CPF/CNPJ e telefone atualizados no banco."
+    except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
         return False, str(exc)
     finally:
         db.close()
