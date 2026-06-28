@@ -23,7 +23,8 @@ def _resolve_lib_root() -> Path:
     for _ in range(6):
         if (p / "lib" / "session_guard.py").exists():
             return p
-        if (p / "frontend" / "lib" / "session_guard.py").exists():<br>            return p / "frontend"
+        if (p / "frontend" / "lib" / "session_guard.py").exists():
+            return p / "frontend"
         p = p.parent
     return Path(__file__).resolve().parent.parent
 
@@ -250,10 +251,10 @@ def _brl(v: float) -> str:
     return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# ── header fixo com carrinho ──────────────────────────────────────────────────────────
+# ── header com stats ──────────────────────────────────────────────────────────────────
 qty  = cart_total_qty()
 val  = cart_total_valor()
-n_prods = len(CATALOG)
+n_prods  = len(CATALOG)
 n_linhas = len(LINHAS)
 
 st.markdown(
@@ -287,7 +288,6 @@ st.markdown(
 
 # ── navegação de view ─────────────────────────────────────────────────────────────────
 if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_detalhe:
-    # ── VIEW DETALHE ──────────────────────────────────────────────────────────────────
     if st.button("← Voltar à loja", key="btn_back"):
         st.session_state.loja_view = "loja"
         st.session_state.loja_produto_detalhe = None
@@ -300,6 +300,9 @@ if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_det
 
     economy = prod["preco"] - prod["preco_parceiro"]
     pct     = int(economy / prod["preco"] * 100)
+    beneficios_html = "".join(
+        f'<span class="prod-benefit-tag">{b}</span>' for b in prod["beneficios"]
+    )
 
     st.markdown(
         f"""
@@ -312,9 +315,7 @@ if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_det
             &nbsp;&nbsp;·&nbsp;&nbsp;
             🏷 Estoque: <strong style="color:#c4b5fd;">{prod['estoque']} un</strong>
           </div>
-          <div class="prod-beneficios">
-            {''.join(f"<span class='prod-benefit-tag'>{b}</span>" for b in prod['beneficios'])}
-          </div>
+          <div class="prod-beneficios">{beneficios_html}</div>
           <div class="prod-precos">
             <span class="prod-preco-cheio">{_brl(prod['preco'])}</span>
             <span class="prod-preco-parc">{_brl(prod['preco_parceiro'])}</span>
@@ -351,7 +352,6 @@ if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_det
 left, right = st.columns([3, 1])
 
 with left:
-    # busca
     busca = st.text_input(
         "🔍 Buscar produto...", value=st.session_state.loja_busca,
         placeholder="Ex: sérum, ouro, protetor…", key="_busca_input",
@@ -361,7 +361,6 @@ with left:
         st.session_state.loja_busca = busca
         st.rerun()
 
-    # filtros de linha
     st.markdown("<div style='margin:8px 0 4px;color:#9ca3af;font-size:.78rem;font-weight:600;'"
                 ">FILTRAR POR LINHA:</div>", unsafe_allow_html=True)
     fcols = st.columns(len(LINHAS))
@@ -380,7 +379,6 @@ with left:
                 st.session_state.loja_filtro_linha = fl
                 st.rerun()
 
-    # filtro categoria
     cat = st.selectbox(
         "Categoria:", options=CATEGORIAS,
         index=CATEGORIAS.index(st.session_state.loja_filtro_cat),
@@ -421,7 +419,7 @@ with left:
                         f'<span class="prod-benefit-tag">{b}</span>'
                         for b in prod["beneficios"]
                     )
-                    desc_curta = prod['descricao'][:90] + ('...' if len(prod['descricao']) > 90 else '')
+                    desc_curta = prod["descricao"][:90] + ("..." if len(prod["descricao"]) > 90 else "")
                     st.markdown(
                         f"""
                         <div class="prod-card">
