@@ -268,18 +268,34 @@ def _inject_sidebar_css() -> None:
       border-color: rgba(185,131,255,.45) !important;
       font-weight: 600 !important; box-shadow: 0 0 14px rgba(185,131,255,.15) !important;
     }
+
+    /* ── Divider neon antes do botão SAIR ── */
+    .hip-sidebar-divider {
+      height: 1px;
+      margin: 14px 16px 10px;
+      background: linear-gradient(90deg, transparent, rgba(185,131,255,.45), rgba(0,245,255,.15), transparent);
+      border: none;
+    }
+
+    /* ── Botão SAIR destacado ── */
     section[data-testid="stSidebar"] div.block-container div.stButton > button {
-      width: 100% !important; background: rgba(255,255,255,.05) !important;
-      color: rgba(255,255,255,.78) !important; border: 1px solid rgba(185,131,255,.22) !important;
-      border-radius: 11px !important; font-family: 'Inter', sans-serif !important;
+      width: 100% !important;
+      background: rgba(255,255,255,.05) !important;
+      color: rgba(255,255,255,.78) !important;
+      border: 1px solid rgba(185,131,255,.22) !important;
+      border-radius: 11px !important;
+      font-family: 'Inter', sans-serif !important;
       font-weight: 600 !important; font-size: .86rem !important;
       padding: 10px 0 !important; min-height: 42px !important;
       transition: all .18s ease !important; margin-top: 4px !important;
     }
     section[data-testid="stSidebar"] div.block-container div.stButton > button:hover {
-      background: rgba(185,131,255,.18) !important; color: #fff !important;
-      border-color: rgba(185,131,255,.5) !important;
+      background: rgba(239,68,68,.18) !important;
+      color: #fca5a5 !important;
+      border-color: rgba(239,68,68,.45) !important;
+      box-shadow: 0 0 16px rgba(239,68,68,.2) !important;
     }
+
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
     section[data-testid="stSidebar"] label,
@@ -353,7 +369,7 @@ def build_sidebar(
     </div>
     """)
 
-    # Nav agrupado com page_link
+    # Nav agrupado com page_link — exibe apenas menus permitidos para o perfil
     last_group = None
     for grupo, page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
@@ -376,9 +392,10 @@ def build_sidebar(
         except Exception:
             pass
 
-    st.sidebar.html("""<div style="height:12px;"></div>""")
+    # ── Divider neon + Botão SAIR ──────────────────────────────────────
+    st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
-        if st.button("🚪  Sair da plataforma", key="sb_logout_btn", use_container_width=True):
+        if st.button("🚪  SAIR", key="sb_logout_btn", use_container_width=True):
             logout()
 
 
