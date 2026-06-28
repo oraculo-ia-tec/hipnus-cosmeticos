@@ -17,37 +17,60 @@ MAX_TOKENS    = 1024
 def _get_api_key() -> str:
     """
     Leitura da GROQ_API_KEY em ordem de prioridade:
-    1. Variável de ambiente (injetada pelo proxy antes do exec)
-    2. st.secrets via subscript
-    3. st.secrets via atributo
-    4. st.secrets via dict()
+    1. Variável de ambiente
+    2. st.secrets raiz:  GROQ_API_KEY = "..."
+    3. st.secrets bloco: [groq]\nGROQ_API_KEY = "..."
+    4. Qualquer sub-bloco que contenha GROQ_API_KEY
     """
-    # 1. Ambiente (mais confiável no contexto exec)
+    # 1. Ambiente
     val = os.environ.get("GROQ_API_KEY", "").strip()
     if val:
         return val
 
-    # 2–4. Streamlit Secrets como fallback
     try:
         import streamlit as st
+
+        # 2. Raiz do secrets
+        for acesso in (
+            lambda: st.secrets["GROQ_API_KEY"],
+            lambda: getattr(st.secrets, "GROQ_API_KEY", ""),
+            lambda: dict(st.secrets).get("GROQ_API_KEY", ""),
+        ):
+            try:
+                val = str(acesso()).strip()
+                if val and val not in ("", "None"):
+                    return val
+            except Exception:
+                pass
+
+        # 3. Bloco [groq]
         try:
-            val = str(st.secrets["GROQ_API_KEY"]).strip()
-            if val:
+            val = str(st.secrets["groq"]["GROQ_API_KEY"]).strip()
+            if val and val not in ("", "None"):
                 return val
         except Exception:
             pass
+
         try:
-            val = str(getattr(st.secrets, "GROQ_API_KEY", "")).strip()
-            if val:
+            val = str(st.secrets.groq.GROQ_API_KEY).strip()
+            if val and val not in ("", "None"):
                 return val
         except Exception:
             pass
+
+        # 4. Varre todos os sub-blocos procurando a chave
         try:
-            val = str(dict(st.secrets).get("GROQ_API_KEY", "")).strip()
-            if val:
-                return val
+            for section_key in dict(st.secrets):
+                section = st.secrets[section_key]
+                try:
+                    val = str(section["GROQ_API_KEY"]).strip()
+                    if val and val not in ("", "None"):
+                        return val
+                except Exception:
+                    pass
         except Exception:
             pass
+
     except Exception:
         pass
 
