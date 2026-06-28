@@ -23,8 +23,7 @@ def _resolve_lib_root() -> Path:
     for _ in range(6):
         if (p / "lib" / "session_guard.py").exists():
             return p
-        if (p / "frontend" / "lib" / "session_guard.py").exists():
-            return p / "frontend"
+        if (p / "frontend" / "lib" / "session_guard.py").exists():<br>            return p / "frontend"
         p = p.parent
     return Path(__file__).resolve().parent.parent
 
@@ -46,7 +45,7 @@ st.set_page_config(
 apply_theme()
 check_session_expiry()
 
-# ── catálogo de produtos ──────────────────────────────────────────────────────────
+# ── catálogo de produtos ──────────────────────────────────────────────────────────────
 CATALOG = [
     dict(id="oro-01", name="Sérum Facial Ouro 24K", linha="Linha Ouro", categoria="Facial",
          preco=189.90, preco_parceiro=142.00, estoque=48,
@@ -251,7 +250,7 @@ def _brl(v: float) -> str:
     return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
-# ── header fixo com carrinho ───────────────────────────────────────────────────────
+# ── header fixo com carrinho ──────────────────────────────────────────────────────────
 qty  = cart_total_qty()
 val  = cart_total_valor()
 n_prods = len(CATALOG)
@@ -286,9 +285,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ── navegação de view ──────────────────────────────────────────────────────────────
+# ── navegação de view ─────────────────────────────────────────────────────────────────
 if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_detalhe:
-    # ── VIEW DETALHE ────────────────────────────────────────────────────────────────
+    # ── VIEW DETALHE ──────────────────────────────────────────────────────────────────
     if st.button("← Voltar à loja", key="btn_back"):
         st.session_state.loja_view = "loja"
         st.session_state.loja_produto_detalhe = None
@@ -348,7 +347,7 @@ if st.session_state.loja_view == "detalhe" and st.session_state.loja_produto_det
     st.stop()
 
 
-# ── VIEW LOJA (principal) ──────────────────────────────────────────────────────────
+# ── VIEW LOJA (principal) ─────────────────────────────────────────────────────────────
 left, right = st.columns([3, 1])
 
 with left:
@@ -422,23 +421,24 @@ with left:
                         f'<span class="prod-benefit-tag">{b}</span>'
                         for b in prod["beneficios"]
                     )
+                    desc_curta = prod['descricao'][:90] + ('...' if len(prod['descricao']) > 90 else '')
                     st.markdown(
                         f"""
                         <div class="prod-card">
                           {badge_html}
                           <div class="prod-linha">{prod['linha'].upper()}</div>
                           <div class="prod-name">{prod['name']}</div>
-                          <div class="prod-desc">{prod['descricao'][:90]}{'...' if len(prod['descricao']) > 90 else ''}</div>
+                          <div class="prod-desc">{desc_curta}</div>
                           <div class="prod-volume">📦 {prod['volume']}</div>
                           <div class="prod-beneficios">{beneficios_html}</div>
                           <div class="prod-precos">
                             <span class="prod-preco-cheio">{_brl(prod['preco'])}</span>
                             <span class="prod-preco-parc">{_brl(prod['preco_parceiro'])}</span>
                           </div>
-                          <div class="prod-economy">✨ -{}% · economia de {_brl(economy)}</div>
+                          <div class="prod-economy">✨ -{pct}% · economia de {_brl(economy)}</div>
                           <div class="prod-estoque" style="margin-top:6px;">🏷 {prod['estoque']} em estoque</div>
                         </div>
-                        """.format(pct),
+                        """,
                         unsafe_allow_html=True,
                     )
                     bc1, bc2 = st.columns(2)
@@ -515,7 +515,6 @@ with right:
         st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
 
         if st.button("💳 Ir para Checkout", type="primary", use_container_width=True, key="btn_checkout"):
-            # Serializa carrinho para session_state de checkout
             items = []
             for pid, qty in cart.items():
                 prod = next((p for p in CATALOG if p["id"] == pid), None)
