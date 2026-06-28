@@ -30,10 +30,8 @@ for _p in [str(_ROOT), str(_FRONTEND)]:
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import seaborn as sns
 import pandas as pd
-import numpy as np
 import streamlit as st
 from lib import ui, components
 from lib.auth import require_auth, build_sidebar
@@ -45,7 +43,6 @@ from lib.user_db import listar_parceiros
 sns.set_theme(style="whitegrid", font="DejaVu Sans")
 PALETTE_HIPNUS = ["#7c3aed", "#a78bfa", "#10b981", "#f59e0b", "#ef4444", "#3b82f6"]
 BORDER_COLOR   = "#e5e0f5"
-BG_CARD        = "#f8f7fc"
 
 st.set_page_config(page_title="Dashboard · HIPNUS", page_icon="📊", layout="wide")
 ui.inject_theme()
@@ -61,38 +58,23 @@ components.page_header(
 # ─── CSS para bordas separadoras ──────────────────────────────────────────────
 st.html("""
 <style>
-  .seaborn-card {
-    background: #f8f7fc;
-    border: 2px solid #e5e0f5;
-    border-radius: 16px;
-    padding: 20px 24px 16px;
-    margin: 12px 0;
-    box-shadow: 0 2px 8px rgba(124,58,237,0.07);
-  }
   .seaborn-card-title {
     font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 1.6px;
-    text-transform: uppercase;
-    color: rgba(124,58,237,0.55);
-    margin-bottom: 12px;
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 1.6px; text-transform: uppercase;
+    color: rgba(124,58,237,0.55); margin-bottom: 12px;
   }
   .section-separator {
-    border: none;
-    border-top: 2px solid #e5e0f5;
-    margin: 28px 0 20px;
-    border-radius: 2px;
+    border: none; border-top: 2px solid #e5e0f5;
+    margin: 28px 0 20px; border-radius: 2px;
   }
   .grafico-wrapper {
-    border: 2px solid #e5e0f5;
-    border-radius: 14px;
-    padding: 16px;
-    background: #ffffff;
-    margin-bottom: 8px;
+    border: 2px solid #e5e0f5; border-radius: 14px;
+    padding: 16px; background: #ffffff; margin-bottom: 8px;
   }
 </style>
 """)
+
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 def _brl(v) -> str:
@@ -105,12 +87,9 @@ def _brl(v) -> str:
 
 def _status_badge(status: str) -> str:
     return {
-        "RECEIVED":  "🟢 Recebido",
-        "CONFIRMED": "🟢 Confirmado",
-        "PENDING":   "🟡 Pendente",
-        "OVERDUE":   "🔴 Vencido",
-        "REFUNDED":  "🔵 Estornado",
-        "CANCELLED": "⚪ Cancelado",
+        "RECEIVED":  "🟢 Recebido",  "CONFIRMED": "🟢 Confirmado",
+        "PENDING":   "🟡 Pendente",  "OVERDUE":   "🔴 Vencido",
+        "REFUNDED":  "🔵 Estornado", "CANCELLED": "⚪ Cancelado",
     }.get(status, status)
 
 def _method_badge(bt: str) -> str:
@@ -118,21 +97,77 @@ def _method_badge(bt: str) -> str:
 
 def _status_color(status: str) -> str:
     return {
-        "RECEIVED":  "#10b981",
-        "CONFIRMED": "#10b981",
-        "PENDING":   "#f59e0b",
-        "OVERDUE":   "#ef4444",
-        "REFUNDED":  "#3b82f6",
-        "CANCELLED": "#9ca3af",
+        "RECEIVED": "#10b981", "CONFIRMED": "#10b981",
+        "PENDING":  "#f59e0b", "OVERDUE":   "#ef4444",
+        "REFUNDED": "#3b82f6", "CANCELLED": "#9ca3af",
     }.get(status, "#7c3aed")
+
+
+# ─── Resolução robusta da API KEY ──────────────────────────────────────────────
+def _resolve_api_key() -> tuple[str, str]:
+    """
+    Tenta encontrar ASAAS_API_KEY em todas as fontes possíveis.
+    Retorna (chave, fonte) onde fonte descreve onde foi encontrada.
+    Retorna ('', motivo_falha) se não encontrar.
+    """
+    import os
+
+    # 1. Raiz do st.secrets  →  ASAAS_API_KEY = "$aact_..."
+    try:
+        v = st.secrets.get("ASAAS_API_KEY", "")
+        if v and str(v).strip():
+            return str(v).strip(), "st.secrets (raiz)"
+    except Exception:
+        pass
+
+    # 2. Seção [asaas]  →  [asaas]\nASSAS_API_KEY = "..."
+    try:
+        v = st.secrets.get("asaas", {}).get("ASAAS_API_KEY", "")
+        if v and str(v).strip():
+            return str(v).strip(), "st.secrets [asaas]"
+    except Exception:
+        pass
+
+    # 3. Seção [hipnus]
+    try:
+        v = st.secrets.get("hipnus", {}).get("ASAAS_API_KEY", "")
+        if v and str(v).strip():
+            return str(v).strip(), "st.secrets [hipnus]"
+    except Exception:
+        pass
+
+    # 4. Variável de ambiente (local / Docker)
+    v = os.environ.get("ASAAS_API_KEY", "")
+    if v and v.strip():
+        return v.strip(), "os.environ"
+
+    # Lista todas as chaves visíveis para diagnóstico
+    try:
+        keys_found = list(st.secrets.keys())
+    except Exception:
+        keys_found = []
+
+    motivo = (
+        f"ASAAS_API_KEY não encontrada.\n"
+        f"Chaves visíveis em st.secrets: {keys_found}\n"
+        f"Dica: no Streamlit Cloud, vá em Settings → Secrets e adicione:\n"
+        f"  ASAAS_API_KEY = \"$aact_SUA_CHAVE_AQUI\""
+    )
+    return "", motivo
 
 
 # ─── Carrega dados ─────────────────────────────────────────────────────────────
 def _load_asaas_payments(days: int = 30) -> tuple[list[dict], str | None]:
+    api_key, fonte_ou_erro = _resolve_api_key()
+    if not api_key:
+        return [], fonte_ou_erro
     try:
-        client = AsaasClient()
-        if not client.api_key:
-            return [], "ASAAS_API_KEY não configurada."
+        import os
+        base_url = (
+            st.secrets.get("ASAAS_BASE_URL", "")
+            or os.environ.get("ASAAS_BASE_URL", "https://api-sandbox.asaas.com/v3")
+        )
+        client = AsaasClient(api_key=api_key, base_url=base_url)
         date_from = (date.today() - timedelta(days=days)).isoformat()
         resp = client.list_payments(date_created_ge=date_from, limit=100)
         return resp.get("data", []), None
@@ -156,20 +191,18 @@ def _load_partners() -> list[dict]:
 
 # ─── Filtro de período ─────────────────────────────────────────────────────────
 st.html("""
-<div style="
-  background: linear-gradient(135deg, rgba(15,10,30,.85), rgba(30,15,55,.75));
-  border: 2px solid rgba(185,131,255,.30); border-radius: 16px;
-  padding: 18px 24px 14px; margin-bottom: 4px; backdrop-filter: blur(8px);
-">
+<div style="background:linear-gradient(135deg,rgba(15,10,30,.85),rgba(30,15,55,.75));
+  border:2px solid rgba(185,131,255,.30);border-radius:16px;
+  padding:18px 24px 14px;margin-bottom:4px;backdrop-filter:blur(8px);">
   <div style="font-family:'Inter',sans-serif;font-size:.65rem;font-weight:700;
-    letter-spacing:1.8px;text-transform:uppercase;
-    color:rgba(185,131,255,.55);margin-bottom:10px;">⏱ Filtro de período</div>
+    letter-spacing:1.8px;text-transform:uppercase;color:rgba(185,131,255,.55);
+    margin-bottom:10px;">⏱ Filtro de período</div>
 </div>
 """)
 
 _f1, _f2 = st.columns([2, 1])
 with _f1:
-    dias = st.selectbox("⏱ Cobranças dos últimos:", options=[7,15,30,60,90], index=2,
+    dias = st.selectbox("⏱ Cobranças dos últimos:", options=[7, 15, 30, 60, 90], index=2,
                         format_func=lambda d: f"{d} dias", key="dash_dias")
 with _f2:
     st.write("")
@@ -178,15 +211,20 @@ with _f2:
 st.html("<div style='margin-bottom:20px;'></div>")
 
 
-# ─── Cache de dados ────────────────────────────────────────────────────────────
+# ─── Cache de dados (limpa ao clicar Atualizar) ─────────────────────────────────
 cache_key = f"_dash_payments_{dias}"
-if atualizar or cache_key not in st.session_state:
+if atualizar:
+    # Limpa cache para forçar nova chamada à API
+    for k in [cache_key, "_dash_asaas_error"]:
+        st.session_state.pop(k, None)
+
+if cache_key not in st.session_state:
     with st.spinner("Buscando cobranças na API Asaas..."):
         payments, asaas_error = _load_asaas_payments(dias)
-    st.session_state[cache_key] = payments
+    st.session_state[cache_key]          = payments
     st.session_state["_dash_asaas_error"] = asaas_error
 else:
-    payments = st.session_state[cache_key]
+    payments    = st.session_state[cache_key]
     asaas_error = st.session_state.get("_dash_asaas_error")
 
 invites        = _load_invites()
@@ -194,14 +232,39 @@ partners       = _load_partners()
 session_orders = st.session_state.get("historico_pedidos", [])
 
 
-# ─── Cálculo de KPIs ──────────────────────────────────────────────────────────
+# ─── Exibe erros / diagnóstico ────────────────────────────────────────────────────
 if asaas_error:
-    st.warning(f"⚠️ API Asaas indisponível: {asaas_error}. Exibindo dados locais da sessão.")
+    # Separa 'chave ausente' de 'erro real de API'
+    is_key_missing = "não encontrada" in asaas_error or "não configurada" in asaas_error
+    if is_key_missing:
+        with st.expander("⚠️ API Asaas: ASAAS_API_KEY não encontrada — clique para diagnóstico", expanded=True):
+            st.markdown("""
+**Como corrigir no Streamlit Cloud:**
+1. Acesse o app → **Manage app** (canto inferior direito)
+2. Vá em **Settings → Secrets**
+3. Confirme que o secret está exatamente assim (na raiz, sem seção):
+```toml
+ASSAS_API_KEY = "$aact_SUA_CHAVE_AQUI"
+```
+> ℹ️ Se preferir usar seção, use:
+```toml
+[asaas]
+ASSAS_API_KEY = "$aact_SUA_CHAVE_AQUI"
+```
+            """)
+            st.caption(f"🔍 Detalhes: {asaas_error}")
+    else:
+        st.warning(f"⚠️ Asaas API retornou erro: {asaas_error}")
 
+
+# ─── Cálculo de KPIs ──────────────────────────────────────────────────────────
 if payments:
-    total_recebido = sum(Decimal(str(p.get("value",0))) for p in payments if p.get("status") in ("RECEIVED","CONFIRMED"))
-    total_pendente = sum(Decimal(str(p.get("value",0))) for p in payments if p.get("status") == "PENDING")
-    total_vencido  = sum(Decimal(str(p.get("value",0))) for p in payments if p.get("status") == "OVERDUE")
+    total_recebido = sum(Decimal(str(p.get("value",0))) for p in payments
+                         if p.get("status") in ("RECEIVED","CONFIRMED"))
+    total_pendente = sum(Decimal(str(p.get("value",0))) for p in payments
+                         if p.get("status") == "PENDING")
+    total_vencido  = sum(Decimal(str(p.get("value",0))) for p in payments
+                         if p.get("status") == "OVERDUE")
     n_recebido = sum(1 for p in payments if p.get("status") in ("RECEIVED","CONFIRMED"))
     n_pendente = sum(1 for p in payments if p.get("status") == "PENDING")
     n_vencido  = sum(1 for p in payments if p.get("status") == "OVERDUE")
@@ -241,10 +304,9 @@ p4.metric("📍 Convites totais", n_invites_total)
 st.html("<hr class='section-separator'>")
 
 
-# ─── SEÇÃO DE GRÁFICOS SEABORN ────────────────────────────────────────────────
+# ─── GRÁFICOS SEABORN ────────────────────────────────────────────────────────────
 components.section_title("📈 Gráficos — Análise Visual (Seaborn)")
 
-# ── Prepara DataFrames ────────────────────────────────────────────────────────
 _source = payments if payments else []
 if not _source and session_orders:
     _source = [
@@ -255,56 +317,46 @@ if not _source and session_orders:
     ]
 
 df_pay = pd.DataFrame(_source) if _source else pd.DataFrame(
-    columns=["status","billingType","value","dateCreated"]
-)
+    columns=["status","billingType","value","dateCreated"])
 
 if not df_pay.empty:
-    df_pay["value"]       = pd.to_numeric(df_pay.get("value", 0), errors="coerce").fillna(0)
-    df_pay["dateCreated"] = pd.to_datetime(df_pay.get("dateCreated", ""), errors="coerce")
-    df_pay["data_str"]    = df_pay["dateCreated"].dt.strftime("%d/%m")
+    df_pay["value"]       = pd.to_numeric(df_pay["value"], errors="coerce").fillna(0)
+    df_pay["dateCreated"] = pd.to_datetime(df_pay["dateCreated"], errors="coerce")
     df_pay["status_pt"]   = df_pay["status"].map({
-        "RECEIVED":"Recebido","CONFIRMED":"Confirmado",
-        "PENDING":"Pendente","OVERDUE":"Vencido",
-        "REFUNDED":"Estornado","CANCELLED":"Cancelado"
-    }).fillna(df_pay.get("status",""))
+        "RECEIVED":"Recebido","CONFIRMED":"Confirmado","PENDING":"Pendente",
+        "OVERDUE":"Vencido","REFUNDED":"Estornado","CANCELLED":"Cancelado"
+    }).fillna(df_pay["status"])
     df_pay["metodo_pt"]   = df_pay["billingType"].map({
         "PIX":"PIX","BOLETO":"Boleto","CREDIT_CARD":"Cartão"
-    }).fillna(df_pay.get("billingType","Outro"))
+    }).fillna(df_pay["billingType"].fillna("Outro"))
 
 has_data = not df_pay.empty
 
-# ── Layout 2 colunas para gráficos ───────────────────────────────────────────
+# ── Linha 1: Barplot valor + Pie método ─────────────────────────────────────────────
 g_col1, g_col2 = st.columns(2)
 
-# ── Gráfico 1: Barplot — Valor por Status ─────────────────────────────────────
 with g_col1:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>💰 Valor Recebido por Status</div>")
+    st.html("<div class='seaborn-card-title'>💰 Valor por Status</div>")
     if has_data:
-        df_status = df_pay.groupby("status_pt")["value"].sum().reset_index()
-        df_status.columns = ["Status", "Valor (R$)"]
-        df_status = df_status.sort_values("Valor (R$)", ascending=False)
-
-        cores_status = {
-            "Recebido":"#10b981","Confirmado":"#10b981","Pendente":"#f59e0b",
-            "Vencido":"#ef4444","Estornado":"#3b82f6","Cancelado":"#9ca3af"
-        }
-        colors = [cores_status.get(s, "#7c3aed") for s in df_status["Status"]]
-
+        df_s = df_pay.groupby("status_pt")["value"].sum().reset_index()
+        df_s.columns = ["Status", "Valor"]
+        df_s = df_s.sort_values("Valor", ascending=False)
+        cores = {"Recebido":"#10b981","Confirmado":"#10b981","Pendente":"#f59e0b",
+                 "Vencido":"#ef4444","Estornado":"#3b82f6","Cancelado":"#9ca3af"}
         fig, ax = plt.subplots(figsize=(6, 3.8))
         fig.patch.set_facecolor("#ffffff")
         ax.set_facecolor("#f8f7fc")
         for spine in ax.spines.values():
-            spine.set_edgecolor(BORDER_COLOR)
-            spine.set_linewidth(1.5)
-
-        bars = ax.barh(df_status["Status"], df_status["Valor (R$)"],
-                       color=colors, edgecolor=BORDER_COLOR, linewidth=1.2)
+            spine.set_edgecolor(BORDER_COLOR); spine.set_linewidth(1.5)
+        bars = ax.barh(df_s["Status"], df_s["Valor"],
+                       color=[cores.get(s,"#7c3aed") for s in df_s["Status"]],
+                       edgecolor=BORDER_COLOR, linewidth=1.2)
         for bar in bars:
             w = bar.get_width()
-            ax.text(w * 1.02, bar.get_y() + bar.get_height()/2,
-                    f"R$ {w:,.0f}".replace(",","."), va="center", ha="left",
-                    fontsize=8, color="#374151", fontweight="bold")
+            ax.text(w*1.02, bar.get_y()+bar.get_height()/2,
+                    f"R$ {w:,.0f}".replace(",","."),
+                    va="center", ha="left", fontsize=8, color="#374151", fontweight="bold")
         ax.set_xlabel("Valor Total (R$)", fontsize=9, color="#6b7280")
         ax.set_title(f"Últimos {dias} dias", fontsize=10, color="#374151", pad=8)
         ax.xaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.7)
@@ -314,79 +366,64 @@ with g_col1:
         st.pyplot(fig, use_container_width=True)
         plt.close(fig)
     else:
-        st.info("Sem dados de pagamentos para exibir.")
+        st.info("Sem dados de pagamentos.")
     st.html("</div>")
 
-# ── Gráfico 2: Pie — Distribuição por Método de Pagamento ─────────────────────
 with g_col2:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>💳 Distribuição por Método de Pagamento</div>")
-    if has_data and "metodo_pt" in df_pay.columns:
-        df_metodo = df_pay["metodo_pt"].value_counts().reset_index()
-        df_metodo.columns = ["Método", "Qtd"]
-
-        cores_metodo = {"PIX":"#7c3aed","Boleto":"#f59e0b","Cartão":"#3b82f6","Outro":"#9ca3af"}
-        colors_m = [cores_metodo.get(m, "#a78bfa") for m in df_metodo["Método"]]
-
+    st.html("<div class='seaborn-card-title'>💳 Método de Pagamento</div>")
+    if has_data:
+        df_m = df_pay["metodo_pt"].value_counts().reset_index()
+        df_m.columns = ["Método", "Qtd"]
+        cores_m = {"PIX":"#7c3aed","Boleto":"#f59e0b","Cartão":"#3b82f6","Outro":"#9ca3af"}
         fig2, ax2 = plt.subplots(figsize=(5, 3.8))
         fig2.patch.set_facecolor("#ffffff")
         wedges, texts, autotexts = ax2.pie(
-            df_metodo["Qtd"], labels=df_metodo["Método"],
-            autopct="%1.0f%%", startangle=90,
-            colors=colors_m, pctdistance=0.78,
-            wedgeprops=dict(edgecolor=BORDER_COLOR, linewidth=2)
-        )
-        for autotext in autotexts:
-            autotext.set_fontsize(9)
-            autotext.set_fontweight("bold")
-            autotext.set_color("#1a0a2e")
-        for text in texts:
-            text.set_fontsize(9)
-            text.set_color("#374151")
-        ax2.set_title(f"Total: {df_metodo['Qtd'].sum()} cobranças", fontsize=10, color="#374151", pad=8)
+            df_m["Qtd"], labels=df_m["Método"], autopct="%1.0f%%", startangle=90,
+            colors=[cores_m.get(m,"#a78bfa") for m in df_m["Método"]],
+            pctdistance=0.78, wedgeprops=dict(edgecolor=BORDER_COLOR, linewidth=2))
+        for t in autotexts:
+            t.set_fontsize(9); t.set_fontweight("bold"); t.set_color("#1a0a2e")
+        for t in texts:
+            t.set_fontsize(9); t.set_color("#374151")
+        ax2.set_title(f"Total: {df_m['Qtd'].sum()} cobranças", fontsize=10, color="#374151", pad=8)
         plt.tight_layout()
         st.pyplot(fig2, use_container_width=True)
         plt.close(fig2)
     else:
-        st.info("Sem dados de pagamentos para exibir.")
+        st.info("Sem dados de pagamentos.")
     st.html("</div>")
 
 st.html("<hr class='section-separator'>")
 
-# ── Gráfico 3: Lineplot — Tendência de Receita por Dia ────────────────────────
+# ── Linha 2: Lineplot tendência + Barplot quantidade ──────────────────────────────
 g_col3, g_col4 = st.columns([3, 2])
 
 with g_col3:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>📅 Tendência de Receita Diária (R$)</div>")
+    st.html("<div class='seaborn-card-title'>📅 Tendência diária (R$)</div>")
     if has_data and not df_pay["dateCreated"].isna().all():
         df_line = df_pay[df_pay["status"].isin(["RECEIVED","CONFIRMED","PENDING"])].copy()
         df_line["data_dia"] = df_line["dateCreated"].dt.date
         df_daily = df_line.groupby(["data_dia","status_pt"])["value"].sum().reset_index()
         df_daily.columns = ["Data","Status","Valor"]
-
         fig3, ax3 = plt.subplots(figsize=(7, 3.8))
         fig3.patch.set_facecolor("#ffffff")
         ax3.set_facecolor("#f8f7fc")
         for spine in ax3.spines.values():
-            spine.set_edgecolor(BORDER_COLOR)
-            spine.set_linewidth(1.5)
-
-        paleta_line = {"Recebido":"#10b981","Confirmado":"#10b981","Pendente":"#f59e0b"}
+            spine.set_edgecolor(BORDER_COLOR); spine.set_linewidth(1.5)
+        paleta_l = {"Recebido":"#10b981","Confirmado":"#10b981","Pendente":"#f59e0b"}
         sns.lineplot(data=df_daily, x="Data", y="Valor", hue="Status",
-                     palette=paleta_line, ax=ax3, linewidth=2.2,
-                     markers=True, dashes=False)
-        recebidos = df_daily[df_daily["Status"]=="Recebido"]
-        if not recebidos.empty:
-            ax3.fill_between(recebidos["Data"], recebidos["Valor"],
-                             alpha=0.15, color="#10b981")
+                     palette=paleta_l, ax=ax3, linewidth=2.2, markers=True, dashes=False)
+        rec = df_daily[df_daily["Status"]=="Recebido"]
+        if not rec.empty:
+            ax3.fill_between(rec["Data"], rec["Valor"], alpha=0.15, color="#10b981")
         ax3.set_xlabel("Data", fontsize=9, color="#6b7280")
         ax3.set_ylabel("Valor (R$)", fontsize=9, color="#6b7280")
         ax3.tick_params(colors="#6b7280", labelsize=8, rotation=30)
         ax3.yaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.7)
         ax3.xaxis.grid(False)
-        ax3.legend(fontsize=8, framealpha=0.85,
-                   edgecolor=BORDER_COLOR, facecolor="#ffffff")
+        ax3.legend(fontsize=8, framealpha=0.85, edgecolor=BORDER_COLOR, facecolor="#ffffff")
         plt.tight_layout()
         st.pyplot(fig3, use_container_width=True)
         plt.close(fig3)
@@ -394,27 +431,21 @@ with g_col3:
         st.info("Sem dados temporais suficientes.")
     st.html("</div>")
 
-# ── Gráfico 4: Barplot — Qtd Cobranças por Status ─────────────────────────────
 with g_col4:
     st.html("<div class='grafico-wrapper'>")
     st.html("<div class='seaborn-card-title'>🔢 Quantidade por Status</div>")
     if has_data:
-        df_count = df_pay["status_pt"].value_counts().reset_index()
-        df_count.columns = ["Status","Qtd"]
-
+        df_cnt = df_pay["status_pt"].value_counts().reset_index()
+        df_cnt.columns = ["Status","Qtd"]
+        cores_c = {"Recebido":"#10b981","Confirmado":"#10b981","Pendente":"#f59e0b",
+                   "Vencido":"#ef4444","Estornado":"#3b82f6","Cancelado":"#9ca3af"}
         fig4, ax4 = plt.subplots(figsize=(4.5, 3.8))
         fig4.patch.set_facecolor("#ffffff")
         ax4.set_facecolor("#f8f7fc")
         for spine in ax4.spines.values():
-            spine.set_edgecolor(BORDER_COLOR)
-            spine.set_linewidth(1.5)
-
-        cores_count = {
-            "Recebido":"#10b981","Confirmado":"#10b981","Pendente":"#f59e0b",
-            "Vencido":"#ef4444","Estornado":"#3b82f6","Cancelado":"#9ca3af"
-        }
-        c_list = [cores_count.get(s,"#7c3aed") for s in df_count["Status"]]
-        sns.barplot(data=df_count, y="Status", x="Qtd", palette=c_list,
+            spine.set_edgecolor(BORDER_COLOR); spine.set_linewidth(1.5)
+        sns.barplot(data=df_cnt, y="Status", x="Qtd",
+                    palette=[cores_c.get(s,"#7c3aed") for s in df_cnt["Status"]],
                     ax=ax4, edgecolor=BORDER_COLOR, linewidth=1.2)
         for container in ax4.containers:
             ax4.bar_label(container, fmt="%d", padding=3,
@@ -428,12 +459,12 @@ with g_col4:
         st.pyplot(fig4, use_container_width=True)
         plt.close(fig4)
     else:
-        st.info("Sem dados para exibir.")
+        st.info("Sem dados.")
     st.html("</div>")
 
 st.html("<hr class='section-separator'>")
 
-# ── Gráfico 5: Barplot — Convites (Ativos vs Usados) ─────────────────────────
+# ── Linha 3: Convites + Parceiros ─────────────────────────────────────────────────────
 g_col5, g_col6 = st.columns(2)
 
 with g_col5:
@@ -441,20 +472,17 @@ with g_col5:
     st.html("<div class='seaborn-card-title'>📨 Status dos Convites</div>")
     df_inv_chart = pd.DataFrame({
         "Status": ["Ativos", "Usados", "Total"],
-        "Qtd": [n_invites_ativos, n_invites_usado, n_invites_total]
+        "Qtd":    [n_invites_ativos, n_invites_usado, n_invites_total]
     })
     fig5, ax5 = plt.subplots(figsize=(5, 3.2))
     fig5.patch.set_facecolor("#ffffff")
     ax5.set_facecolor("#f8f7fc")
     for spine in ax5.spines.values():
-        spine.set_edgecolor(BORDER_COLOR)
-        spine.set_linewidth(1.5)
-    cores_inv = ["#f59e0b","#10b981","#7c3aed"]
+        spine.set_edgecolor(BORDER_COLOR); spine.set_linewidth(1.5)
     bars5 = ax5.bar(df_inv_chart["Status"], df_inv_chart["Qtd"],
-                    color=cores_inv, edgecolor=BORDER_COLOR, linewidth=1.5,
-                    width=0.55)
-    ax5.bar_label(bars5, fmt="%d", padding=4,
-                  fontsize=11, color="#374151", fontweight="bold")
+                    color=["#f59e0b","#10b981","#7c3aed"],
+                    edgecolor=BORDER_COLOR, linewidth=1.5, width=0.55)
+    ax5.bar_label(bars5, fmt="%d", padding=4, fontsize=11, color="#374151", fontweight="bold")
     ax5.set_ylabel("Quantidade", fontsize=9, color="#6b7280")
     ax5.yaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.6)
     ax5.xaxis.grid(False)
@@ -465,7 +493,6 @@ with g_col5:
     plt.close(fig5)
     st.html("</div>")
 
-# ── Gráfico 6: Barplot — Parceiros por Perfil ─────────────────────────────────
 with g_col6:
     st.html("<div class='grafico-wrapper'>")
     st.html("<div class='seaborn-card-title'>👥 Parceiros por Perfil</div>")
@@ -476,19 +503,15 @@ with g_col6:
                      "super_admin":"Super Admin","demo":"Demo"}
         df_perf["Perfil"] = df_perf["Perfil"].map(lambda x: labels_pt.get(x, x))
         df_perf = df_perf.sort_values("Qtd", ascending=False)
-
         fig6, ax6 = plt.subplots(figsize=(5, 3.2))
         fig6.patch.set_facecolor("#ffffff")
         ax6.set_facecolor("#f8f7fc")
         for spine in ax6.spines.values():
-            spine.set_edgecolor(BORDER_COLOR)
-            spine.set_linewidth(1.5)
-        cores_perf = sns.color_palette(PALETTE_HIPNUS, n_colors=len(df_perf))
+            spine.set_edgecolor(BORDER_COLOR); spine.set_linewidth(1.5)
         bars6 = ax6.bar(df_perf["Perfil"], df_perf["Qtd"],
-                        color=cores_perf, edgecolor=BORDER_COLOR,
-                        linewidth=1.5, width=0.55)
-        ax6.bar_label(bars6, fmt="%d", padding=4,
-                      fontsize=11, color="#374151", fontweight="bold")
+                        color=sns.color_palette(PALETTE_HIPNUS, n_colors=len(df_perf)),
+                        edgecolor=BORDER_COLOR, linewidth=1.5, width=0.55)
+        ax6.bar_label(bars6, fmt="%d", padding=4, fontsize=11, color="#374151", fontweight="bold")
         ax6.set_ylabel("Quantidade", fontsize=9, color="#6b7280")
         ax6.yaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.6)
         ax6.xaxis.grid(False)
@@ -506,7 +529,8 @@ st.html("<hr class='section-separator'>")
 
 # ─── TABS DE DETALHES ─────────────────────────────────────────────────────────
 components.section_title("📋 Detalhes Operacionais")
-tab_cob, tab_inv, tab_par, tab_sess = st.tabs(["💳 Cobranças", "📨 Convites", "🤝 Parceiros", "🛘 Sessão"])
+tab_cob, tab_inv, tab_par, tab_sess = st.tabs(
+    ["💳 Cobranças", "📨 Convites", "🤝 Parceiros", "🛘 Sessão"])
 
 with tab_cob:
     components.section_title(f"Cobranças — últimos {dias} dias")
@@ -517,12 +541,13 @@ with tab_cob:
                 totais = o.get("totais", {})
                 st.html(f"""
                 <div style="background:#f8f7fc;border:2px solid #e5e0f5;border-radius:12px;
-                            padding:14px 18px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{o.get('external_ref','--')}</div>
-                        <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">{_status_badge(o.get('status',''))} &nbsp;·&nbsp; {_method_badge('')}</div>
-                    </div>
-                    <div style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(totais.get('total',0))}</div>
+                    padding:14px 18px;margin:8px 0;display:flex;
+                    justify-content:space-between;align-items:center;">
+                  <div>
+                    <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{o.get('external_ref','--')}</div>
+                    <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">{_status_badge(o.get('status',''))}</div>
+                  </div>
+                  <div style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(totais.get('total',0))}</div>
                 </div>""")
         else:
             components.empty_state(icon="💳", title="Sem cobranças",
@@ -530,70 +555,74 @@ with tab_cob:
     else:
         for p in payments:
             ref  = p.get("externalReference") or p.get("description", "—")
-            val  = _brl(p.get("value", 0))
-            stat = _status_badge(p.get("status", ""))
-            meth = _method_badge(p.get("billingType", ""))
-            dt   = (p.get("dateCreated") or "")[:10]
-            link = p.get("invoiceUrl") or p.get("bankSlipUrl") or ""
             sc   = _status_color(p.get("status",""))
+            link = p.get("invoiceUrl") or p.get("bankSlipUrl") or ""
             st.html(f"""
-            <div style="background:#f8f7fc;border:2px solid #e5e0f5;border-radius:12px;
-                        border-left:5px solid {sc};
-                        padding:14px 18px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{ref}</div>
-                    <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">{stat} &nbsp;·&nbsp; {meth} &nbsp;·&nbsp; {dt}</div>
+            <div style="background:#f8f7fc;border:2px solid #e5e0f5;
+                border-radius:12px;border-left:5px solid {sc};
+                padding:14px 18px;margin:8px 0;
+                display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{ref}</div>
+                <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">
+                  {_status_badge(p.get('status',''))} &nbsp;·&nbsp;
+                  {_method_badge(p.get('billingType',''))} &nbsp;·&nbsp;
+                  {(p.get('dateCreated') or '')[:10]}
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-size:1rem;font-weight:800;color:#7c3aed;">{val}</div>
-                    {f'<a href="{link}" target="_blank" style="font-size:.72rem;color:#7c3aed;">Ver cobrança ↗</a>' if link else ''}
-                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(p.get('value',0))}</div>
+                {f'<a href="{link}" target="_blank" style="font-size:.72rem;color:#7c3aed;">Ver cobrança ↗</a>' if link else ''}
+              </div>
             </div>""")
 
 with tab_inv:
     components.section_title("Convites de parceiros")
     if not invites:
-        components.empty_state(icon="📨", title="Sem convites", message="Crie convites em Convites de Parceiros.")
+        components.empty_state(icon="📨", title="Sem convites",
+                                message="Crie convites em Convites de Parceiros.")
     else:
         for inv in invites:
-            usado      = inv.get("used", False)
-            badge_uso  = "✅ Usado" if usado else "⏳ Pendente"
-            role_label = {"b2b":"🎤 Profissional","b2c":"👤 Cliente","admin":"🛡️ Admin"}.get(inv.get("role",""), inv.get("role",""))
-            expires    = str(inv.get("expires_at") or "")[:10]
-            email      = inv.get("email", "")
+            usado     = inv.get("used", False)
+            role_lbl  = {"b2b":"🎤 Profissional","b2c":"👤 Cliente","admin":"🛡️ Admin"}.get(
+                inv.get("role",""), inv.get("role",""))
             st.html(f"""
             <div style="background:{'#f0fdf4' if usado else '#faf7ff'};
-                        border:2px solid {'#86efac' if usado else '#e9d5ff'};
-                        border-radius:12px;padding:12px 18px;margin:6px 0;display:flex;justify-content:space-between;">
-                <div>
-                    <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{email}</div>
-                    <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">{role_label} &nbsp;·&nbsp; Expira: {expires}</div>
+                border:2px solid {'#86efac' if usado else '#e9d5ff'};
+                border-radius:12px;padding:12px 18px;margin:6px 0;
+                display:flex;justify-content:space-between;">
+              <div>
+                <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{inv.get('email','')}</div>
+                <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">
+                  {role_lbl} &nbsp;·&nbsp; Expira: {str(inv.get('expires_at') or '')[:10]}
                 </div>
-                <div style="font-size:.82rem;font-weight:700;color:{'#16a34a' if usado else '#7c3aed'};">{badge_uso}</div>
+              </div>
+              <div style="font-size:.82rem;font-weight:700;
+                color:{'#16a34a' if usado else '#7c3aed'};">{'\u2705 Usado' if usado else '\u23f3 Pendente'}</div>
             </div>""")
 
 with tab_par:
     components.section_title("Parceiros cadastrados")
     if not partners:
-        components.empty_state(icon="🤝", title="Sem parceiros", message="Os parceiros aparecem após concluir o cadastro via convite.")
+        components.empty_state(icon="🤝", title="Sem parceiros",
+                                message="Os parceiros aparecem após cadastro via convite.")
     else:
+        icons_map = {"super_admin":"⭐","admin":"🛡️","b2b":"🎤","b2c":"👤","demo":"👀"}
         for p in partners:
             perfil = p.get("perfil") or p.get("role", "")
-            badge  = {"⭐":"super_admin","🛡️":"admin","🎤":"b2b","👤":"b2c","👀":"demo"}
-            icon   = {v: k for k, v in badge.items()}.get(perfil, "🤝")
-            nome   = p.get("nome") or p.get("name", "")
-            email  = p.get("email", "")
+            icon   = icons_map.get(perfil, "🤝")
             cidade = p.get("cidade") or p.get("city", "")
             estado = p.get("estado") or p.get("state", "")
             loc    = f"{cidade}/{estado}" if cidade else estado or "—"
             st.html(f"""
-            <div style="background:#f8f7fc;border:2px solid #e5e0f5;border-radius:12px;
-                        padding:12px 18px;margin:6px 0;display:flex;align-items:center;gap:14px;">
-                <div style="font-size:1.6rem;">{icon}</div>
-                <div>
-                    <div style="font-size:.88rem;font-weight:700;color:#1a0a2e;">{nome}</div>
-                    <div style="font-size:.75rem;color:#6b7280;">{email} &nbsp;·&nbsp; {loc}</div>
-                </div>
+            <div style="background:#f8f7fc;border:2px solid #e5e0f5;
+                border-radius:12px;padding:12px 18px;margin:6px 0;
+                display:flex;align-items:center;gap:14px;">
+              <div style="font-size:1.6rem;">{icon}</div>
+              <div>
+                <div style="font-size:.88rem;font-weight:700;color:#1a0a2e;">{p.get('nome') or p.get('name','')}</div>
+                <div style="font-size:.75rem;color:#6b7280;">{p.get('email','')} &nbsp;·&nbsp; {loc}</div>
+              </div>
             </div>""")
 
 with tab_sess:
@@ -605,15 +634,16 @@ with tab_sess:
         for o in session_orders:
             totais = o.get("totais", {})
             st.html(f"""
-            <div style="background:#f3f0ff;border:2px solid #c4b5fd;border-radius:12px;padding:14px 18px;margin:8px 0;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                    <span style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{o.get('external_ref','—')}</span>
-                    <span style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(totais.get('total',0))}</span>
-                </div>
-                <div style="font-size:.75rem;color:#6b7280;">
-                    {_status_badge(o.get('status',''))} &nbsp;·&nbsp;
-                    ID: <code>{o.get('payment_id','—')}</code>
-                </div>
+            <div style="background:#f3f0ff;border:2px solid #c4b5fd;
+                border-radius:12px;padding:14px 18px;margin:8px 0;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                <span style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{o.get('external_ref','—')}</span>
+                <span style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(totais.get('total',0))}</span>
+              </div>
+              <div style="font-size:.75rem;color:#6b7280;">
+                {_status_badge(o.get('status',''))} &nbsp;·&nbsp;
+                ID: <code>{o.get('payment_id','—')}</code>
+              </div>
             </div>""")
         m1, m2 = st.columns(2)
         total_sess = sum(Decimal(str(o.get("totais",{}).get("total",0))) for o in session_orders)
