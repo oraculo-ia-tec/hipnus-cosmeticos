@@ -8,20 +8,17 @@ import os
 from pathlib import Path
 
 # ── path setup à prova de exec() ─────────────────────────────────────────────────────
-# Quando o Streamlit Cloud usa exec(), __file__ pode apontar para o wrapper.
-# Estrategia: procuramos 'frontend/lib' a partir do CWD ou de /mount/src.
 def _resolve_lib_root() -> Path:
     candidates = [
-        Path(__file__).resolve().parent.parent,          # caminho normal
-        Path(os.getcwd()),                                # cwd do processo
+        Path(__file__).resolve().parent.parent,
+        Path(os.getcwd()),
         Path(os.getcwd()) / "frontend",
-        Path("/mount/src/hipnus-cosmeticos/frontend"),   # Streamlit Cloud
+        Path("/mount/src/hipnus-cosmeticos/frontend"),
         Path("/mount/src/hipnus-cosmeticos") / "frontend",
     ]
     for c in candidates:
         if (c / "lib" / "session_guard.py").exists():
             return c
-    # fallback: sobe ate encontrar frontend/lib
     p = Path(__file__).resolve()
     for _ in range(6):
         if (p / "lib" / "session_guard.py").exists():
@@ -36,10 +33,9 @@ if str(_lib_root) not in sys.path:
     sys.path.insert(0, str(_lib_root))
 
 import streamlit as st
-from lib.session_guard import require_login
+from lib.session_guard import check_session_expiry
 from lib.theme import apply_theme
 
-# ── page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Loja do Parceiro · HIPNUS",
     page_icon="🏪",
@@ -48,11 +44,10 @@ st.set_page_config(
 )
 
 apply_theme()
-require_login()
+check_session_expiry()
 
 # ── catálogo de produtos ──────────────────────────────────────────────────────────
 CATALOG = [
-    # LINHA OURO
     dict(id="oro-01", name="Sérum Facial Ouro 24K", linha="Linha Ouro", categoria="Facial",
          preco=189.90, preco_parceiro=142.00, estoque=48,
          badge="Mais Vendido", descricao="Sérum concentrado com partículas de ouro coloidal. Reduz linhas finas e uniformiza o tom da pele.",
@@ -65,7 +60,6 @@ CATALOG = [
          preco=149.90, preco_parceiro=112.00, estoque=60,
          badge="", descricao="Máscara de argila branca com extrato de ouro. Purifica e deixa a pele radiante.",
          volume="100 g", beneficios=["Detox", "Poros", "Brilho"]),
-    # LINHA PLATINUM
     dict(id="plt-01", name="Óleo Corporal Platinum Rosas", linha="Linha Platinum", categoria="Corporal",
          preco=159.90, preco_parceiro=119.00, estoque=55,
          badge="Destaque", descricao="Óleo seco com extratos de rosa búlgara e vitamina E. Absorção rápida, pele sedosa.",
@@ -78,7 +72,6 @@ CATALOG = [
          preco=139.90, preco_parceiro=104.00, estoque=40,
          badge="Mais Pedido", descricao="Loção com coenzima Q10 e colágeno vegetal. Tonifica e reduz a aparência da celulite.",
          volume="200 ml", beneficios=["Firmeza", "Anti-celulite", "Hidratação"]),
-    # LINHA ESSENCE
     dict(id="ess-01", name="Água Micelar Essence Pure", linha="Linha Essence", categoria="Limpeza",
          preco=89.90, preco_parceiro=67.00, estoque=85,
          badge="", descricao="Água micelar bifásica com extrato de camomila e aloe vera. Remove maquiagem sem agredir.",
@@ -91,7 +84,6 @@ CATALOG = [
          preco=129.90, preco_parceiro=97.00, estoque=50,
          badge="Essencial", descricao="Protetor solar com textura fluida e acabamento matte. Proteção UVA/UVB + azul.",
          volume="50 ml", beneficios=["FPS 60", "Matte", "UVA/UVB"]),
-    # LINHA VELVET
     dict(id="vlv-01", name="Gloss Labial Velvet Rosé", linha="Linha Velvet", categoria="Maquiagem",
          preco=69.90, preco_parceiro=52.00, estoque=90,
          badge="Top 10", descricao="Gloss labial com pigmento rosé e efeito volumizador. Fórmula hidratante com vitamina E.",
@@ -109,19 +101,14 @@ CATALOG = [
 LINHAS = sorted(set(p["linha"] for p in CATALOG))
 CATEGORIAS = ["Todas"] + sorted(set(p["categoria"] for p in CATALOG))
 
-# ── session state ──────────────────────────────────────────────────────────────
 for _k, _v in {
-    "loja_cart": {},
-    "loja_filtro_linha": [],
-    "loja_filtro_cat": "Todas",
-    "loja_busca": "",
-    "loja_view": "loja",
-    "loja_produto_detalhe": None,
+    "loja_cart": {}, "loja_filtro_linha": [], "loja_filtro_cat": "Todas",
+    "loja_busca": "", "loja_view": "loja", "loja_produto_detalhe": None,
 }.items():
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
-# ── helpers ───────────────────────────────────────────────────────────────────
+
 def cart_total_qty():
     return sum(st.session_state.loja_cart.values())
 
@@ -158,7 +145,7 @@ def get_filtered_products():
         prods = [p for p in prods if q in p["name"].lower() or q in p["descricao"].lower()]
     return prods
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
+
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] { background: #0f0d14; }
@@ -244,8 +231,6 @@ section.main > div { padding-top: 0 !important; }
     background:linear-gradient(90deg,#e879f9,#a855f7);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
 }
-.empty-cart      { text-align:center; padding:60px 20px; color:#6b7280; }
-.empty-cart-icon { font-size:3rem; margin-bottom:12px; }
 .checkout-section {
     background:#1c1626; border:1px solid rgba(168,85,247,.2);
     border-radius:16px; padding:24px; margin-bottom:20px;
@@ -258,7 +243,6 @@ section.main > div { padding-top: 0 !important; }
 """, unsafe_allow_html=True)
 
 
-# ══ VIEW: LOJA ═════════════════════════════════════════════════════════════════════
 def render_loja():
     user = st.session_state.get("user", {})
     nome = user.get("nome", "Parceiro") if isinstance(user, dict) else "Parceiro"
@@ -268,7 +252,8 @@ def render_loja():
         st.markdown('<div style="font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,#e879f9,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🏪 HIPNUS · Loja do Parceiro</div>', unsafe_allow_html=True)
     with col_cart:
         qty = cart_total_qty()
-        if st.button(f"🛒 {qty} item{'ns' if qty != 1 else ''}", key="go_cart_top", use_container_width=True):
+        label = "ns" if qty != 1 else ""
+        if st.button(f"🛒 {qty} item{label}", key="go_cart_top", use_container_width=True):
             st.session_state.loja_view = "carrinho"
             st.rerun()
 
@@ -296,8 +281,7 @@ def render_loja():
             idx_cat = CATEGORIAS.index(st.session_state.loja_filtro_cat) if st.session_state.loja_filtro_cat in CATEGORIAS else 0
             cat = st.selectbox("Categoria", CATEGORIAS, index=idx_cat, label_visibility="collapsed")
             st.session_state.loja_filtro_cat = cat
-        linhas_sel = st.multiselect("Linhas", LINHAS, default=st.session_state.loja_filtro_linha,
-                                    label_visibility="visible")
+        linhas_sel = st.multiselect("Linhas", LINHAS, default=st.session_state.loja_filtro_linha)
         st.session_state.loja_filtro_linha = linhas_sel
 
     prods = get_filtered_products()
@@ -333,6 +317,7 @@ def render_loja():
                 badge_html = f'<div class="prod-badge">{prod["badge"]}</div>' if prod["badge"] else ""
                 bens = "".join(f'<span class="prod-benefit-tag">{b}</span>' for b in prod["beneficios"])
                 est_icon = "⚠️" if prod["estoque"] < 20 else "✅"
+                economia_fmt = f"R$ {economia:.0f}"
                 st.markdown(
                     f'<div class="prod-card">{badge_html}'
                     f'<div class="prod-linha">🌿 {prod["linha"]}</div>'
@@ -343,7 +328,7 @@ def render_loja():
                     f'<div class="prod-precos">'
                     f'<span class="prod-preco-parceiro">R$ {prod["preco_parceiro"]:.2f}</span>'
                     f'<span class="prod-preco-cheio">R$ {prod["preco"]:.2f}</span>'
-                    f'<span class="prod-economia">-R$ {economia:.0f}</span></div>'
+                    f'<span class="prod-economia">-{economia_fmt}</span></div>'
                     f'<div class="prod-estoque {estoque_cls}">{est_icon} {prod["estoque"]} em estoque</div>'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -358,13 +343,11 @@ def render_loja():
                     q_cart = st.session_state.loja_cart.get(prod["id"], 0)
                     if q_cart:
                         st.markdown(
-                            f'<div style="text-align:center;color:#a855f7;font-weight:800;'
-                            f'padding-top:6px">{q_cart}</div>',
+                            f'<div style="text-align:center;color:#a855f7;font-weight:800;padding-top:6px">{q_cart}</div>',
                             unsafe_allow_html=True,
                         )
 
 
-# ══ VIEW: CARRINHO ═══════════════════════════════════════════════════════════════════
 def render_carrinho():
     c1, c2, c3 = st.columns([2, 5, 2])
     with c1:
@@ -405,9 +388,9 @@ def render_carrinho():
                 if st.button("−", key=f"dec_{pid}"):
                     update_cart_qty(pid, qty - 1); st.rerun()
             with cb:
+                preco_fmt = f"R$ {prod['preco_parceiro']:.2f}"
                 st.markdown(
-                    f'<div style="text-align:center;color:#e879f9;font-weight:700;padding-top:4px">'
-                    f'{qty}x · R$ {prod["preco_parceiro"]:.2f}</div>',
+                    f'<div style="text-align:center;color:#e879f9;font-weight:700;padding-top:4px">{qty}x · {preco_fmt}</div>',
                     unsafe_allow_html=True,
                 )
             with cc:
@@ -426,15 +409,15 @@ def render_carrinho():
         )
         economia = total_cheio - total
         frete = 0.0 if total >= 500 else 29.90
+        frete_cor = "#86efac" if frete == 0 else "#f5d0fe"
+        frete_str = "GRATIS" if frete == 0 else f"R$ {frete:.2f}"
+        frete_msg = "Frete gratis!" if frete == 0 else f"Falta R$ {500-total:.0f} para frete gratis"
         itens_html = "".join(
-            f'<div class="resumo-linha">'
-            f'<span>{next((p["name"] for p in CATALOG if p["id"]==pid),pid)[:28]}</span>'
-            f'<span>R$ {next((p for p in CATALOG if p["id"]==pid),{}).get("preco_parceiro",0)*q:.2f}</span></div>'
+            '<div class="resumo-linha">'
+            '<span>' + next((p["name"] for p in CATALOG if p["id"]==pid), pid)[:28] + '</span>'
+            '<span>R$ ' + f"{next((p for p in CATALOG if p['id']==pid), {}).get('preco_parceiro', 0)*q:.2f}" + '</span></div>'
             for pid, q in cart.items()
         )
-        frete_cor = "#86efac" if frete == 0 else "#f5d0fe"
-        frete_str = "GRÁTIS" if frete == 0 else f"R$ {frete:.2f}"
-        frete_msg = "✅ Frete grátis!" if frete == 0 else f"Falta R$ {500-total:.0f} para frete grátis"
         st.markdown(
             f'<div class="resumo-box">{itens_html}'
             f'<div class="resumo-linha"><span>🏷️ Economia</span><span style="color:#86efac">-R$ {economia:.2f}</span></div>'
@@ -449,7 +432,6 @@ def render_carrinho():
             st.session_state.loja_view = "checkout"; st.rerun()
 
 
-# ══ VIEW: CHECKOUT ═══════════════════════════════════════════════════════════════════
 def render_checkout():
     c1, c2 = st.columns([2, 7])
     with c1:
@@ -471,29 +453,27 @@ def render_checkout():
         with ct: tel = st.text_input("Telefone", key="co_tel", placeholder="(11) 9xxxx-xxxx")
         with cc: cpf = st.text_input("CPF",      key="co_cpf", placeholder="000.000.000-00")
         st.markdown("</div>", unsafe_allow_html=True)
-
         st.markdown('<div class="checkout-section"><div class="checkout-section-title">🏠 Endereço</div>', unsafe_allow_html=True)
         cep_col, _ = st.columns([2, 3])
         with cep_col: cep = st.text_input("CEP", key="co_cep", placeholder="00000-000")
         rua = st.text_input("Rua / Av.", key="co_rua")
         cn, cc2 = st.columns([1, 3])
-        with cn:  num  = st.text_input("Nº",           key="co_num")
+        with cn:  num  = st.text_input("Num",          key="co_num")
         with cc2: comp = st.text_input("Complemento", key="co_comp")
         cb, cci, cuf = st.columns([2, 3, 1])
         with cb:  bairro = st.text_input("Bairro",  key="co_bairro")
         with cci: cidade = st.text_input("Cidade",  key="co_cidade")
         with cuf: uf     = st.text_input("UF",      key="co_uf", max_chars=2)
         st.markdown("</div>", unsafe_allow_html=True)
-
         st.markdown('<div class="checkout-section"><div class="checkout-section-title">💳 Pagamento</div>', unsafe_allow_html=True)
-        metodo = st.radio("Pagamento", ["💠 PIX", "📄 Boleto", "💳 Cartão de Crédito"],
+        metodo = st.radio("Pagamento", ["💠 PIX", "📄 Boleto", "💳 Cartao de Credito"],
                           key="co_metodo", horizontal=True)
-        if "Cartão" in metodo:
+        if "Cartao" in metodo:
             cnn, cvv = st.columns([3, 1])
-            with cnn: st.text_input("Número do cartão", key="co_card_num", placeholder="0000 0000 0000 0000")
+            with cnn: st.text_input("Numero do cartao", key="co_card_num", placeholder="0000 0000 0000 0000")
             with cvv: st.text_input("CVV", key="co_cvv", placeholder="123", max_chars=3)
             cnm, cvc = st.columns(2)
-            with cnm: st.text_input("Nome no cartão", key="co_card_nome")
+            with cnm: st.text_input("Nome no cartao", key="co_card_nome")
             with cvc: st.text_input("Validade", key="co_venc", placeholder="MM/AA")
             st.selectbox("Parcelamento", [f"{i}x sem juros" for i in range(1, 7)], key="co_parcelas")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -505,11 +485,11 @@ def render_checkout():
         frete = 0.0 if total >= 500 else 29.90
         grand = total + frete
         frete_cor = "#86efac" if frete == 0 else "#f5d0fe"
-        frete_str = "GRÁTIS" if frete == 0 else f"R$ {frete:.2f}"
+        frete_str = "GRATIS" if frete == 0 else f"R$ {frete:.2f}"
         itens_resumo = "".join(
-            f'<div class="resumo-linha">'
-            f'<span>{next((p["name"] for p in CATALOG if p["id"]==pid),pid)[:22]}... x{q}</span>'
-            f'<span>R$ {next((p for p in CATALOG if p["id"]==pid),{}).get("preco_parceiro",0)*q:.2f}</span></div>'
+            '<div class="resumo-linha">'
+            '<span>' + next((p["name"] for p in CATALOG if p["id"]==pid), pid)[:22] + f'... x{q}</span>'
+            '<span>R$ ' + f"{next((p for p in CATALOG if p['id']==pid), {}).get('preco_parceiro', 0)*q:.2f}" + '</span></div>'
             for pid, q in cart.items()
         )
         st.markdown(
@@ -522,12 +502,12 @@ def render_checkout():
         st.markdown("<br>", unsafe_allow_html=True)
         campos_ok = all([nome, email, tel, cpf, cep, rua, num, bairro, cidade, uf])
         if not campos_ok:
-            st.warning("⚠️ Preencha todos os campos obrigatórios.", icon="⚠️")
+            st.warning("Preencha todos os campos obrigatorios.", icon="⚠️")
         if st.button("✅ Confirmar Pedido", key="confirmar_pedido",
                      use_container_width=True, disabled=not campos_ok):
             pedido = {
-                "items": [{"id": pid, "name": next((p["name"] for p in CATALOG if p["id"]==pid),pid),
-                           "price": next((p["preco_parceiro"] for p in CATALOG if p["id"]==pid),0),
+                "items": [{"id": pid, "name": next((p["name"] for p in CATALOG if p["id"]==pid), pid),
+                           "price": next((p["preco_parceiro"] for p in CATALOG if p["id"]==pid), 0),
                            "qty": q} for pid, q in cart.items()],
                 "cliente": {"nome": nome, "email": email, "tel": tel, "cpf": cpf},
                 "endereco": {"cep": cep, "rua": rua, "num": num, "comp": comp,
@@ -540,22 +520,23 @@ def render_checkout():
             st.rerun()
 
 
-# ══ VIEW: CONFIRMADO ══════════════════════════════════════════════════════════════════
 def render_confirmado():
     pedido  = st.session_state.get("loja_pedido_confirmado", {})
     total   = pedido.get("total", 0)
     metodo  = pedido.get("pagamento", "")
     cliente = pedido.get("cliente", {})
+    nome_cli = cliente.get("nome", "")
+    email_cli = cliente.get("email", "")
     st.balloons()
     st.markdown(
-        f'<div style="text-align:center;padding:60px 20px">'
-        f'<div style="font-size:4rem">🎉</div>'
-        f'<h1 style="background:linear-gradient(90deg,#e879f9,#a855f7);-webkit-background-clip:text;'
-        f'-webkit-text-fill-color:transparent;font-size:2rem;margin:16px 0 8px">Pedido Confirmado!</h1>'
-        f'<p style="color:#c4b5fd;font-size:1.05rem">Obrigado, <strong>{cliente.get("nome","")}</strong>!<br>'
+        '<div style="text-align:center;padding:60px 20px">'
+        '<div style="font-size:4rem">🎉</div>'
+        '<h1 style="background:linear-gradient(90deg,#e879f9,#a855f7);-webkit-background-clip:text;'
+        '-webkit-text-fill-color:transparent;font-size:2rem;margin:16px 0 8px">Pedido Confirmado!</h1>'
+        f'<p style="color:#c4b5fd;font-size:1.05rem">Obrigado, <strong>{nome_cli}</strong>!<br>'
         f'Pedido de <strong>R$ {total:.2f}</strong> via <strong>{metodo}</strong> recebido.</p>'
-        f'<p style="color:#9ca3af;font-size:.85rem;margin-top:12px">📧 Confirmação enviada para {cliente.get("email","")}</p>'
-        f'</div>',
+        f'<p style="color:#9ca3af;font-size:.85rem;margin-top:12px">Confirmacao enviada para {email_cli}</p>'
+        '</div>',
         unsafe_allow_html=True,
     )
     col1, col2 = st.columns(2)
@@ -569,7 +550,6 @@ def render_confirmado():
             st.switch_page("pages/0_Dashboard.py")
 
 
-# ══ ROTEADOR ════════════════════════════════════════════════════════════════════════════
 _VIEW_MAP = {"loja": render_loja, "carrinho": render_carrinho,
              "checkout": render_checkout, "confirmado": render_confirmado}
 _VIEW_MAP.get(st.session_state.loja_view, render_loja)()

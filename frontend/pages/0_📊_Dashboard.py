@@ -2,16 +2,6 @@
 0_📊_Dashboard.py — HIPNUS COSMÉTICOS
 =======================================
 Skill #4 — Dashboard Admin com gráficos Seaborn + bordas separadoras.
-
-Visão unificada de:
-  - Métricas financeiras via Asaas (cobranças por status e método)
-  - Gráficos Seaborn: distribuição por status, método, tendência temporal
-  - Convites de parceiros ativos e utilizados (banco local)
-  - Parceiros cadastrados (banco local)
-  - Histórico de pedidos da sessão atual
-
-Acesso restrito a super_admin e admin.
-Atualização manual via botão ↻.
 """
 from __future__ import annotations
 
@@ -39,7 +29,6 @@ from lib.asaas_client import AsaasClient, AsaasError
 from lib.invite_db import listar_invites_db
 from lib.user_db import listar_parceiros
 
-# ─── Configuração global Seaborn ──────────────────────────────────────────────
 sns.set_theme(style="whitegrid", font="DejaVu Sans")
 PALETTE_HIPNUS = ["#7c3aed", "#a78bfa", "#10b981", "#f59e0b", "#ef4444", "#3b82f6"]
 BORDER_COLOR   = "#e5e0f5"
@@ -55,7 +44,6 @@ components.page_header(
     kicker="📊 Painel Operacional",
 )
 
-# ─── CSS para bordas separadoras ──────────────────────────────────────────────
 st.html("""
 <style>
   .seaborn-card-title {
@@ -76,24 +64,24 @@ st.html("""
 """)
 
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
 def _brl(v) -> str:
     try:
         val = Decimal(str(v))
     except Exception:
         val = Decimal("0")
     s = f"{val:,.2f}"
-    return f"R$ {s}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return "R$ " + s.replace(",", "X").replace(".", ",").replace("X", ".")
 
 def _status_badge(status: str) -> str:
-    return {
-        "RECEIVED":  "🟢 Recebido",  "CONFIRMED": "🟢 Confirmado",
-        "PENDING":   "🟡 Pendente",  "OVERDUE":   "🔴 Vencido",
-        "REFUNDED":  "🔵 Estornado", "CANCELLED": "⚪ Cancelado",
-    }.get(status, status)
+    _map = {
+        "RECEIVED":  "Recebido",  "CONFIRMED": "Confirmado",
+        "PENDING":   "Pendente",  "OVERDUE":   "Vencido",
+        "REFUNDED":  "Estornado", "CANCELLED": "Cancelado",
+    }
+    return _map.get(status, status)
 
 def _method_badge(bt: str) -> str:
-    return {"PIX": "PIX 🟣", "BOLETO": "Boleto 📜", "CREDIT_CARD": "Cartão 💳"}.get(bt, bt)
+    return {"PIX": "PIX", "BOLETO": "Boleto", "CREDIT_CARD": "Cartao"}.get(bt, bt)
 
 def _status_color(status: str) -> str:
     return {
@@ -103,60 +91,41 @@ def _status_color(status: str) -> str:
     }.get(status, "#7c3aed")
 
 
-# ─── Resolução robusta da API KEY ──────────────────────────────────────────────
 def _resolve_api_key() -> tuple[str, str]:
-    """
-    Tenta encontrar ASAAS_API_KEY em todas as fontes possíveis.
-    Retorna (chave, fonte) onde fonte descreve onde foi encontrada.
-    Retorna ('', motivo_falha) se não encontrar.
-    """
     import os
-
-    # 1. Raiz do st.secrets  →  ASAAS_API_KEY = "$aact_..."
     try:
         v = st.secrets.get("ASAAS_API_KEY", "")
         if v and str(v).strip():
             return str(v).strip(), "st.secrets (raiz)"
     except Exception:
         pass
-
-    # 2. Seção [asaas]  →  [asaas]\nASSAS_API_KEY = "..."
     try:
         v = st.secrets.get("asaas", {}).get("ASAAS_API_KEY", "")
         if v and str(v).strip():
             return str(v).strip(), "st.secrets [asaas]"
     except Exception:
         pass
-
-    # 3. Seção [hipnus]
     try:
         v = st.secrets.get("hipnus", {}).get("ASAAS_API_KEY", "")
         if v and str(v).strip():
             return str(v).strip(), "st.secrets [hipnus]"
     except Exception:
         pass
-
-    # 4. Variável de ambiente (local / Docker)
     v = os.environ.get("ASAAS_API_KEY", "")
     if v and v.strip():
         return v.strip(), "os.environ"
-
-    # Lista todas as chaves visíveis para diagnóstico
     try:
         keys_found = list(st.secrets.keys())
     except Exception:
         keys_found = []
-
     motivo = (
-        f"ASAAS_API_KEY não encontrada.\n"
-        f"Chaves visíveis em st.secrets: {keys_found}\n"
-        f"Dica: no Streamlit Cloud, vá em Settings → Secrets e adicione:\n"
-        f"  ASAAS_API_KEY = \"$aact_SUA_CHAVE_AQUI\""
+        "ASAAS_API_KEY nao encontrada. "
+        "Chaves visiveis em st.secrets: " + str(keys_found) + ". "
+        "Dica: Settings -> Secrets -> ASAAS_API_KEY = seu_token"
     )
     return "", motivo
 
 
-# ─── Carrega dados ─────────────────────────────────────────────────────────────
 def _load_asaas_payments(days: int = 30) -> tuple[list[dict], str | None]:
     api_key, fonte_ou_erro = _resolve_api_key()
     if not api_key:
@@ -189,32 +158,28 @@ def _load_partners() -> list[dict]:
         return []
 
 
-# ─── Filtro de período ─────────────────────────────────────────────────────────
 st.html("""
 <div style="background:linear-gradient(135deg,rgba(15,10,30,.85),rgba(30,15,55,.75));
   border:2px solid rgba(185,131,255,.30);border-radius:16px;
   padding:18px 24px 14px;margin-bottom:4px;backdrop-filter:blur(8px);">
   <div style="font-family:'Inter',sans-serif;font-size:.65rem;font-weight:700;
     letter-spacing:1.8px;text-transform:uppercase;color:rgba(185,131,255,.55);
-    margin-bottom:10px;">⏱ Filtro de período</div>
+    margin-bottom:10px;">Filtro de periodo</div>
 </div>
 """)
 
 _f1, _f2 = st.columns([2, 1])
 with _f1:
-    dias = st.selectbox("⏱ Cobranças dos últimos:", options=[7, 15, 30, 60, 90], index=2,
+    dias = st.selectbox("Cobranças dos ultimos:", options=[7, 15, 30, 60, 90], index=2,
                         format_func=lambda d: f"{d} dias", key="dash_dias")
 with _f2:
     st.write("")
-    atualizar = st.button("↻ Atualizar dados", use_container_width=True, key="_btn_atualizar")
+    atualizar = st.button("Atualizar dados", use_container_width=True, key="_btn_atualizar")
 
 st.html("<div style='margin-bottom:20px;'></div>")
 
-
-# ─── Cache de dados (limpa ao clicar Atualizar) ─────────────────────────────────
 cache_key = f"_dash_payments_{dias}"
 if atualizar:
-    # Limpa cache para forçar nova chamada à API
     for k in [cache_key, "_dash_asaas_error"]:
         st.session_state.pop(k, None)
 
@@ -231,33 +196,24 @@ invites        = _load_invites()
 partners       = _load_partners()
 session_orders = st.session_state.get("historico_pedidos", [])
 
-
-# ─── Exibe erros / diagnóstico ────────────────────────────────────────────────────
 if asaas_error:
-    # Separa 'chave ausente' de 'erro real de API'
-    is_key_missing = "não encontrada" in asaas_error or "não configurada" in asaas_error
+    is_key_missing = "nao encontrada" in asaas_error or "nao configurada" in asaas_error
     if is_key_missing:
-        with st.expander("⚠️ API Asaas: ASAAS_API_KEY não encontrada — clique para diagnóstico", expanded=True):
+        with st.expander("API Asaas: ASAAS_API_KEY nao encontrada", expanded=True):
             st.markdown("""
 **Como corrigir no Streamlit Cloud:**
-1. Acesse o app → **Manage app** (canto inferior direito)
-2. Vá em **Settings → Secrets**
-3. Confirme que o secret está exatamente assim (na raiz, sem seção):
+1. Acesse o app -> **Manage app** (canto inferior direito)
+2. Va em **Settings -> Secrets**
+3. Confirme que o secret esta exatamente assim:
 ```toml
-ASSAS_API_KEY = "$aact_SUA_CHAVE_AQUI"
-```
-> ℹ️ Se preferir usar seção, use:
-```toml
-[asaas]
 ASSAS_API_KEY = "$aact_SUA_CHAVE_AQUI"
 ```
             """)
-            st.caption(f"🔍 Detalhes: {asaas_error}")
+            st.caption("Detalhes: " + str(asaas_error))
     else:
-        st.warning(f"⚠️ Asaas API retornou erro: {asaas_error}")
+        st.warning("Asaas API retornou erro: " + str(asaas_error))
 
 
-# ─── Cálculo de KPIs ──────────────────────────────────────────────────────────
 if payments:
     total_recebido = sum(Decimal(str(p.get("value",0))) for p in payments
                          if p.get("status") in ("RECEIVED","CONFIRMED"))
@@ -283,29 +239,26 @@ n_invites_usado  = sum(1 for i in invites if i.get("used"))
 n_parceiros      = len(partners)
 
 
-# ─── KPIs Financeiros ─────────────────────────────────────────────────────────
-components.section_title("💰 Financeiro")
+components.section_title("Financeiro")
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("🟢 Recebido",        _brl(total_recebido), f"{n_recebido} cobranças")
-k2.metric("🟡 Pendente",        _brl(total_pendente), f"{n_pendente} cobranças")
-k3.metric("🔴 Vencido",         _brl(total_vencido),  f"{n_vencido} cobranças")
-k4.metric("📊 Total cobranças", len(payments) or len(session_orders))
+k1.metric("Recebido",        _brl(total_recebido), str(n_recebido) + " cobranças")
+k2.metric("Pendente",        _brl(total_pendente), str(n_pendente) + " cobranças")
+k3.metric("Vencido",         _brl(total_vencido),  str(n_vencido) + " cobranças")
+k4.metric("Total cobranças", len(payments) or len(session_orders))
 
 st.html("<hr class='section-separator'>")
 
-# ─── KPIs Plataforma ──────────────────────────────────────────────────────────
-components.section_title("🤝 Plataforma")
+components.section_title("Plataforma")
 p1, p2, p3, p4 = st.columns(4)
-p1.metric("🤝 Parceiros",       n_parceiros)
-p2.metric("📨 Convites ativos", n_invites_ativos)
-p3.metric("✅ Convites usados", n_invites_usado)
-p4.metric("📍 Convites totais", n_invites_total)
+p1.metric("Parceiros",       n_parceiros)
+p2.metric("Convites ativos", n_invites_ativos)
+p3.metric("Convites usados", n_invites_usado)
+p4.metric("Convites totais", n_invites_total)
 
 st.html("<hr class='section-separator'>")
 
 
-# ─── GRÁFICOS SEABORN ────────────────────────────────────────────────────────────
-components.section_title("📈 Gráficos — Análise Visual (Seaborn)")
+components.section_title("Graficos — Analise Visual (Seaborn)")
 
 _source = payments if payments else []
 if not _source and session_orders:
@@ -322,22 +275,22 @@ df_pay = pd.DataFrame(_source) if _source else pd.DataFrame(
 if not df_pay.empty:
     df_pay["value"]       = pd.to_numeric(df_pay["value"], errors="coerce").fillna(0)
     df_pay["dateCreated"] = pd.to_datetime(df_pay["dateCreated"], errors="coerce")
-    df_pay["status_pt"]   = df_pay["status"].map({
+    _status_map = {
         "RECEIVED":"Recebido","CONFIRMED":"Confirmado","PENDING":"Pendente",
         "OVERDUE":"Vencido","REFUNDED":"Estornado","CANCELLED":"Cancelado"
-    }).fillna(df_pay["status"])
-    df_pay["metodo_pt"]   = df_pay["billingType"].map({
-        "PIX":"PIX","BOLETO":"Boleto","CREDIT_CARD":"Cartão"
-    }).fillna(df_pay["billingType"].fillna("Outro"))
+    }
+    _method_map = {"PIX":"PIX","BOLETO":"Boleto","CREDIT_CARD":"Cartao"}
+    df_pay["status_pt"] = df_pay["status"].map(_status_map).fillna(df_pay["status"])
+    df_pay["metodo_pt"] = df_pay["billingType"].map(_method_map).fillna(
+        df_pay["billingType"].fillna("Outro"))
 
 has_data = not df_pay.empty
 
-# ── Linha 1: Barplot valor + Pie método ─────────────────────────────────────────────
 g_col1, g_col2 = st.columns(2)
 
 with g_col1:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>💰 Valor por Status</div>")
+    st.html("<div class='seaborn-card-title'>Valor por Status</div>")
     if has_data:
         df_s = df_pay.groupby("status_pt")["value"].sum().reset_index()
         df_s.columns = ["Status", "Valor"]
@@ -354,11 +307,12 @@ with g_col1:
                        edgecolor=BORDER_COLOR, linewidth=1.2)
         for bar in bars:
             w = bar.get_width()
+            label_val = "R$ " + f"{w:,.0f}".replace(",",".")
             ax.text(w*1.02, bar.get_y()+bar.get_height()/2,
-                    f"R$ {w:,.0f}".replace(",","."),
-                    va="center", ha="left", fontsize=8, color="#374151", fontweight="bold")
+                    label_val, va="center", ha="left",
+                    fontsize=8, color="#374151", fontweight="bold")
         ax.set_xlabel("Valor Total (R$)", fontsize=9, color="#6b7280")
-        ax.set_title(f"Últimos {dias} dias", fontsize=10, color="#374151", pad=8)
+        ax.set_title("Ultimos " + str(dias) + " dias", fontsize=10, color="#374151", pad=8)
         ax.xaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.7)
         ax.yaxis.grid(False)
         ax.tick_params(colors="#6b7280", labelsize=9)
@@ -371,22 +325,23 @@ with g_col1:
 
 with g_col2:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>💳 Método de Pagamento</div>")
+    st.html("<div class='seaborn-card-title'>Metodo de Pagamento</div>")
     if has_data:
         df_m = df_pay["metodo_pt"].value_counts().reset_index()
-        df_m.columns = ["Método", "Qtd"]
-        cores_m = {"PIX":"#7c3aed","Boleto":"#f59e0b","Cartão":"#3b82f6","Outro":"#9ca3af"}
+        df_m.columns = ["Metodo", "Qtd"]
+        cores_m = {"PIX":"#7c3aed","Boleto":"#f59e0b","Cartao":"#3b82f6","Outro":"#9ca3af"}
         fig2, ax2 = plt.subplots(figsize=(5, 3.8))
         fig2.patch.set_facecolor("#ffffff")
         wedges, texts, autotexts = ax2.pie(
-            df_m["Qtd"], labels=df_m["Método"], autopct="%1.0f%%", startangle=90,
-            colors=[cores_m.get(m,"#a78bfa") for m in df_m["Método"]],
+            df_m["Qtd"], labels=df_m["Metodo"], autopct="%1.0f%%", startangle=90,
+            colors=[cores_m.get(m,"#a78bfa") for m in df_m["Metodo"]],
             pctdistance=0.78, wedgeprops=dict(edgecolor=BORDER_COLOR, linewidth=2))
         for t in autotexts:
             t.set_fontsize(9); t.set_fontweight("bold"); t.set_color("#1a0a2e")
         for t in texts:
             t.set_fontsize(9); t.set_color("#374151")
-        ax2.set_title(f"Total: {df_m['Qtd'].sum()} cobranças", fontsize=10, color="#374151", pad=8)
+        total_cob = int(df_m["Qtd"].sum())
+        ax2.set_title("Total: " + str(total_cob) + " cobranças", fontsize=10, color="#374151", pad=8)
         plt.tight_layout()
         st.pyplot(fig2, use_container_width=True)
         plt.close(fig2)
@@ -396,12 +351,11 @@ with g_col2:
 
 st.html("<hr class='section-separator'>")
 
-# ── Linha 2: Lineplot tendência + Barplot quantidade ──────────────────────────────
 g_col3, g_col4 = st.columns([3, 2])
 
 with g_col3:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>📅 Tendência diária (R$)</div>")
+    st.html("<div class='seaborn-card-title'>Tendencia diaria (R$)</div>")
     if has_data and not df_pay["dateCreated"].isna().all():
         df_line = df_pay[df_pay["status"].isin(["RECEIVED","CONFIRMED","PENDING"])].copy()
         df_line["data_dia"] = df_line["dateCreated"].dt.date
@@ -433,7 +387,7 @@ with g_col3:
 
 with g_col4:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>🔢 Quantidade por Status</div>")
+    st.html("<div class='seaborn-card-title'>Quantidade por Status</div>")
     if has_data:
         df_cnt = df_pay["status_pt"].value_counts().reset_index()
         df_cnt.columns = ["Status","Qtd"]
@@ -464,12 +418,11 @@ with g_col4:
 
 st.html("<hr class='section-separator'>")
 
-# ── Linha 3: Convites + Parceiros ─────────────────────────────────────────────────────
 g_col5, g_col6 = st.columns(2)
 
 with g_col5:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>📨 Status dos Convites</div>")
+    st.html("<div class='seaborn-card-title'>Status dos Convites</div>")
     df_inv_chart = pd.DataFrame({
         "Status": ["Ativos", "Usados", "Total"],
         "Qtd":    [n_invites_ativos, n_invites_usado, n_invites_total]
@@ -487,7 +440,8 @@ with g_col5:
     ax5.yaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.6)
     ax5.xaxis.grid(False)
     ax5.tick_params(colors="#6b7280", labelsize=10)
-    ax5.set_ylim(0, max(df_inv_chart["Qtd"].max() * 1.3, 5))
+    max_val = df_inv_chart["Qtd"].max()
+    ax5.set_ylim(0, max(max_val * 1.3, 5))
     plt.tight_layout()
     st.pyplot(fig5, use_container_width=True)
     plt.close(fig5)
@@ -495,7 +449,7 @@ with g_col5:
 
 with g_col6:
     st.html("<div class='grafico-wrapper'>")
-    st.html("<div class='seaborn-card-title'>👥 Parceiros por Perfil</div>")
+    st.html("<div class='seaborn-card-title'>Parceiros por Perfil</div>")
     if partners:
         perfis = [p.get("perfil") or p.get("role","outro") for p in partners]
         df_perf = pd.DataFrame(Counter(perfis).items(), columns=["Perfil","Qtd"])
@@ -516,7 +470,8 @@ with g_col6:
         ax6.yaxis.grid(True, color=BORDER_COLOR, linestyle="--", alpha=0.6)
         ax6.xaxis.grid(False)
         ax6.tick_params(colors="#6b7280", labelsize=9, rotation=15)
-        ax6.set_ylim(0, max(df_perf["Qtd"].max() * 1.3, 5))
+        max_perf = df_perf["Qtd"].max()
+        ax6.set_ylim(0, max(max_perf * 1.3, 5))
         plt.tight_layout()
         st.pyplot(fig6, use_container_width=True)
         plt.close(fig6)
@@ -527,125 +482,135 @@ with g_col6:
 st.html("<hr class='section-separator'>")
 
 
-# ─── TABS DE DETALHES ─────────────────────────────────────────────────────────
-components.section_title("📋 Detalhes Operacionais")
+components.section_title("Detalhes Operacionais")
 tab_cob, tab_inv, tab_par, tab_sess = st.tabs(
-    ["💳 Cobranças", "📨 Convites", "🤝 Parceiros", "🛘 Sessão"])
+    ["Cobranças", "Convites", "Parceiros", "Sessao"])
 
 with tab_cob:
-    components.section_title(f"Cobranças — últimos {dias} dias")
+    components.section_title("Cobranças — ultimos " + str(dias) + " dias")
     if not payments:
         if session_orders:
-            st.info("📋 API Asaas sem dados. Exibindo pedidos da sessão atual.")
+            st.info("API Asaas sem dados. Exibindo pedidos da sessao atual.")
             for o in session_orders:
                 totais = o.get("totais", {})
-                st.html(f"""
-                <div style="background:#f8f7fc;border:2px solid #e5e0f5;border-radius:12px;
-                    padding:14px 18px;margin:8px 0;display:flex;
-                    justify-content:space-between;align-items:center;">
-                  <div>
-                    <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{o.get('external_ref','--')}</div>
-                    <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">{_status_badge(o.get('status',''))}</div>
-                  </div>
-                  <div style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(totais.get('total',0))}</div>
-                </div>""")
+                ref_val = str(o.get("external_ref", "--"))
+                status_val = _status_badge(str(o.get("status", "")))
+                brl_val = _brl(totais.get("total", 0))
+                st.html(
+                    '<div style="background:#f8f7fc;border:2px solid #e5e0f5;border-radius:12px;'
+                    'padding:14px 18px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">'
+                    '<div>'
+                    '<div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">' + ref_val + '</div>'
+                    '<div style="font-size:.75rem;color:#6b7280;margin-top:2px;">' + status_val + '</div>'
+                    '</div>'
+                    '<div style="font-size:1rem;font-weight:800;color:#7c3aed;">' + brl_val + '</div>'
+                    '</div>'
+                )
         else:
-            components.empty_state(icon="💳", title="Sem cobranças",
+            components.empty_state(icon="Cobranças", title="Sem cobranças",
                                     message="Configure ASAAS_API_KEY para ver dados em tempo real.")
     else:
         for p in payments:
-            ref  = p.get("externalReference") or p.get("description", "—")
-            sc   = _status_color(p.get("status",""))
-            link = p.get("invoiceUrl") or p.get("bankSlipUrl") or ""
-            st.html(f"""
-            <div style="background:#f8f7fc;border:2px solid #e5e0f5;
-                border-radius:12px;border-left:5px solid {sc};
-                padding:14px 18px;margin:8px 0;
-                display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{ref}</div>
-                <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">
-                  {_status_badge(p.get('status',''))} &nbsp;·&nbsp;
-                  {_method_badge(p.get('billingType',''))} &nbsp;·&nbsp;
-                  {(p.get('dateCreated') or '')[:10]}
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(p.get('value',0))}</div>
-                {f'<a href="{link}" target="_blank" style="font-size:.72rem;color:#7c3aed;">Ver cobrança ↗</a>' if link else ''}
-              </div>
-            </div>""")
+            ref  = str(p.get("externalReference") or p.get("description", "—"))
+            sc   = _status_color(str(p.get("status","")))
+            link = str(p.get("invoiceUrl") or p.get("bankSlipUrl") or "")
+            status_txt  = _status_badge(str(p.get("status","")))
+            method_txt  = _method_badge(str(p.get("billingType","")))
+            date_txt    = str(p.get("dateCreated") or "")[:10]
+            brl_val     = _brl(p.get("value", 0))
+            link_html   = ('<a href="' + link + '" target="_blank" style="font-size:.72rem;color:#7c3aed;">Ver cobrança</a>') if link else ""
+            st.html(
+                '<div style="background:#f8f7fc;border:2px solid #e5e0f5;'
+                'border-radius:12px;border-left:5px solid ' + sc + ';'
+                'padding:14px 18px;margin:8px 0;'
+                'display:flex;justify-content:space-between;align-items:center;">'
+                '<div>'
+                '<div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">' + ref + '</div>'
+                '<div style="font-size:.75rem;color:#6b7280;margin-top:2px;">'
+                + status_txt + ' &nbsp;&middot;&nbsp; ' + method_txt + ' &nbsp;&middot;&nbsp; ' + date_txt +
+                '</div></div>'
+                '<div style="text-align:right;">'
+                '<div style="font-size:1rem;font-weight:800;color:#7c3aed;">' + brl_val + '</div>'
+                + link_html +
+                '</div></div>'
+            )
 
 with tab_inv:
     components.section_title("Convites de parceiros")
     if not invites:
-        components.empty_state(icon="📨", title="Sem convites",
+        components.empty_state(icon="Convites", title="Sem convites",
                                 message="Crie convites em Convites de Parceiros.")
     else:
+        _role_lbl = {"b2b": "Profissional", "b2c": "Cliente", "admin": "Admin"}
         for inv in invites:
             usado     = inv.get("used", False)
-            role_lbl  = {"b2b":"🎤 Profissional","b2c":"👤 Cliente","admin":"🛡️ Admin"}.get(
-                inv.get("role",""), inv.get("role",""))
-            st.html(f"""
-            <div style="background:{'#f0fdf4' if usado else '#faf7ff'};
-                border:2px solid {'#86efac' if usado else '#e9d5ff'};
-                border-radius:12px;padding:12px 18px;margin:6px 0;
-                display:flex;justify-content:space-between;">
-              <div>
-                <div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{inv.get('email','')}</div>
-                <div style="font-size:.75rem;color:#6b7280;margin-top:2px;">
-                  {role_lbl} &nbsp;·&nbsp; Expira: {str(inv.get('expires_at') or '')[:10]}
-                </div>
-              </div>
-              <div style="font-size:.82rem;font-weight:700;
-                color:{'#16a34a' if usado else '#7c3aed'};">{'\u2705 Usado' if usado else '\u23f3 Pendente'}</div>
-            </div>""")
+            role_lbl  = _role_lbl.get(str(inv.get("role","")), str(inv.get("role","")))
+            bg_color  = "#f0fdf4" if usado else "#faf7ff"
+            bd_color  = "#86efac" if usado else "#e9d5ff"
+            st_color  = "#16a34a" if usado else "#7c3aed"
+            st_label  = "Usado" if usado else "Pendente"
+            expires   = str(inv.get("expires_at") or "")[:10]
+            email_inv = str(inv.get("email", ""))
+            st.html(
+                '<div style="background:' + bg_color + ';border:2px solid ' + bd_color + ';'
+                'border-radius:12px;padding:12px 18px;margin:6px 0;display:flex;justify-content:space-between;">'
+                '<div>'
+                '<div style="font-size:.85rem;font-weight:700;color:#1a0a2e;">' + email_inv + '</div>'
+                '<div style="font-size:.75rem;color:#6b7280;margin-top:2px;">' + role_lbl + ' &nbsp;&middot;&nbsp; Expira: ' + expires + '</div>'
+                '</div>'
+                '<div style="font-size:.82rem;font-weight:700;color:' + st_color + ';">' + st_label + '</div>'
+                '</div>'
+            )
 
 with tab_par:
     components.section_title("Parceiros cadastrados")
     if not partners:
-        components.empty_state(icon="🤝", title="Sem parceiros",
-                                message="Os parceiros aparecem após cadastro via convite.")
+        components.empty_state(icon="Parceiros", title="Sem parceiros",
+                                message="Os parceiros aparecem apos cadastro via convite.")
     else:
-        icons_map = {"super_admin":"⭐","admin":"🛡️","b2b":"🎤","b2c":"👤","demo":"👀"}
+        icons_map = {"super_admin":"Estrela","admin":"Admin","b2b":"Pro","b2c":"Cliente","demo":"Demo"}
         for p in partners:
-            perfil = p.get("perfil") or p.get("role", "")
-            icon   = icons_map.get(perfil, "🤝")
-            cidade = p.get("cidade") or p.get("city", "")
-            estado = p.get("estado") or p.get("state", "")
-            loc    = f"{cidade}/{estado}" if cidade else estado or "—"
-            st.html(f"""
-            <div style="background:#f8f7fc;border:2px solid #e5e0f5;
-                border-radius:12px;padding:12px 18px;margin:6px 0;
-                display:flex;align-items:center;gap:14px;">
-              <div style="font-size:1.6rem;">{icon}</div>
-              <div>
-                <div style="font-size:.88rem;font-weight:700;color:#1a0a2e;">{p.get('nome') or p.get('name','')}</div>
-                <div style="font-size:.75rem;color:#6b7280;">{p.get('email','')} &nbsp;·&nbsp; {loc}</div>
-              </div>
-            </div>""")
+            perfil = str(p.get("perfil") or p.get("role", ""))
+            icon   = icons_map.get(perfil, "")
+            cidade = str(p.get("cidade") or p.get("city", ""))
+            estado = str(p.get("estado") or p.get("state", ""))
+            loc    = (cidade + "/" + estado) if cidade else (estado or "—")
+            nome_p  = str(p.get("nome") or p.get("name", ""))
+            email_p = str(p.get("email", ""))
+            st.html(
+                '<div style="background:#f8f7fc;border:2px solid #e5e0f5;'
+                'border-radius:12px;padding:12px 18px;margin:6px 0;display:flex;align-items:center;gap:14px;">'
+                '<div style="font-size:1rem;color:#7c3aed;font-weight:700;">[' + icon + ']</div>'
+                '<div>'
+                '<div style="font-size:.88rem;font-weight:700;color:#1a0a2e;">' + nome_p + '</div>'
+                '<div style="font-size:.75rem;color:#6b7280;">' + email_p + ' &nbsp;&middot;&nbsp; ' + loc + '</div>'
+                '</div></div>'
+            )
 
 with tab_sess:
-    components.section_title("Pedidos desta sessão")
+    components.section_title("Pedidos desta sessao")
     if not session_orders:
-        components.empty_state(icon="🛘", title="Nenhum pedido na sessão",
+        components.empty_state(icon="Sessao", title="Nenhum pedido na sessao",
                                 message="Os pedidos finalizados no checkout aparecem aqui.")
     else:
         for o in session_orders:
-            totais = o.get("totais", {})
-            st.html(f"""
-            <div style="background:#f3f0ff;border:2px solid #c4b5fd;
-                border-radius:12px;padding:14px 18px;margin:8px 0;">
-              <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                <span style="font-size:.85rem;font-weight:700;color:#1a0a2e;">{o.get('external_ref','—')}</span>
-                <span style="font-size:1rem;font-weight:800;color:#7c3aed;">{_brl(totais.get('total',0))}</span>
-              </div>
-              <div style="font-size:.75rem;color:#6b7280;">
-                {_status_badge(o.get('status',''))} &nbsp;·&nbsp;
-                ID: <code>{o.get('payment_id','—')}</code>
-              </div>
-            </div>""")
+            totais    = o.get("totais", {})
+            ext_ref   = str(o.get("external_ref", "—"))
+            brl_val   = _brl(totais.get("total", 0))
+            status_lbl = _status_badge(str(o.get("status", "")))
+            pay_id    = str(o.get("payment_id", "—"))
+            st.html(
+                '<div style="background:#f3f0ff;border:2px solid #c4b5fd;'
+                'border-radius:12px;padding:14px 18px;margin:8px 0;">'
+                '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+                '<span style="font-size:.85rem;font-weight:700;color:#1a0a2e;">' + ext_ref + '</span>'
+                '<span style="font-size:1rem;font-weight:800;color:#7c3aed;">' + brl_val + '</span>'
+                '</div>'
+                '<div style="font-size:.75rem;color:#6b7280;">'
+                + status_lbl + ' &nbsp;&middot;&nbsp; ID: <code>' + pay_id + '</code>'
+                '</div></div>'
+            )
         m1, m2 = st.columns(2)
         total_sess = sum(Decimal(str(o.get("totais",{}).get("total",0))) for o in session_orders)
-        m1.metric("💰 Total da sessão", _brl(total_sess))
-        m2.metric("📦 Pedidos",         len(session_orders))
+        m1.metric("Total da sessao", _brl(total_sess))
+        m2.metric("Pedidos",         len(session_orders))
