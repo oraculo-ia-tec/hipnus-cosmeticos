@@ -183,7 +183,7 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "via_api":      st.session_state.get("via_api", False),
         "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
-    if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
+    if perfis_permitidos and usuario["perfil"] not in perfis_imitidos:
         st.error("🚫 Você não tem permissão para acessar esta página.")
         st.stop()
     return usuario
@@ -204,31 +204,22 @@ def logout() -> None:
 # SIDEBAR PRO REDESIGN 2026
 # ───────────────────────────────────────────────────────────────────────
 
+# Lista flat: (page_path, label, roles_permitidos)
+# Sem grupos — todos os menus expostos diretamente na sidebar
 _NAV_ITEMS = [
-    # IA PRIMEIRO
-    ("ai",   "pages/10_🤖_IA_Consultora.py",   "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
-    # Principal
-    ("main", "pages/0_🏠_Home.py",             "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
-    ("main", "pages/0_📊_Dashboard.py",         "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
-    # Loja
-    ("shop", "pages/1_🛍️_Catálogo.py",         "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
-    ("shop", "pages/2_✨_Linhas.py",            "✨  Linhas",            {"super_admin","admin","b2b","b2c"}),
-    ("shop", "pages/3_🏪_Loja_do_Parceiro.py", "🏪  Loja Parceiro",     {"super_admin","admin","b2b"}),
-    ("shop", "pages/4_🛒_Carrinho.py",          "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
-    ("shop", "pages/5_💳_Checkout.py",          "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
-    # Gestão
-    ("mgmt", "pages/6_Convites.py",             "✉️  Convites",          {"super_admin","admin"}),
-    ("mgmt", "pages/7_Cadastro_Parceiro.py",    "➕  Cadastro Parceiro", {"super_admin","admin"}),
-    ("mgmt", "pages/8_Configuracao.py",         "⚙️  Configurações",     {"super_admin","admin"}),
-    ("mgmt", "pages/9_👥_Usuarios.py",          "👥  Usuários",          {"super_admin"}),
+    ("pages/10_🤖_IA_Consultora.py",   "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/0_🏠_Home.py",             "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/0_📊_Dashboard.py",         "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/1_🛍️_Catálogo.py",         "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
+    ("pages/2_✨_Linhas.py",            "✨  Linhas",            {"super_admin","admin","b2b","b2c"}),
+    ("pages/3_🏪_Loja_do_Parceiro.py", "🏪  Loja Parceiro",     {"super_admin","admin","b2b"}),
+    ("pages/4_🛒_Carrinho.py",          "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
+    ("pages/5_💳_Checkout.py",          "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
+    ("pages/6_Convites.py",             "✉️  Convites",          {"super_admin","admin"}),
+    ("pages/7_Cadastro_Parceiro.py",    "➕  Cadastro Parceiro", {"super_admin","admin"}),
+    ("pages/8_Configuracao.py",         "⚙️  Configurações",     {"super_admin","admin"}),
+    ("pages/9_👥_Usuarios.py",          "👥  Usuários",          {"super_admin"}),
 ]
-
-_GROUP_LABELS = {
-    "ai":   "✦ Inteligência Artificial",
-    "main": "Principal",
-    "shop": "Loja & Pedidos",
-    "mgmt": "Gestão",
-}
 
 
 def _inject_sidebar_css() -> None:
@@ -277,7 +268,7 @@ def _inject_sidebar_css() -> None:
       border: none;
     }
 
-    /* ── Botão SAIR destacado ── */
+    /* ── Botão SAIR ── */
     section[data-testid="stSidebar"] div.block-container div.stButton > button {
       width: 100% !important;
       background: rgba(255,255,255,.05) !important;
@@ -315,7 +306,7 @@ def build_sidebar(
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """Sidebar Pro 2026 — usa st.sidebar.page_link() para navegação real."""
+    """Sidebar Pro 2026 — menus flat sem grupos, todos expostos diretamente."""
     perfil = st.session_state.get("perfil", "demo")
     _inject_sidebar_css()
 
@@ -349,7 +340,7 @@ def build_sidebar(
 
     st.sidebar.html(f"""
     <div style="display:flex;align-items:center;gap:10px;
-      padding:10px 12px;margin:0 8px 4px;
+      padding:10px 12px;margin:0 8px 8px;
       background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(185,131,255,.07));
       border:1px solid rgba(185,131,255,.28);border-radius:14px;">
       <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
@@ -369,23 +360,10 @@ def build_sidebar(
     </div>
     """)
 
-    # Nav agrupado com page_link — exibe apenas menus permitidos para o perfil
-    last_group = None
-    for grupo, page_path, label, roles_ok in _NAV_ITEMS:
+    # ── Menus flat — sem labels de grupo, sem separadores entre itens ──
+    for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
             continue
-        if grupo != last_group:
-            if last_group is not None:
-                st.sidebar.html("""
-                <div style="height:1px;margin:6px 16px;
-                background:linear-gradient(90deg,transparent,rgba(185,131,255,.18),transparent);
-                "></div>""")
-            st.sidebar.html(f"""
-            <div style="font-family:'Inter',sans-serif;font-size:.58rem;font-weight:700;
-              letter-spacing:1.8px;text-transform:uppercase;
-              color:rgba(185,131,255,.42);padding:12px 18px 4px;"
-            >{_GROUP_LABELS.get(grupo, grupo)}</div>""")
-            last_group = grupo
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
         try:
             st.sidebar.page_link(page_path, label=lbl)
@@ -401,11 +379,9 @@ def build_sidebar(
 
 # ───────────────────────────────────────────────────────────────────────
 # ALIASES DE COMPATIBILIDADE
-# Todas as páginas antigas importam estas funções individualmente.
-# Elas agora chamam build_sidebar() ou são no-ops seguros.
 # ───────────────────────────────────────────────────────────────────────
 
-_sidebar_built: set = set()  # evita chamar build_sidebar() duas vezes por rerun
+_sidebar_built: set = set()
 
 
 def sidebar_logo() -> None:
@@ -415,26 +391,26 @@ def sidebar_logo() -> None:
 
 def sidebar_user_info() -> None:
     """Legado: renderiza card do usuário. Agora delegado a build_sidebar()."""
-    pass  # já incluído no build_sidebar() chamado por sidebar_logo()
+    pass
 
 
 def sidebar_logout_button() -> None:
     """Legado: botão de logout. Agora delegado a build_sidebar()."""
-    pass  # já incluído no build_sidebar()
+    pass
 
 
 def sidebar_nav_highlight() -> None:
     """Legado: injetava CSS dos links. Agora delegado a build_sidebar()."""
-    pass  # já incluído em _inject_sidebar_css()
+    pass
 
 
 def sidebar_section_label(label: str) -> None:
-    """Legado: label de seção. No-op — grupos agora gerenciados por build_sidebar()."""
+    """Legado: label de seção. No-op."""
     pass
 
 
 def sidebar_divider() -> None:
-    """Legado: divisor visual. No-op — gerenciado por build_sidebar()."""
+    """Legado: divisor visual. No-op."""
     pass
 
 
@@ -443,10 +419,7 @@ def _maybe_build_sidebar(
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """
-    Garante que build_sidebar() seja chamada no máximo uma vez por rerun.
-    Usada pelos aliases legados (sidebar_logo, etc.).
-    """
+    """Garante que build_sidebar() seja chamada no máximo uma vez por rerun."""
     run_id = id(st.session_state)
     key = f"_sb_done_{run_id}"
     if not st.session_state.get(key):
