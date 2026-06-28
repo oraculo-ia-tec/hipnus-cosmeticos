@@ -14,12 +14,16 @@ st.set_page_config(page_title="Carrinho · HIPNUS", page_icon="🛒", layout="wi
 ui.inject_theme()
 require_auth()
 
-cart = st.session_state.get("carrinho", [])
-build_sidebar(show_cart=True, cart_count=len(cart))
+# Garante que session_state["cart"] existe como dict (chave única do sistema)
+if "cart" not in st.session_state or not isinstance(st.session_state["cart"], dict):
+    st.session_state["cart"] = {}
 
-components.page_header(title="Carrinho", subtitle="Revise os itens antes de finalizar o pedido.")
+build_sidebar(show_cart=True, cart_count=ui.cart_count())
 
-if not cart:
-    components.empty_state(icon="🛒", title="Carrinho vazio", message="Adicione produtos pelo Catálogo ou Loja do Parceiro.")
-else:
-    commerce.cart_view(cart, on_remove=ui.remove_from_cart, on_clear=ui.clear_cart)
+components.page_header(
+    title="Carrinho",
+    subtitle="Revise os itens antes de finalizar o pedido.",
+)
+
+# cart_view() já lê internamente session_state["cart"] via _cart()
+commerce.cart_view()
