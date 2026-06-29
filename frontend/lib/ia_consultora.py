@@ -2,8 +2,8 @@
 ia_consultora.py — HIPNUS COSMÉTICOS
 ========================================
 Skill: 🤖 IA Consultora
-Atualização: integração da catalog_llm_skill para domínio de produtos e
-preços por perfil de usuário (super_admin / admin / b2b / b2c / demo).
+Atualização: integração da catalog_llm_skill + respostas concisas
+e anti-alucinação de preços.
 """
 from __future__ import annotations
 
@@ -14,17 +14,10 @@ from typing import Generator
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
-MAX_TOKENS    = 1024
+MAX_TOKENS    = 512   # reduzido para respostas mais objetivas
 
 
 def _get_api_key() -> str:
-    """
-    Leitura da GROQ_API_KEY em ordem de prioridade:
-    1. Variável de ambiente
-    2. st.secrets raiz:  GROQ_API_KEY = "..."
-    3. st.secrets bloco: [groq]\nGROQ_API_KEY = "..."
-    4. Qualquer sub-bloco que contenha GROQ_API_KEY
-    """
     val = os.environ.get("GROQ_API_KEY", "").strip()
     if val:
         return val
@@ -96,23 +89,37 @@ def _brl(v) -> str:
 # ── Catalog Skill ─────────────────────────────────────────────────────────────
 
 def load_catalog_skill() -> str:
-    """Carrega a skill de catálogo de produtos (docs/skills/catalog_llm_skill.md)."""
+    """Carrega a skill de catálogo (docs/skills/catalog_llm_skill.md) — apenas
+    a seção de regras e linguagem, SEM os blocos de código Python, para
+    economizar tokens do contexto.
+    """
     skill_path = (
         Path(__file__).resolve().parents[2]
         / "docs"
         / "skills"
         / "catalog_llm_skill.md"
     )
-    if skill_path.exists():
-        return skill_path.read_text(encoding="utf-8")
-    return ""
+    if not skill_path.exists():
+        return ""
+    content = skill_path.read_text(encoding="utf-8")
+    # Remove seções de código Python (economiza ~400 tokens desnecessarios no prompt)
+    import re
+    content = re.sub(r"```python.*?```", "", content, flags=re.DOTALL)
+    content = re.sub(r"## 🤖 Como usar esta skill.*", "", content, flags=re.DOTALL)
+    content = re.sub(r"## 📊 Contexto Dinâmico.*", "", content, flags=re.DOTALL)
+    return content.strip()
 
 
 def build_products_context(products: list[dict], user_role: str) -> str:
     """Formata lista de produtos para injeção no contexto do LLM por perfil."""
     if not products:
-        return ""
-    linhas = ["\n--- PRODUTOS DO CATÁLOGO (tempo real) ---"]
+        return (
+            "\n--- PRODUTOS DO CATÁLOGO ---\n"
+            "Nenhum produto cadastrado no banco ainda. "
+            "Use o Painel de Produtos para cadastrar.\n"
+            "--- FIM DOS PRODUTOS ---"
+        )
+    linhas = ["\n--- PRODUTOS DO CATÁLOGO (dados reais do banco) ---"]
     for p in products:
         if user_role in ("super_admin", "admin"):
             srp = p.get("suggested_retail_price")
@@ -191,9 +198,8 @@ def build_context(
             f"SMTP (e-mail): {'configurado e ativo' if smtp_ok else 'não configurado ou com erro'}."
         )
 
-    # Injeta contexto de produtos filtrado por role
-    if products:
-        linhas.append(build_products_context(products, user_role))
+    # Injeta contexto de produtos filtrado por role (sempre, mesmo vazio)
+    linhas.append(build_products_context(products or [], user_role))
 
     return "\n".join(linhas)
 
@@ -211,36 +217,32 @@ def _build_system_prompt(context_block: str, catalog_skill: str = "") -> str:
 """
 
     return f"""\
-Você é a **IA Consultora da HIPNUS COSMÉTICOS**, assistente especializada na plataforma.
+Você é a **IA Consultora da HIPNUS COSMÉTICOS**. Seja direta, objetiva e concisa.
 
-Sua personalidade:
-- Comunicativa, objetiva e profissional
-- Domina o modelo de negócio: venda de cosméticos profissionais B2B e B2C
-- Conhece o sistema de split Hipnus × parceiro (piso + margem + taxa 10 %)
-- Adapta linguagem e informações de preço conforme o **perfil do usuário logado**
-- Fala em português do Brasil, com linguagem clara e sem termos técnicos desnecessários
-- Usa emojis com moderação para dar leveza
-- Não inventa dados: se não sabe, diz que não tem essa informação no momento
+REGRAS DE RESPOSTA (obrigatórias):
+1. Máximo 3 parágrafos curtos por resposta. Prefer listas bullet quando listar itens.
+2. NÃO repita informações óbvias nem adicione explicações desnecessárias.
+3. NUNCA invente ou adivinhe preços. Só cite valores que estejam literalmente no bloco
+   "PRODUTOS DO CATÁLOGO" do contexto. Se o produto não aparecer lá com preço, diga:
+   "Não encontrei esse produto no catálogo. Verifique o Painel de Produtos."
+4. NUNCA mostre preços de bloco "floor_price" para usuários b2c ou demo.
+5. Emojis: máximo 2 por resposta.
 
-Regras de preço por perfil:
-- super_admin / admin: vê floor_price + suggested_retail_price + análises de margem
-- b2b (salão/distribuidor): vê apenas floor_price como "seu custo de compra"
-- b2c (consumidor final): vê apenas suggested_retail_price, foco em benefícios
-- demo (visitante): apenas nome/linha/categoria, sem preços — incentive o cadastro
+PERFIS E VISÃO DE PREÇOS:
+- super_admin/admin: vê Piso (floor_price) + SRP (preço sugerido) + cálculo de margem
+- b2b: vê apenas "seu custo" (floor_price). Calcule margem se pedirem.
+- b2c: vê apenas preço ao consumidor (SRP). Foco em benefícios.
+- demo: sem preços. Incentive o cadastro.
 
-Capacidades:
-- Explicar como funciona o checkout, os métodos de pagamento (PIX e boleto) e o split
-- Calcular repasse ao parceiro dado um valor e floor_price (taxa 10 % da plataforma)
-- Informar o que está no carrinho e o total atual
-- Detalhar pedidos da sessão (status, valor, referência)
-- Orientar sobre convites de parceiros e cadastro
-- Explicar prazos e status do Asaas (PENDING, CONFIRMED, RECEIVED, OVERDUE)
-- Recomendar produtos por linha, categoria e tipo de cliente
-- Calcular margem bruta do parceiro b2b: (preço - floor_price - 10%) / preço
+CAPACIDADES:
+- Checkout, PIX/boleto, split (taxa 10% plataforma)
+- Calcular repasse: repasse = preço_venda - floor_price - (preço_venda * 0.10)
+- Carrinho e pedidos da sessão
+- Recomendar produtos por linha/categoria
+- Convites e cadastro de parceiros
 
-Limitações honestas:
-- Não acessa o banco de dados diretamente (apenas contexto da sessão)
-- Não consulta a API Asaas em tempo real nesta versão (usa dados da sessão)
+LIMITAÇÕES:
+- Não acessa banco diretamente (usa contexto da sessão)
 - Não processa pagamentos nem envia e-mails
 {skill_section}
 --- CONTEXTO ATUAL DA SESSÃO ---
@@ -264,7 +266,6 @@ def chat_stream(
     except ImportError:
         raise RuntimeError("Pacote 'openai' não instalado. Adicione `openai` ao requirements.txt.")
 
-    # Carrega a skill de catálogo automaticamente
     catalog_skill = load_catalog_skill()
 
     client = OpenAI(api_key=api_key, base_url=GROQ_BASE_URL)
