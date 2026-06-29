@@ -2,14 +2,12 @@
 10_IA_Consultora.py — HIPNUS COSMÉTICOS
 Chat com IA (Chiara) usando Groq (llama-3.3-70b) via streaming.
 
-Fix 2026-06-29 v5:
-  - _md(): adicionado re.DOTALL para capturar **negrito** e *itálico* que
-    contenham quebras de linha (\n). Sem esse flag o .+? não casava \n e o
-    re.sub lançava TypeError ao tentar passar o resultado para st.html().
-  - Adicionado isinstance(text, str) como guarda de segurança.
-  - st.html() é renderizado em iframe isolado que não herda o tema escuro.
-  - Cada bloco HTML agora carrega seu próprio <style> com background
-    explícito para garantir visibilidade independente do tema do Streamlit.
+Fix 2026-06-29 v6:
+  - _chiara_nome e _user_nome: fallback robusto com `or` para evitar None
+    mesmo quando session_state guarda None explicitamente.
+  - CSS da .chiara-initial no topo corrigido: agora usa a mesma classe
+    .chiara-top-avatar .chiara-initial já definida no CSS global.
+  - re.DOTALL mantido na função _md() (fix v5).
 """
 from __future__ import annotations
 import sys, re
@@ -34,21 +32,22 @@ build_sidebar()
 # ── CSS GLOBAL — injetado no documento principal (herda tema) ──────────
 st.markdown("""
 <style>
-/* Avatar da Chiara no topo — renderizado via st.markdown para herdar o tema */
 .chiara-top-avatar {
     display: flex; flex-direction: column;
     align-items: center; padding: 28px 0 20px 0; margin-bottom: 8px;
 }
-.chiara-top-avatar img, .chiara-top-avatar .chiara-initial {
+.chiara-top-avatar img,
+.chiara-top-avatar .chiara-initial {
     width: 140px; height: 140px; border-radius: 50%; object-fit: cover;
     border: 4px solid rgba(185,131,255,0.6);
     box-shadow: 0 0 48px rgba(185,131,255,0.45), 0 0 16px rgba(236,72,153,0.25);
-    display: block; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
 }
 .chiara-top-avatar .chiara-initial {
     background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
-    display: flex; align-items: center; justify-content: center;
     font-size: 3.5rem; font-weight: 800; color: #fff;
+    flex-shrink: 0;
 }
 .chiara-top-name {
     font-size: 1.3rem; font-weight: 800;
@@ -81,8 +80,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── CSS DE BOLHA embutido em cada st.html() ───────────────────────────
-# st.html() roda em iframe sandboxado — não herda o tema nem CSS externo.
-# Cada bloco precisa de seu próprio <style> com cores explícitas.
 _BUBBLE_CSS = """
 <style>
   html, body { margin:0; padding:0; background:#0e0018 !important; }
@@ -121,16 +118,24 @@ _BUBBLE_CSS = """
 </style>
 """
 
-# ── Dados da Chiara e do usuário ───────────────────────────────────
-_chiara_b64   = st.session_state.get("chiara_foto_b64", "")
-_chiara_mime  = st.session_state.get("chiara_foto_mime", "image/jpeg")
-_chiara_nome  = st.session_state.get("chiara_nome", "Chiara")
-_chiara_cargo = st.session_state.get(
-    "chiara_cargo", "Terapeuta Capilar Digital · Embaixadora HIPNUS"
+# ── Dados da Chiara e do usuário — fallback robusto com `or` ─────────────
+# Usa `or` em vez de apenas .get(key, default) porque session_state pode
+# guardar None explicitamente, o que faria .get() retornar None mesmo com default.
+_chiara_b64   = st.session_state.get("chiara_foto_b64") or ""
+_chiara_mime  = st.session_state.get("chiara_foto_mime") or "image/jpeg"
+_chiara_nome  = st.session_state.get("chiara_nome") or "Chiara"
+_chiara_cargo = (
+    st.session_state.get("chiara_cargo")
+    or "Terapeuta Capilar Digital · Embaixadora HIPNUS"
 )
-_user_b64    = st.session_state.get("avatar_b64", "")
-_user_nome   = st.session_state.get("display_name", "") or st.session_state.get("nome", "Você")
-_user_perfil = st.session_state.get("perfil", "demo")
+_user_b64    = st.session_state.get("avatar_b64") or ""
+_user_nome   = (
+    st.session_state.get("display_name")
+    or st.session_state.get("nome")
+    or st.session_state.get("usuario")
+    or "Você"
+)
+_user_perfil = st.session_state.get("perfil") or "demo"
 _badge_colors = {
     "super_admin": "#7c3aed", "admin": "#2563eb",
     "b2b": "#059669", "b2c": "#d97706", "demo": "#6b7280",
@@ -202,6 +207,7 @@ def _render_bubble(role: str, content: str) -> None:
 # ── Avatar da Chiara no topo ───────────────────────────────────────
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
+    initial = (_chiara_nome or "C")[0].upper()
     if _chiara_b64:
         src_topo = _chiara_b64 if _chiara_b64.startswith("data:") else f"data:{_chiara_mime};base64,{_chiara_b64}"
         st.markdown(f"""
@@ -214,7 +220,6 @@ with col_center:
         <hr class="chiara-divider" />
         """, unsafe_allow_html=True)
     else:
-        initial = (_chiara_nome or "C")[0].upper()
         st.markdown(f"""
         <div class="chiara-top-avatar">
             <div class="chiara-initial">{initial}</div>
@@ -244,7 +249,7 @@ _saudacao_padrao = (
     "- **Convites e cadastro** de parceiros\n\n"
     "Como posso te ajudar hoje?"
 )
-_saudacao = st.session_state.get("chiara_saudacao", _saudacao_padrao)
+_saudacao = st.session_state.get("chiara_saudacao") or _saudacao_padrao
 
 if "ia_msgs" not in st.session_state:
     st.session_state["ia_msgs"] = [{"role": "assistant", "content": _saudacao}]

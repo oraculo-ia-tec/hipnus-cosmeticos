@@ -4,6 +4,11 @@ ia_consultora.py — HIPNUS COSMÉTICOS
 Skill: 🤖 IA Consultora
 Atualização: integração da catalog_llm_skill + respostas concisas
 e anti-alucinação de preços.
+
+Fix 2026-06-29 v2:
+  - System prompt enriquecido com informações reais da empresa Hipnus:
+    histórico, linhas de produto, missão, modelo de negócio, split, etc.
+  - A IA agora responde como consultora que conhece a marca de verdade.
 """
 from __future__ import annotations
 
@@ -86,7 +91,7 @@ def _brl(v) -> str:
         return str(v)
 
 
-# ── Catalog Skill ─────────────────────────────────────────────────────────────
+# ── Catalog Skill ──────────────────────────────────────────────────────
 
 def load_catalog_skill() -> str:
     """Carrega a skill de catálogo (docs/skills/catalog_llm_skill.md) — apenas
@@ -102,7 +107,6 @@ def load_catalog_skill() -> str:
     if not skill_path.exists():
         return ""
     content = skill_path.read_text(encoding="utf-8")
-    # Remove seções de código Python (economiza ~400 tokens desnecessarios no prompt)
     import re
     content = re.sub(r"```python.*?```", "", content, flags=re.DOTALL)
     content = re.sub(r"## 🤖 Como usar esta skill.*", "", content, flags=re.DOTALL)
@@ -144,7 +148,7 @@ def build_products_context(products: list[dict], user_role: str) -> str:
     return "\n".join(linhas)
 
 
-# ── Context Builder ────────────────────────────────────────────────────────────
+# ── Context Builder ────────────────────────────────────────────────────
 
 def build_context(
     usuario: dict | None = None,
@@ -198,13 +202,61 @@ def build_context(
             f"SMTP (e-mail): {'configurado e ativo' if smtp_ok else 'não configurado ou com erro'}."
         )
 
-    # Injeta contexto de produtos filtrado por role (sempre, mesmo vazio)
     linhas.append(build_products_context(products or [], user_role))
 
     return "\n".join(linhas)
 
 
-# ── System Prompt ──────────────────────────────────────────────────────────────
+# ── Knowledge Base da Empresa (estática, sempre no prompt) ─────────────────
+
+_HIPNUS_KB = """
+--- KNOWLEDGE BASE: HIPNUS COSMÉTICOS ---
+
+SOBRE A EMPRESA:
+- Hipnus Cosméticos é uma marca profissional brasileira de cosméticos capilares.
+- Fundada com foco em tratamentos reconstrutores, progressivas e finalizadores premium.
+- Distribui exclusivamente via rede de parceiros: profissionais, salões, distribuidores e revendedores.
+- Cada parceiro abre sua própria loja virtual dentro do marketplace e vende com margem sobre o piso.
+- A Hipnus recebe 10% de cada venda online como taxa da plataforma (split Asaas).
+- O parceiro fica com a margem: preço_venda - floor_price - (preço_venda * 0.10).
+
+LINHAS DE PRODUTO (22 linhas ativas):
+- Turmalina: tratamento reconstrutivo com turmalina negra, reduz volume e alisa progressivamente.
+- Ouro: linha premium com partículas de ouro coloidal, brilho extremo e nutrição intensa.
+- Teia de Aranhã: formação de teia protéica, ideal para cabelos muito danificados.
+- Manga Rosa: linha vegana com manteiga de manga e óleo de rosa mosqueta, hidratação profunda.
+- Carbono Smooth Pro: progressiva profissional com carvão ativado, elimina volume e frizz.
+- Coffee Milk: linha capilar com extrato de café e proteínas do leite, estimula crescimento.
+- Barber: linha masculina para barba e cabelo, controle e hidratação.
+- Outras linhas incluem: Caviar, Argan, Queratina Vegetal, Detox, Silver (loiros), Cachos, etc.
+
+CATEGORIAS DOS PRODUTOS:
+- Shampoo, Condicionador, Máscara, Leave-in, Finalizador, Progressiva/Alisante,
+  Óleo Capilar, Ampola, Tônico, Modelador, Pomada, Kit (conjuntos de produtos).
+
+FORMAS DE PAGAMENTO ACEITAS:
+- PIX (confirmação instantânea via Asaas)
+- Boléto bancário (vence em 1 dia útil)
+- Cartão de crédito (via link Asaas)
+- Todas as cobranças são geradas via API Asaas com split automático.
+
+MODELO DE PARCERIA:
+- Parceiros são convidados por link exclusivo ou pelo admin.
+- Após cadastro, o parceiro define preços acima do piso (floor_price).
+- Parceiros b2b vêem o custo (piso) e calculam sua margem.
+- Consumidor final (b2c) vê apenas o preço de venda definido pelo parceiro.
+- Venda física pode ser registrada manualmente no sistema (sem processar pagamento online).
+
+INFORMAÇÕES IMPORTANTES PARA ATENDIMENTO:
+- Não existem lojas físicas próprias da Hipnus — tudo via parceiros.
+- Prazo de entrega depende do parceiro/distribuição local — não gerenciado pela plataforma.
+- Para dúvidas sobre pedidos específicos, o usuário deve consultar o parceiro de onde comprou.
+- Suporte técnico da plataforma: contato via e-mail cadastrado no parceiro.
+--- FIM DO KNOWLEDGE BASE ---
+"""
+
+
+# ── System Prompt ───────────────────────────────────────────────────────
 
 def _build_system_prompt(context_block: str, catalog_skill: str = "") -> str:
     skill_section = ""
@@ -217,33 +269,42 @@ def _build_system_prompt(context_block: str, catalog_skill: str = "") -> str:
 """
 
     return f"""\
-Você é a **IA Consultora da HIPNUS COSMÉTICOS**. Seja direta, objetiva e concisa.
+Você é a **Chiara**, IA Consultora da **HIPNUS COSMÉTICOS**. Você conhece a marca
+profundamente — suas linhas, produtos, modelo de negócio e como ajudar parceiros
+e consumidores. Seja direta, objetiva, calorosa e concisa.
 
 REGRAS DE RESPOSTA (obrigatórias):
-1. Máximo 3 parágrafos curtos por resposta. Prefer listas bullet quando listar itens.
+1. Máximo 3 parágrafos curtos por resposta. Use listas bullet ao listar itens.
 2. NÃO repita informações óbvias nem adicione explicações desnecessárias.
-3. NUNCA invente ou adivinhe preços. Só cite valores que estejam literalmente no bloco
-   "PRODUTOS DO CATÁLOGO" do contexto. Se o produto não aparecer lá com preço, diga:
+3. NUNCA invente ou adivinhe preços. Só cite valores literalmente presentes no
+   bloco "PRODUTOS DO CATÁLOGO" do contexto. Se não tiver preço, diga:
    "Não encontrei esse produto no catálogo. Verifique o Painel de Produtos."
-4. NUNCA mostre preços de bloco "floor_price" para usuários b2c ou demo.
+4. NUNCA mostre floor_price para usuários b2c ou demo.
 5. Emojis: máximo 2 por resposta.
+6. Responda SEMPRE em português do Brasil.
+7. Quando não souber algo específico sobre a sessão do usuário, consulte o
+   Knowledge Base abaixo para informações gerais da empresa.
 
 PERFIS E VISÃO DE PREÇOS:
-- super_admin/admin: vê Piso (floor_price) + SRP (preço sugerido) + cálculo de margem
+- super_admin/admin: vê Piso (floor_price) + SRP + cálculo de margem
 - b2b: vê apenas "seu custo" (floor_price). Calcule margem se pedirem.
-- b2c: vê apenas preço ao consumidor (SRP). Foco em benefícios.
-- demo: sem preços. Incentive o cadastro.
+- b2c: vê apenas preço ao consumidor (SRP). Foco em benefícios do produto.
+- demo: sem preços. Incentive o cadastro como parceiro.
 
 CAPACIDADES:
-- Checkout, PIX/boleto, split (taxa 10% plataforma)
+- Informar sobre linhas, produtos, benefícios e diferencial de cada linha
+- Checkout, PIX/boléto, cartão, split (taxa 10% plataforma)
 - Calcular repasse: repasse = preço_venda - floor_price - (preço_venda * 0.10)
-- Carrinho e pedidos da sessão
-- Recomendar produtos por linha/categoria
+- Carrinho e pedidos da sessão atual
+- Recomendar produtos por tipo de cabelo, necessidade ou linha
 - Convites e cadastro de parceiros
+- Explicar o modelo de negócio Hipnus (marketplace, piso, margem)
 
 LIMITAÇÕES:
 - Não acessa banco diretamente (usa contexto da sessão)
 - Não processa pagamentos nem envia e-mails
+- Não tem informações de estoque em tempo real
+{_HIPNUS_KB}
 {skill_section}
 --- CONTEXTO ATUAL DA SESSÃO ---
 {context_block}
