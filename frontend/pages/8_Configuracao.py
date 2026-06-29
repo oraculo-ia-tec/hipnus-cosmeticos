@@ -1,9 +1,9 @@
 """
 8_Configuracao.py — HIPNUS COSMÉTICOS
 Painel de configurações para admin/super_admin.
-Corrigido 2026-06-29: fotos da Chiara e do usuário agora são persistidas
-no banco SQLite via user_db.salvar_foto_chiara() e user_db.atualizar_perfil().
-Assim as imagens sobrevivem a logout/login e reinicializações do Streamlit.
+Atualizado 2026-06-29 v2:
+  - Nova aba "🎨 Tema" com seletor de cor de acento, modo escuro/claro
+    e preview em tempo real. Preferências salvas via set_app_config.
 """
 from __future__ import annotations
 import sys, base64, hashlib
@@ -56,9 +56,7 @@ def _tab_minha_conta():
     badge_label, badge_color = badge_map.get(perfil, (perfil.upper(), "#6b7280"))
     initial = (display_nm or "U")[0].upper()
 
-    # Avatar card
     if avatar_b64:
-        # Normaliza: aceita tanto base64 puro quanto data-uri completa
         src = avatar_b64 if avatar_b64.startswith("data:") else f"data:image/jpeg;base64,{avatar_b64}"
         st.html(f"""
         <div style="display:flex;flex-direction:column;align-items:center;padding:24px 0 16px;">
@@ -84,8 +82,6 @@ def _tab_minha_conta():
         </div>""")
 
     st.divider()
-
-    # Upload avatar do usuário
     st.markdown("##### 📷 Foto de perfil")
     foto_up = st.file_uploader(
         "Enviar nova foto (JPG/PNG, máx 2 MB)",
@@ -98,10 +94,8 @@ def _tab_minha_conta():
         if novo_hash != st.session_state.get("_avatar_upload_hash"):
             mime  = foto_up.type or "image/jpeg"
             b64   = base64.b64encode(foto_bytes).decode()
-            # Persiste no banco SE for parceiro com e-mail
             if DB_OK and email:
                 atualizar_perfil(email=email, avatar_b64=b64)
-            # Atualiza session_state
             st.session_state["avatar_b64"]         = b64
             st.session_state["_avatar_upload_hash"] = novo_hash
             st.session_state["_avatar_loaded"]      = True
@@ -109,8 +103,6 @@ def _tab_minha_conta():
             st.rerun()
 
     st.divider()
-
-    # Editar dados
     st.markdown("##### ✏️ Editar dados")
     with st.form("form_conta"):
         novo_nome    = st.text_input("Nome completo",   value=nome)
@@ -130,8 +122,6 @@ def _tab_minha_conta():
             st.rerun()
 
     st.divider()
-
-    # Trocar senha
     st.markdown("##### 🔒 Trocar senha")
     with st.form("form_senha"):
         senha_atual  = st.text_input("Senha atual",         type="password")
@@ -155,8 +145,6 @@ def _tab_minha_conta():
                 st.info("Troca de senha disponível apenas para contas cadastradas no banco.")
 
     st.divider()
-
-    # Info somente leitura
     with st.container():
         c1, c2, c3 = st.columns(3)
         c1.metric("Perfil de acesso", perfil.replace("_", " ").upper())
@@ -170,7 +158,6 @@ def _tab_minha_conta():
 def _tab_ia_consultora():
     st.markdown("### 🤖 Configurar IA Consultora (Chiara)")
 
-    # Carrega do banco se ainda não carregado
     if not st.session_state.get("_chiara_loaded"):
         try:
             cfg = carregar_config_chiara()
@@ -183,12 +170,11 @@ def _tab_ia_consultora():
             pass
         st.session_state["_chiara_loaded"] = True
 
-    _chiara_b64  = st.session_state.get("chiara_foto_b64", "")
-    _chiara_mime = st.session_state.get("chiara_foto_mime", "image/jpeg")
-    _chiara_nome = st.session_state.get("chiara_nome", "Chiara")
+    _chiara_b64   = st.session_state.get("chiara_foto_b64", "")
+    _chiara_mime  = st.session_state.get("chiara_foto_mime", "image/jpeg")
+    _chiara_nome  = st.session_state.get("chiara_nome", "Chiara")
     _chiara_cargo = st.session_state.get("chiara_cargo", "Terapeuta Capilar Digital · Embaixadora HIPNUS")
 
-    # Preview da foto atual
     col_prev, col_up = st.columns([1, 2])
     with col_prev:
         if _chiara_b64:
@@ -226,10 +212,8 @@ def _tab_ia_consultora():
             if novo_hash != st.session_state.get("chiara_foto_hash"):
                 mime = foto_upload.type or "image/jpeg"
                 b64  = base64.b64encode(foto_bytes).decode()
-                # ── PERSISTE NO BANCO ──────────────────────────────────────
                 if DB_OK:
                     salvar_foto_chiara(b64, mime)
-                # ── Atualiza session_state ─────────────────────────────────
                 st.session_state["chiara_foto_b64"]  = b64
                 st.session_state["chiara_foto_mime"] = mime
                 st.session_state["chiara_foto_hash"] = novo_hash
@@ -239,8 +223,6 @@ def _tab_ia_consultora():
                 st.success("✅ Foto já carregada.")
 
     st.divider()
-
-    # Nome e cargo
     with st.form("form_chiara_nome"):
         novo_nome  = st.text_input("Nome da IA",      value=_chiara_nome,  placeholder="Chiara")
         novo_cargo = st.text_input("Cargo / descrição", value=_chiara_cargo,
@@ -254,8 +236,6 @@ def _tab_ia_consultora():
             st.rerun()
 
     st.divider()
-
-    # Saudação
     st.markdown("**💬 Saudação inicial personalizada**")
     saudacao_atual = st.session_state.get("chiara_saudacao", "")
     nova_saudacao  = st.text_area(
@@ -271,6 +251,187 @@ def _tab_ia_consultora():
         st.session_state["chiara_saudacao"] = nova_saudacao
         st.success("✅ Saudação salva!")
         st.rerun()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ABA: TEMA DA PLATAFORMA
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Paleta de acentos disponíveis
+_TEMAS = {
+    "🟣 Violeta (padrão)": {
+        "accent":       "#7c3aed",
+        "accent_light": "#b983ff",
+        "accent_dark":  "#5b21b6",
+        "glow":         "rgba(124,58,237,.55)",
+        "sidebar_bg":   "linear-gradient(180deg,#0a0015 0%,#110028 55%,#0a0015 100%)",
+    },
+    "💙 Azul Royal": {
+        "accent":       "#1d4ed8",
+        "accent_light": "#60a5fa",
+        "accent_dark":  "#1e3a8a",
+        "glow":         "rgba(29,78,216,.55)",
+        "sidebar_bg":   "linear-gradient(180deg,#00071a 0%,#001233 55%,#00071a 100%)",
+    },
+    "💚 Esmeralda": {
+        "accent":       "#059669",
+        "accent_light": "#34d399",
+        "accent_dark":  "#064e3b",
+        "glow":         "rgba(5,150,105,.55)",
+        "sidebar_bg":   "linear-gradient(180deg,#001a10 0%,#002a18 55%,#001a10 100%)",
+    },
+    "🌸 Rosa Neon": {
+        "accent":       "#db2777",
+        "accent_light": "#f9a8d4",
+        "accent_dark":  "#9d174d",
+        "glow":         "rgba(219,39,119,.55)",
+        "sidebar_bg":   "linear-gradient(180deg,#1a0010 0%,#2d001e 55%,#1a0010 100%)",
+    },
+    "🟠 Âmbar": {
+        "accent":       "#d97706",
+        "accent_light": "#fbbf24",
+        "accent_dark":  "#92400e",
+        "glow":         "rgba(217,119,6,.55)",
+        "sidebar_bg":   "linear-gradient(180deg,#1a0e00 0%,#2d1800 55%,#1a0e00 100%)",
+    },
+    "🩵 Ciano Tech": {
+        "accent":       "#0891b2",
+        "accent_light": "#67e8f9",
+        "accent_dark":  "#164e63",
+        "glow":         "rgba(8,145,178,.55)",
+        "sidebar_bg":   "linear-gradient(180deg,#001218 0%,#001f29 55%,#001218 100%)",
+    },
+}
+
+
+def _tab_tema():
+    st.markdown("### 🎨 Tema da Plataforma")
+    st.caption("Personalize a cor de acento da sidebar e da interface. A escolha é salva e aplicada a todos os admins.")
+
+    # Carrega tema salvo
+    tema_salvo = ""
+    if DB_OK:
+        try:
+            tema_salvo = get_app_config("tema_acento") or ""
+        except Exception:
+            tema_salvo = ""
+    tema_salvo = tema_salvo or "🟣 Violeta (padrão)"
+
+    opcoes = list(_TEMAS.keys())
+    idx_atual = opcoes.index(tema_salvo) if tema_salvo in opcoes else 0
+
+    st.markdown("#### Escolha o acento de cor")
+    tema_escolhido = st.radio(
+        "Cor de acento",
+        opcoes,
+        index=idx_atual,
+        key="radio_tema_acento",
+        label_visibility="collapsed",
+        horizontal=False,
+    )
+
+    cores = _TEMAS[tema_escolhido]
+
+    # ── Preview em tempo real ──────────────────────────────────────────
+    st.markdown("#### Preview")
+    st.html(f"""
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=Syne:wght@800&display=swap');
+    </style>
+    <div style="
+      background: {cores['sidebar_bg']};
+      border: 1px solid {cores['accent']}44;
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 280px;
+      box-shadow: 0 0 32px {cores['glow']};
+      font-family: 'Inter', sans-serif;
+    ">
+      <!-- Logo mock -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="
+          width:36px;height:36px;border-radius:10px;
+          background:linear-gradient(135deg,{cores['accent']},{cores['accent_dark']});
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff;
+          box-shadow:0 0 14px {cores['glow']};
+        ">H</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;
+            background:linear-gradient(90deg,#fff 20%,{cores['accent_light']} 100%);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            background-clip:text;">HIPNUS</div>
+          <div style="font-size:.5rem;color:{cores['accent_light']}66;letter-spacing:3px;
+            text-transform:uppercase;">Cosméticos</div>
+        </div>
+      </div>
+      <!-- Nav items mock -->
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <div style="
+          padding:8px 12px;border-radius:9px;
+          background:linear-gradient(135deg,{cores['accent']}33,{cores['accent_light']}14);
+          border:1px solid {cores['accent']}44;
+          color:#fff;font-size:.82rem;font-weight:600;
+        ">🤖  IA Consultora</div>
+        <div style="padding:8px 12px;border-radius:9px;color:rgba(255,255,255,.6);font-size:.82rem;">🏠  Home</div>
+        <div style="padding:8px 12px;border-radius:9px;color:rgba(255,255,255,.6);font-size:.82rem;">📊  Dashboard</div>
+        <div style="padding:8px 12px;border-radius:9px;color:rgba(255,255,255,.6);font-size:.82rem;">🛍️  Catálogo</div>
+      </div>
+      <!-- Divider -->
+      <div style="height:1px;margin:14px 0;
+        background:linear-gradient(90deg,transparent,{cores['accent_light']}44,transparent);"></div>
+      <!-- Botão SAIR mock -->
+      <div style="
+        padding:9px 14px;border-radius:11px;text-align:center;
+        background:linear-gradient(135deg,rgba(127,29,29,.55),rgba(153,27,27,.40));
+        border:1px solid rgba(239,68,68,.40);
+        color:#fca5a5;font-size:.82rem;font-weight:600;letter-spacing:.4px;
+      ">⬡  Sair da plataforma</div>
+    </div>
+    """)
+
+    st.divider()
+
+    # ── Informações técnicas das cores ────────────────────────────────
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.html(f"""
+        <div style="text-align:center;padding:12px;border-radius:10px;
+          background:{cores['accent']};box-shadow:0 0 16px {cores['glow']};">
+          <div style="color:#fff;font-weight:700;font-size:.75rem;">ACENTO</div>
+          <div style="color:#fff;font-size:.7rem;opacity:.8;">{cores['accent']}</div>
+        </div>""")
+    with c2:
+        st.html(f"""
+        <div style="text-align:center;padding:12px;border-radius:10px;
+          background:{cores['accent_light']};">
+          <div style="color:#000;font-weight:700;font-size:.75rem;">CLARO</div>
+          <div style="color:#000;font-size:.7rem;opacity:.7;">{cores['accent_light']}</div>
+        </div>""")
+    with c3:
+        st.html(f"""
+        <div style="text-align:center;padding:12px;border-radius:10px;
+          background:{cores['accent_dark']};">
+          <div style="color:#fff;font-weight:700;font-size:.75rem;">ESCURO</div>
+          <div style="color:#fff;font-size:.7rem;opacity:.8;">{cores['accent_dark']}</div>
+        </div>""")
+
+    st.markdown("")
+
+    # ── Botão salvar ──────────────────────────────────────────────────
+    col_btn, _ = st.columns([1, 2])
+    with col_btn:
+        if st.button("💾 Aplicar tema", key="btn_salvar_tema", use_container_width=True):
+            if DB_OK:
+                try:
+                    set_app_config("tema_acento", tema_escolhido)
+                    st.success(f"✅ Tema **{tema_escolhido}** salvo com sucesso!")
+                    st.info("♻️ Recarregue a página para ver o novo tema aplicado na sidebar.")
+                except Exception as e:
+                    st.error(f"❌ Erro ao salvar: {e}")
+            else:
+                st.warning("⚠️ Banco indisponível — o tema não pôde ser persistido.")
+                st.session_state["tema_acento_preview"] = tema_escolhido
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -330,17 +491,18 @@ st.title("⚙️ Configurações")
 perfil_atual = st.session_state.get("perfil", "demo")
 
 if perfil_atual in {"super_admin", "admin"}:
-    aba_conta, aba_ia, aba_groq, aba_sistema = st.tabs([
+    aba_conta, aba_ia, aba_tema, aba_groq, aba_sistema = st.tabs([
         "👤 Minha Conta",
         "🤖 IA Consultora",
+        "🎨 Tema",
         "🔑 Groq API",
         "🗄️ Sistema",
     ])
     with aba_conta:   _tab_minha_conta()
     with aba_ia:      _tab_ia_consultora()
+    with aba_tema:    _tab_tema()
     with aba_groq:    _tab_groq()
     with aba_sistema: _tab_sistema()
 else:
-    # b2b / b2c veem apenas a aba de conta
     st.markdown("### 👤 Minha Conta")
     _tab_minha_conta()

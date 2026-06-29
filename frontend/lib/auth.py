@@ -1,11 +1,9 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-Guarda de autenticação + Sidebar Pro Redesign 2026.
-
-Fix 2026-06-29 v3:
-  - Card do usuário na sidebar exibe <img> real quando avatar_b64 existe.
-  - Persistência de imagens: sem flags bloqueantes (_avatar_loaded removido).
+Fix 2026-06-29 v4:
+  - Botão SAIR redesenhado: ícone de porta, vermelho elegante com glow,
+    seletor CSS restrito ao key único para não vazar nos page_links.
 """
 from __future__ import annotations
 
@@ -338,28 +336,50 @@ def _debug_sidebar_state(perfil: str) -> None:
             st.json(dict(st.session_state))
 
 
+# ── CSS do botão SAIR ────────────────────────────────────────────────
+# Seletor restrito ao key único (sb_logout_btn) para não vazar em
+# outros botões da sidebar.
 _SAIR_CSS = """
 <style>
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button p {
-    background-color: rgba(185, 28, 28, 0.25) !important;
-    background-image: none !important;
+/* Botão SAIR — estilo destrutivo refinado */
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[kind="secondary"][data-testid="sb_logout_btn"]) > button,
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[kind="secondary"][data-testid="sb_logout_btn"]) > button > div,
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[kind="secondary"][data-testid="sb_logout_btn"]) > button p {
+    background: linear-gradient(135deg,
+      rgba(127,29,29,.55) 0%,
+      rgba(153,27,27,.40) 100%) !important;
     color: #fca5a5 !important;
-    border: 1.5px solid rgba(239, 68, 68, 0.45) !important;
-    border-radius: 11px !important;
-    font-weight: 700 !important;
-    font-size: 0.86rem !important;
-    min-height: 44px !important;
-    transition: all 0.18s ease !important;
+    border: 1px solid rgba(239,68,68,.40) !important;
+    border-radius: 12px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    letter-spacing: .4px !important;
+    min-height: 42px !important;
+    transition: all .2s cubic-bezier(.16,1,.3,1) !important;
+    box-shadow: 0 2px 10px rgba(239,68,68,.15),
+                inset 0 1px 0 rgba(255,255,255,.06) !important;
 }
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover > div,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p {
-    background-color: rgba(220, 38, 38, 0.40) !important;
-    color: #ffffff !important;
-    border-color: rgba(239, 68, 68, 0.75) !important;
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.30) !important;
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[kind="secondary"][data-testid="sb_logout_btn"]) > button:hover,
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[kind="secondary"][data-testid="sb_logout_btn"]) > button:hover p {
+    background: linear-gradient(135deg,
+      rgba(185,28,28,.75) 0%,
+      rgba(220,38,38,.60) 100%) !important;
+    color: #fff !important;
+    border-color: rgba(239,68,68,.70) !important;
+    box-shadow: 0 0 22px rgba(239,68,68,.35),
+                0 4px 14px rgba(239,68,68,.20) !important;
+    transform: translateY(-1px) !important;
+}
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[kind="secondary"][data-testid="sb_logout_btn"]) > button:active {
+    transform: translateY(0px) !important;
+    box-shadow: 0 0 10px rgba(239,68,68,.25) !important;
 }
 </style>
 """
@@ -515,10 +535,15 @@ def build_sidebar(
         except Exception:
             pass
 
-    # Divider + botão SAIR
+    # Divider + botão SAIR redesenhado
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
-        if st.button("🚨  SAIR", key="sb_logout_btn", use_container_width=True):
+        if st.button(
+            "⬡  Sair da plataforma",
+            key="sb_logout_btn",
+            use_container_width=True,
+            help="Encerrar sessão e voltar ao login",
+        ):
             logout()
 
 
