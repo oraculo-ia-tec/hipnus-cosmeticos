@@ -2,6 +2,11 @@
 auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação + Sidebar Pro Redesign 2026.
+
+Correção 2026-06-29: ao restaurar a sessão após login, carrega automaticamente
+  - avatar do usuário (parceiros) do banco  → session_state["avatar_b64"]
+  - foto/nome/cargo da Chiara do banco      → session_state["chiara_*"]
+Isso garante que as imagens persistem mesmo após o usuário sair e voltar.
 """
 from __future__ import annotations
 
@@ -75,6 +80,36 @@ def _normalize_role(role: str | None) -> str:
     return aliases.get(role, role)
 
 
+def _carregar_chiara_no_session() -> None:
+    """
+    Lê nome, cargo e foto da Chiara do banco e injeta no session_state.
+    Chamado uma única vez por sessão (guarda flag _chiara_loaded).
+    """
+    if st.session_state.get("_chiara_loaded"):
+        return
+    try:
+        import sys
+        _root = Path(__file__).resolve().parents[2]
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        from lib.user_db import carregar_config_chiara
+        cfg = carregar_config_chiara()
+        # Só sobrescreve se o banco tiver valor — preserva defaults se banco vazio
+        if cfg.get("nome"):
+            st.session_state["chiara_nome"]      = cfg["nome"]
+        if cfg.get("cargo"):
+            st.session_state["chiara_cargo"]     = cfg["cargo"]
+        if cfg.get("foto_b64"):
+            st.session_state["chiara_foto_b64"]  = cfg["foto_b64"]
+            st.session_state["chiara_foto_mime"] = cfg["foto_mime"]
+        if cfg.get("saudacao"):
+            st.session_state["chiara_saudacao"]  = cfg["saudacao"]
+    except Exception:
+        pass
+    finally:
+        st.session_state["_chiara_loaded"] = True
+
+
 def _gravar_sessao(
     nome: str, username: str, role: str,
     display_name: str, email: str, token: str | None,
@@ -93,7 +128,36 @@ def _gravar_sessao(
         "avatar_b64":        avatar_b64,
         "session_start":     time.time(),
         "_jwt_dialog_shown": False,
+        # Força recarga das fotos na próxima página
+        "_chiara_loaded":    False,
+        "_avatar_loaded":    False,
     })
+
+
+def _restaurar_avatar_usuario(email: str) -> None:
+    """
+    Recarrega avatar_b64 do parceiro no banco, caso ainda não esteja na sessão.
+    Útil quando o usuário faz login e o avatar estava apenas no banco.
+    """
+    if st.session_state.get("_avatar_loaded"):
+        return
+    if st.session_state.get("avatar_b64"):
+        # Já tem avatar na sessão (veio do login)
+        st.session_state["_avatar_loaded"] = True
+        return
+    try:
+        import sys
+        _root = Path(__file__).resolve().parents[2]
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        from lib.user_db import buscar_por_email
+        parceiro = buscar_por_email(email)
+        if parceiro and parceiro.get("avatar_b64"):
+            st.session_state["avatar_b64"] = parceiro["avatar_b64"]
+    except Exception:
+        pass
+    finally:
+        st.session_state["_avatar_loaded"] = True
 
 
 def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
@@ -185,6 +249,12 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         logout()
     if not st.session_state.get("autenticado"):
         st.switch_page(_LOGIN_PAGE)
+
+    # ── Restaura fotos persistidas no banco (executa 1x por sessão) ──
+    email = st.session_state.get("email", "")
+    _restaurar_avatar_usuario(email)
+    _carregar_chiara_no_session()
+
     usuario = {
         "login":        st.session_state.get("usuario", ""),
         "perfil":       _normalize_role(st.session_state.get("perfil", "demo")),
@@ -207,6 +277,9 @@ def logout() -> None:
         "autenticado", "usuario", "perfil", "nome",
         "display_name", "email", "token", "via_api", "avatar_b64",
         "session_start", "_jwt_dialog_shown",
+        "_chiara_loaded", "_avatar_loaded",
+        "chiara_nome", "chiara_cargo", "chiara_foto_b64",
+        "chiara_foto_mime", "chiara_foto_hash", "chiara_saudacao",
     ]:
         st.session_state.pop(key, None)
     st.query_params.clear()
@@ -268,13 +341,6 @@ def _debug_sidebar_state(perfil: str) -> None:
             st.json(dict(st.session_state))
 
 
-# ─── CSS do botão SAIR ────────────────────────────────────────────────
-# Injetado via st.markdown() no <head> do documento — máxima precedência.
-# O tema light do Streamlit gera regras com alta especificidade que
-# sobrescrevem qualquer CSS injetado via st.sidebar.html().
-# A única forma confiável de vencer é usar st.markdown com
-# unsafe_allow_html=True, que coloca o <style> no <head> após as regras
-# do tema, ganhando por ordem de cascata (mesmo seletor, último vence).
 _SAIR_CSS = """
 <style>
 /* HIPNUS — Botão SAIR na sidebar */
@@ -315,10 +381,7 @@ section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus p {
 
 
 def _inject_sidebar_css() -> None:
-    # 1. CSS do botão SAIR — injetado no <head> via st.markdown (máxima precedência)
     st.markdown(_SAIR_CSS, unsafe_allow_html=True)
-
-    # 2. CSS geral da sidebar — injetado via st.sidebar.html
     st.sidebar.html("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');

@@ -7,6 +7,9 @@ Tabela `parceiros`:
   id, username, nome, email, telefone, empresa, cidade, estado,
   role, senha_hash, avatar_b64 (TEXT base64), bio, created_at, updated_at
 
+Tabela `app_configs`  (chave-valor global — usada para Chiara e config IA)
+  id, chave, valor, updated_at
+
 Funciona standalone (sem FastAPI).
 """
 from __future__ import annotations
@@ -46,6 +49,15 @@ CREATE TABLE IF NOT EXISTS parceiros (
 )
 """
 
+CREATE_APP_CONFIGS = """
+CREATE TABLE IF NOT EXISTS app_configs (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    chave      VARCHAR(120) NOT NULL UNIQUE,
+    valor      TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+"""
+
 
 def _hash_senha(senha: str) -> str:
     return hashlib.sha256(senha.encode("utf-8")).hexdigest()
@@ -54,6 +66,7 @@ def _hash_senha(senha: str) -> str:
 def _ensure_table(db) -> None:
     try:
         db.execute(text(CREATE_PARCEIROS))
+        db.execute(text(CREATE_APP_CONFIGS))
         db.commit()
     except Exception:
         try:
@@ -68,11 +81,86 @@ def _ensure_column(db, column: str, col_type: str = "VARCHAR(60)") -> None:
         db.execute(text(f"ALTER TABLE parceiros ADD COLUMN {column} {col_type}"))
         db.commit()
     except Exception:
-        # Coluna já existe ou erro ignorável
         try:
             db.rollback()
         except Exception:
             pass
+
+
+# ─── app_configs: chave-valor global ─────────────────────────────────────────
+def set_app_config(chave: str, valor: str) -> bool:
+    """Grava ou atualiza uma config global pelo nome da chave."""
+    db, err = get_db_session()
+    if not db:
+        return False
+    try:
+        _ensure_table(db)
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        db.execute(text("""
+            INSERT INTO app_configs (chave, valor, updated_at)
+            VALUES (:chave, :valor, :now)
+            ON CONFLICT(chave) DO UPDATE SET valor = :valor, updated_at = :now
+        """), {"chave": chave, "valor": valor, "now": now})
+        db.commit()
+        return True
+    except Exception:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        db.close()
+
+
+def get_app_config(chave: str) -> str | None:
+    """Recupera uma config global pelo nome da chave."""
+    db, _ = get_db_session()
+    if not db:
+        return None
+    try:
+        _ensure_table(db)
+        row = db.execute(
+            text("SELECT valor FROM app_configs WHERE chave = :chave"),
+            {"chave": chave},
+        ).fetchone()
+        return row[0] if row else None
+    except Exception:
+        return None
+    finally:
+        db.close()
+
+
+# ─── Foto da Chiara (IA Consultora) ──────────────────────────────────────────
+def salvar_foto_chiara(b64: str, mime: str = "image/jpeg") -> bool:
+    """Persiste foto e mime-type da Chiara no banco."""
+    ok1 = set_app_config("chiara_foto_b64",  b64)
+    ok2 = set_app_config("chiara_foto_mime", mime)
+    return ok1 and ok2
+
+
+def carregar_foto_chiara() -> tuple[str, str]:
+    """Retorna (b64, mime) da foto da Chiara ou ("", "image/jpeg") se não houver."""
+    b64  = get_app_config("chiara_foto_b64")  or ""
+    mime = get_app_config("chiara_foto_mime") or "image/jpeg"
+    return b64, mime
+
+
+def salvar_nome_chiara(nome: str, cargo: str = "") -> bool:
+    ok1 = set_app_config("chiara_nome",  nome)
+    ok2 = set_app_config("chiara_cargo", cargo) if cargo else True
+    return ok1 and ok2
+
+
+def carregar_config_chiara() -> dict:
+    """Retorna dict com nome, cargo, foto_b64, foto_mime da Chiara."""
+    return {
+        "nome":      get_app_config("chiara_nome")      or "Chiara",
+        "cargo":     get_app_config("chiara_cargo")     or "Terapeuta Capilar Digital · Embaixadora HIPNUS",
+        "foto_b64":  get_app_config("chiara_foto_b64")  or "",
+        "foto_mime": get_app_config("chiara_foto_mime") or "image/jpeg",
+        "saudacao":  get_app_config("chiara_saudacao")  or "",
+    }
 
 
 # ─── Listar parceiros ─────────────────────────────────────────────────────────────
@@ -159,9 +247,6 @@ def cadastrar_parceiro(
     estado: str = "",
     **kwargs,
 ) -> None:
-    """Alias de criar_parceiro() para compatibilidade com as páginas.
-    Lança Exception em caso de erro para que o form exiba st.error().
-    """
     ok, msg = criar_parceiro(
         nome=nome, email=email, senha=senha,
         role=perfil, cidade=cidade, estado=estado, **kwargs,
@@ -172,7 +257,6 @@ def cadastrar_parceiro(
 
 # ─── Deletar parceiro ───────────────────────────────────────────────────────────────
 def deletar_parceiro(email: str) -> None:
-    """Remove parceiro pelo e-mail. Lança Exception em caso de erro."""
     db, err = get_db_session()
     if not db:
         raise RuntimeError(f"Banco indisponível: {err}")
@@ -210,7 +294,6 @@ def buscar_por_email(email: str) -> dict | None:
 
 # ─── Autenticar parceiro ──────────────────────────────────────────────────────────────────
 def autenticar_parceiro(email: str, senha: str) -> dict | None:
-    """Valida e-mail + senha. Retorna dados do parceiro ou None."""
     parceiro = buscar_por_email(email)
     if not parceiro:
         return None
@@ -265,15 +348,6 @@ def atualizar_cpf_phone(
     cpf_cnpj: str | None = None,
     phone: str | None = None,
 ) -> tuple[bool, str]:
-    """
-    Persiste CPF/CNPJ e telefone no registro do parceiro após confirmação no checkout.
-
-    - Garante que as colunas `cpf_cnpj` e `phone` existem na tabela (cria via
-      ALTER TABLE se necessário — seguro para SQLite).
-    - Nunca sobrescreve campos de login (senha_hash, role, email) — apenas
-      enriquece dados complementares do perfil.
-    - Silencioso em caso de banco indisponível (não bloqueia o checkout).
-    """
     if not email:
         return False, "E-mail ausente."
     db, err = get_db_session()
@@ -281,10 +355,8 @@ def atualizar_cpf_phone(
         return False, f"Banco indisponível: {err}"
     try:
         _ensure_table(db)
-        # Garante que as colunas extras existem (idempotente)
         _ensure_column(db, "cpf_cnpj", "VARCHAR(14)")
         _ensure_column(db, "phone",    "VARCHAR(30)")
-
         sets, params = [], {"email": email.lower().strip()}
         if cpf_cnpj:
             sets.append("cpf_cnpj = :cpf_cnpj")
