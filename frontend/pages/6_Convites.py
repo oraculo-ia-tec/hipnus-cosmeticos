@@ -2,6 +2,7 @@
 6_Convites.py — HIPNUS COSMÉTICOS
 """
 from __future__ import annotations
+import os
 import sys
 from pathlib import Path
 
@@ -41,16 +42,35 @@ ROLE_OPTIONS  = [r[0] for r in ROLES]
 ROLE_LABELS   = {r[0]: r[1] for r in ROLES}
 ROLE_DESC     = {r[0]: r[2] for r in ROLES}
 
-# ── URL base da aplicação ──────────────────────────────────────────────────
-# A página que recebe o token é 7_Cadastro_Parceiro.py
-# Streamlit Cloud roteia multi-page com URL: /Cadastro_Parceiro
-# FIX: era uma URL externa fixa que não existia
-_APP_BASE = (
-    st.secrets.get("APP_BASE_URL", "")
-    or "https://hipnus-cosmeticos.streamlit.app"
-).rstrip("/")
-_SIGNUP_PATH = "/Cadastro_Parceiro"   # Streamlit M-P router: /NomeDaPagina
-_DEFAULT_SIGNUP_URL = f"{_APP_BASE}{_SIGNUP_PATH}"
+# ── URL base: prioridade st.secrets > env var > fallback hardcoded ────────────────
+def _get_base_url() -> str:
+    """Lê APP_BASE_URL com múltiplos fallbacks."""
+    # 1. st.secrets (Streamlit Cloud — fonte principal)
+    try:
+        val = st.secrets.get("APP_BASE_URL", "")
+        if val:
+            return str(val).rstrip("/")
+    except Exception:
+        pass
+    # 2. Env var injetada pelo portal pages/7_Convites.py
+    val = os.getenv("_HIPNUS_SIGNUP_BASE", "")
+    if val:
+        # Já vem com o path completo — retorna direto
+        return val.rstrip("/")
+    # 3. Env var genérica
+    val = os.getenv("APP_BASE_URL", "")
+    if val:
+        return val.rstrip("/")
+    # 4. Fallback: Streamlit Cloud
+    return "https://hipnus-cosmeticos.streamlit.app"
+
+_base         = _get_base_url()
+# Se _base já termina com /Cadastro_Parceiro (injetado pelo portal), usa direto
+# Caso contrário, concatena o path da página
+if _base.endswith("/Cadastro_Parceiro"):
+    _DEFAULT_SIGNUP_URL = _base
+else:
+    _DEFAULT_SIGNUP_URL = f"{_base}/Cadastro_Parceiro"
 
 tab_novo, tab_email, tab_lista = st.tabs([
     "➕ Novo Convite",
@@ -78,9 +98,9 @@ with tab_novo:
                 token = criar_invite_db(email=email, role=role, dias=int(dias))
                 link  = f"{_DEFAULT_SIGNUP_URL}?token={token}"
                 st.success(f"✅ Convite gerado para **{email}** · perfil **{ROLE_LABELS[role]}**")
-                st.markdown("**Link de cadastro:**")
+                st.markdown("**Link de cadastro (copie e envie manualmente):**")
                 st.code(link, language="text")
-                st.caption("Copie o link acima e envie manualmente, ou use a aba '📧 Enviar por E-mail'.")
+                st.caption("⚠️ Teste o link abrindo em uma aba anônima antes de enviar.")
             except Exception as exc:
                 st.error(f"Erro ao criar convite: {exc}")
 
@@ -97,35 +117,32 @@ with tab_email:
         st.success(f"✅ SMTP pronto · Remetente: `{smtp['from_email']}`")
 
     st.markdown("### Enviar convite de cadastro por e-mail")
-    st.caption("Gera um token único, monta o link de cadastro e dispara o e-mail com template visual.")
 
-    # Mostra a URL que será usada para o admin conferir
+    # Mostra a URL que será usada — o admin pode conferir antes de enviar
     st.html(
         f'<div style="background:rgba(124,58,237,.07);border:1px solid rgba(168,85,247,.25);'
         f'border-radius:10px;padding:10px 16px;font-size:.78rem;margin-bottom:14px;">'
-        f'🔗 URL base de cadastro: '
-        f'<code style="color:#e879f9;">{_DEFAULT_SIGNUP_URL}</code>'
+        f'🔗 URL base de cadastro detectada: '
+        f'<code style="color:#7c3aed;font-weight:700;">{_DEFAULT_SIGNUP_URL}</code>'
         f'</div>'
     )
 
     with st.form("form_convite_email"):
         email_dest = st.text_input("📧 E-mail do convidado", placeholder="parceiro@email.com")
-
-        role_dest = st.selectbox(
+        role_dest  = st.selectbox(
             "👥 Tipo de usuário convidado",
             options=ROLE_OPTIONS,
             format_func=lambda v: ROLE_LABELS[v],
             key="role_email",
         )
         st.caption(ROLE_DESC.get(role_dest, ""))
-
         dias_dest   = st.number_input(
             "Validade (dias)", min_value=1, max_value=365, value=30, key="dias_email"
         )
         signup_base = st.text_input(
             "🔗 URL base de cadastro",
             value=_DEFAULT_SIGNUP_URL,
-            help="O token será adicionado como parâmetro ?token=...",
+            help="O token será adicionado automaticamente como ?token=...",
         )
         enviar = st.form_submit_button(
             "📤 Gerar token e enviar e-mail",
@@ -155,10 +172,11 @@ with tab_email:
                         f"✅ Convite enviado para **{email_dest}** "
                         f"· perfil **{ROLE_LABELS[role_dest]}**!"
                     )
-                    st.info(f"🔗 Link gerado: `{signup_url}`")
+                    st.info(f"🔗 Link enviado: `{signup_url}`")
+                    st.caption("⚠️ Teste o link em uma aba anônima para confirmar que o formulário abre.")
                 else:
                     st.error(f"❌ Falha ao enviar e-mail: {msg}")
-                    st.markdown("**Copie o link abaixo e envie manualmente:**")
+                    st.markdown("**Copie e envie manualmente:**")
                     st.code(signup_url, language="text")
             except Exception as exc:
                 st.error(f"Erro: {exc}")
@@ -179,24 +197,22 @@ with tab_lista:
         )
     else:
         for inv in invites:
-            usado     = inv.get("used", False)
-            email_inv = inv.get("email", "")
-            token_inv = inv.get("token", "")
-            expires   = str(inv.get("expires_at") or "")[:10]
-            role_inv  = inv.get("role", "")
-            role_label_inv = ROLE_LABELS.get(role_inv, role_inv)
-            link_inv  = f"{_DEFAULT_SIGNUP_URL}?token={token_inv}" if token_inv else ""
+            usado      = inv.get("used", False)
+            email_inv  = inv.get("email", "")
+            token_inv  = inv.get("token", "")
+            expires    = str(inv.get("expires_at") or "")[:10]
+            role_inv   = inv.get("role", "")
+            role_lbl   = ROLE_LABELS.get(role_inv, role_inv)
+            link_inv   = f"{_DEFAULT_SIGNUP_URL}?token={token_inv}" if token_inv else ""
+            badge      = "✅ Usado" if usado else "⏳ Ativo"
 
             c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
             with c1:
-                badge = "✅ Usado" if usado else "⏳ Ativo"
-                st.markdown(
-                    f"**{email_inv}** · {role_label_inv} · Expira: {expires} · {badge}"
-                )
+                st.markdown(f"**{email_inv}** · {role_lbl} · Expira: {expires} · {badge}")
                 if link_inv and not usado:
                     st.caption(f"🔗 `{link_inv}`")
             with c2:
-                if not usado and st.button("📋 Copiar link", key=f"copy_{token_inv}"):
+                if not usado and st.button("📋 Link", key=f"copy_{token_inv}"):
                     st.code(link_inv, language="text")
             with c3:
                 if usado and st.button("🔄 Reativar", key=f"reat_{token_inv}"):
@@ -206,7 +222,7 @@ with tab_lista:
                     except Exception as exc:
                         st.error(str(exc))
             with c4:
-                if st.button("🗑️ Deletar", key=f"del_{token_inv}"):
+                if st.button("🗑️", key=f"del_{token_inv}"):
                     try:
                         deletar_invite_db(token_inv)
                         st.rerun()
