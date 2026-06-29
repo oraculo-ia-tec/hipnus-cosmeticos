@@ -31,17 +31,26 @@ components.page_header(
     kicker="✉️ Gestão de Acessos",
 )
 
-# ── Mapa de perfis ──────────────────────────────────────────────────────────────────────────────
+# ── Mapa de perfis ─────────────────────────────────────────────────────
 ROLES = [
     ("b2b",   "💇 Parceiro / Salão B2B",    "Acesso à loja parceiro, tabela de preços piso e pedidos B2B."),
     ("b2c",   "👤 Cliente Final B2C",       "Acesso à loja consumidor com preços sugeridos."),
     ("admin", "🛡️ Administrador",           "Acesso completo ao painel, relatórios e gestão de usuários."),
 ]
-ROLE_OPTIONS  = [r[0] for r in ROLES]                        # ["b2b", "b2c", "admin"]
-ROLE_LABELS   = {r[0]: r[1] for r in ROLES}                 # {"b2b": "💇 ...", ...}
-ROLE_DESC     = {r[0]: r[2] for r in ROLES}                 # descrições
+ROLE_OPTIONS  = [r[0] for r in ROLES]
+ROLE_LABELS   = {r[0]: r[1] for r in ROLES}
+ROLE_DESC     = {r[0]: r[2] for r in ROLES}
 
-_DEFAULT_SIGNUP_URL = "https://hipnuscosmeticos.com.br/cadastro"
+# ── URL base da aplicação ──────────────────────────────────────────────────
+# A página que recebe o token é 7_Cadastro_Parceiro.py
+# Streamlit Cloud roteia multi-page com URL: /Cadastro_Parceiro
+# FIX: era uma URL externa fixa que não existia
+_APP_BASE = (
+    st.secrets.get("APP_BASE_URL", "")
+    or "https://hipnus-cosmeticos.streamlit.app"
+).rstrip("/")
+_SIGNUP_PATH = "/Cadastro_Parceiro"   # Streamlit M-P router: /NomeDaPagina
+_DEFAULT_SIGNUP_URL = f"{_APP_BASE}{_SIGNUP_PATH}"
 
 tab_novo, tab_email, tab_lista = st.tabs([
     "➕ Novo Convite",
@@ -49,30 +58,33 @@ tab_novo, tab_email, tab_lista = st.tabs([
     "📋 Lista de Convites",
 ])
 
-# ── Aba 1: Gerar token (sem envio) ─────────────────────────────────────────────────
+# ── Aba 1: Gerar token (sem envio) ──────────────────────────────────
 with tab_novo:
     with st.form("form_convite"):
-        email = st.text_input("E-mail do parceiro")
+        email = st.text_input("📧 E-mail do parceiro")
         role  = st.selectbox(
-            "Tipo de usuário convidado",
+            "👥 Tipo de usuário convidado",
             options=ROLE_OPTIONS,
             format_func=lambda v: ROLE_LABELS[v],
         )
         st.caption(ROLE_DESC.get(role, ""))
         dias   = st.number_input("Validade (dias)", min_value=1, max_value=365, value=30)
-        submit = st.form_submit_button("Gerar Convite", use_container_width=True)
+        submit = st.form_submit_button("🔗 Gerar Convite", use_container_width=True)
     if submit:
         if not email or "@" not in email:
             st.error("Informe um e-mail válido.")
         else:
             try:
                 token = criar_invite_db(email=email, role=role, dias=int(dias))
+                link  = f"{_DEFAULT_SIGNUP_URL}?token={token}"
                 st.success(f"✅ Convite gerado para **{email}** · perfil **{ROLE_LABELS[role]}**")
-                st.code(token, language="text")
+                st.markdown("**Link de cadastro:**")
+                st.code(link, language="text")
+                st.caption("Copie o link acima e envie manualmente, ou use a aba '📧 Enviar por E-mail'.")
             except Exception as exc:
                 st.error(f"Erro ao criar convite: {exc}")
 
-# ── Aba 2: Gerar + Enviar por E-mail ──────────────────────────────────────────────
+# ── Aba 2: Gerar + Enviar por E-mail ────────────────────────────
 with tab_email:
     smtp = smtp_status()
     if not smtp["ready"]:
@@ -86,6 +98,15 @@ with tab_email:
 
     st.markdown("### Enviar convite de cadastro por e-mail")
     st.caption("Gera um token único, monta o link de cadastro e dispara o e-mail com template visual.")
+
+    # Mostra a URL que será usada para o admin conferir
+    st.html(
+        f'<div style="background:rgba(124,58,237,.07);border:1px solid rgba(168,85,247,.25);'
+        f'border-radius:10px;padding:10px 16px;font-size:.78rem;margin-bottom:14px;">'
+        f'🔗 URL base de cadastro: '
+        f'<code style="color:#e879f9;">{_DEFAULT_SIGNUP_URL}</code>'
+        f'</div>'
+    )
 
     with st.form("form_convite_email"):
         email_dest = st.text_input("📧 E-mail do convidado", placeholder="parceiro@email.com")
@@ -102,7 +123,7 @@ with tab_email:
             "Validade (dias)", min_value=1, max_value=365, value=30, key="dias_email"
         )
         signup_base = st.text_input(
-            "URL base de cadastro",
+            "🔗 URL base de cadastro",
             value=_DEFAULT_SIGNUP_URL,
             help="O token será adicionado como parâmetro ?token=...",
         )
@@ -137,12 +158,12 @@ with tab_email:
                     st.info(f"🔗 Link gerado: `{signup_url}`")
                 else:
                     st.error(f"❌ Falha ao enviar e-mail: {msg}")
-                    st.code(token, language="text")
-                    st.caption("Copie o token acima e envie manualmente.")
+                    st.markdown("**Copie o link abaixo e envie manualmente:**")
+                    st.code(signup_url, language="text")
             except Exception as exc:
                 st.error(f"Erro: {exc}")
 
-# ── Aba 3: Lista de convites ─────────────────────────────────────────────────────────
+# ── Aba 3: Lista de convites ──────────────────────────────────────────
 with tab_lista:
     try:
         invites = listar_invites_db()
@@ -164,21 +185,27 @@ with tab_lista:
             expires   = str(inv.get("expires_at") or "")[:10]
             role_inv  = inv.get("role", "")
             role_label_inv = ROLE_LABELS.get(role_inv, role_inv)
+            link_inv  = f"{_DEFAULT_SIGNUP_URL}?token={token_inv}" if token_inv else ""
 
-            c1, c2, c3 = st.columns([3, 1, 1])
+            c1, c2, c3, c4 = st.columns([3, 1, 1, 1])
             with c1:
                 badge = "✅ Usado" if usado else "⏳ Ativo"
                 st.markdown(
                     f"**{email_inv}** · {role_label_inv} · Expira: {expires} · {badge}"
                 )
+                if link_inv and not usado:
+                    st.caption(f"🔗 `{link_inv}`")
             with c2:
+                if not usado and st.button("📋 Copiar link", key=f"copy_{token_inv}"):
+                    st.code(link_inv, language="text")
+            with c3:
                 if usado and st.button("🔄 Reativar", key=f"reat_{token_inv}"):
                     try:
                         reativar_invite_db(token_inv, dias=30)
                         st.rerun()
                     except Exception as exc:
                         st.error(str(exc))
-            with c3:
+            with c4:
                 if st.button("🗑️ Deletar", key=f"del_{token_inv}"):
                     try:
                         deletar_invite_db(token_inv)
