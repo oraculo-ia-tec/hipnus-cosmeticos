@@ -1,9 +1,11 @@
 """
 8_Configuracao.py — HIPNUS COSMÉTICOS
 Painel de configurações para admin/super_admin.
-Atualizado 2026-06-29 v2:
-  - Nova aba "🎨 Tema" com seletor de cor de acento, modo escuro/claro
-    e preview em tempo real. Preferências salvas via set_app_config.
+v3 — 2026-06-29:
+  - Aba Tema: 2 colunas (Cores | Tipografia)
+  - Seletor de fonte corpo e título com preview dinâmico
+  - Botão SAIR no preview usa cor do tema ativo
+  - Aplicação imediata: session_state atualizado antes do rerun
 """
 from __future__ import annotations
 import sys, base64, hashlib
@@ -257,7 +259,7 @@ def _tab_ia_consultora():
 # ABA: TEMA DA PLATAFORMA
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Paleta de acentos disponíveis
+# ── Paletas de cor ────────────────────────────────────────────────────────────
 _TEMAS = {
     "🟣 Violeta (padrão)": {
         "accent":       "#7c3aed",
@@ -303,49 +305,169 @@ _TEMAS = {
     },
 }
 
+# ── Fontes disponíveis ─────────────────────────────────────────────────────────
+_FONTES_CORPO = [
+    "Inter",
+    "Poppins",
+    "Nunito",
+    "Lato",
+    "Raleway",
+    "DM Sans",
+]
+
+_FONTES_TITULO = [
+    "Syne",
+    "Playfair Display",
+    "Montserrat",
+    "Outfit",
+    "Space Grotesk",
+    "Cormorant Garamond",
+]
+
 
 def _tab_tema():
     st.markdown("### 🎨 Tema da Plataforma")
-    st.caption("Personalize a cor de acento da sidebar e da interface. A escolha é salva e aplicada a todos os admins.")
-
-    # Carrega tema salvo
-    tema_salvo = ""
-    if DB_OK:
-        try:
-            tema_salvo = get_app_config("tema_acento") or ""
-        except Exception:
-            tema_salvo = ""
-    tema_salvo = tema_salvo or "🟣 Violeta (padrão)"
-
-    opcoes = list(_TEMAS.keys())
-    idx_atual = opcoes.index(tema_salvo) if tema_salvo in opcoes else 0
-
-    st.markdown("#### Escolha o acento de cor")
-    tema_escolhido = st.radio(
-        "Cor de acento",
-        opcoes,
-        index=idx_atual,
-        key="radio_tema_acento",
-        label_visibility="collapsed",
-        horizontal=False,
+    st.caption(
+        "Personalize cores e tipografia. As mudanças são aplicadas **imediatamente** "
+        "na sessão atual e salvas para todos os admins."
     )
 
-    cores = _TEMAS[tema_escolhido]
+    # ── Carrega configurações salvas no banco ────────────────────────────────
+    tema_salvo      = st.session_state.get("tema_acento",  "")
+    fonte_corpo_salva  = st.session_state.get("fonte_corpo",  "")
+    fonte_titulo_salva = st.session_state.get("fonte_titulo", "")
 
-    # ── Preview em tempo real ──────────────────────────────────────────
-    st.markdown("#### Preview")
+    if DB_OK and not tema_salvo:
+        try:
+            tema_salvo         = get_app_config("tema_acento")  or ""
+            fonte_corpo_salva  = get_app_config("fonte_corpo")  or ""
+            fonte_titulo_salva = get_app_config("fonte_titulo") or ""
+        except Exception:
+            pass
+
+    tema_salvo         = tema_salvo         or "🟣 Violeta (padrão)"
+    fonte_corpo_salva  = fonte_corpo_salva  or "Inter"
+    fonte_titulo_salva = fonte_titulo_salva or "Syne"
+
+    opcoes_tema = list(_TEMAS.keys())
+    idx_tema    = opcoes_tema.index(tema_salvo) if tema_salvo in opcoes_tema else 0
+    idx_corpo   = _FONTES_CORPO.index(fonte_corpo_salva)  if fonte_corpo_salva  in _FONTES_CORPO  else 0
+    idx_titulo  = _FONTES_TITULO.index(fonte_titulo_salva) if fonte_titulo_salva in _FONTES_TITULO else 0
+
+    # ── Layout em 2 colunas ──────────────────────────────────────────────────
+    col_cores, col_fontes = st.columns([1, 1], gap="large")
+
+    # ════════════════════════════════════════════════════════════════
+    # COLUNA ESQUERDA — Cores
+    # ════════════════════════════════════════════════════════════════
+    with col_cores:
+        st.markdown("#### 🎨 Cor de acento")
+        tema_escolhido = st.radio(
+            "Cor de acento",
+            opcoes_tema,
+            index=idx_tema,
+            key="radio_tema_acento",
+            label_visibility="collapsed",
+        )
+        cores = _TEMAS[tema_escolhido]
+
+        # Chips de cor
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.html(f"""
+            <div style="text-align:center;padding:10px 6px;border-radius:10px;
+              background:{cores['accent']};box-shadow:0 0 12px {cores['glow']};">
+              <div style="color:#fff;font-weight:700;font-size:.68rem;">ACENTO</div>
+              <div style="color:#fff;font-size:.62rem;opacity:.8;">{cores['accent']}</div>
+            </div>""")
+        with c2:
+            st.html(f"""
+            <div style="text-align:center;padding:10px 6px;border-radius:10px;
+              background:{cores['accent_light']};">
+              <div style="color:#000;font-weight:700;font-size:.68rem;">CLARO</div>
+              <div style="color:#000;font-size:.62rem;opacity:.7;">{cores['accent_light']}</div>
+            </div>""")
+        with c3:
+            st.html(f"""
+            <div style="text-align:center;padding:10px 6px;border-radius:10px;
+              background:{cores['accent_dark']};">
+              <div style="color:#fff;font-weight:700;font-size:.68rem;">ESCURO</div>
+              <div style="color:#fff;font-size:.62rem;opacity:.8;">{cores['accent_dark']}</div>
+            </div>""")
+
+    # ════════════════════════════════════════════════════════════════
+    # COLUNA DIREITA — Tipografia
+    # ════════════════════════════════════════════════════════════════
+    with col_fontes:
+        st.markdown("#### 🔤 Tipografia")
+
+        fonte_corpo_escolhida = st.selectbox(
+            "Fonte do corpo (textos, botões, menus)",
+            _FONTES_CORPO,
+            index=idx_corpo,
+            key="sel_fonte_corpo",
+            help="Aplicada em parágrafos, inputs e botões.",
+        )
+        fonte_titulo_escolhida = st.selectbox(
+            "Fonte dos títulos (H1, H2, H3)",
+            _FONTES_TITULO,
+            index=idx_titulo,
+            key="sel_fonte_titulo",
+            help="Aplicada em cabeçalhos, logo e seções.",
+        )
+
+        # Preview de tipografia
+        fc = fonte_corpo_escolhida.replace(" ", "+")
+        ft = fonte_titulo_escolhida.replace(" ", "+")
+        st.html(f"""
+        <style>
+          @import url('https://fonts.googleapis.com/css2?
+            family={fc}:wght@400;600;700
+            &family={ft}:wght@700;800
+            &display=swap');
+        </style>
+        <div style="
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 12px;
+          padding: 16px 18px;
+          margin-top: 8px;
+        ">
+          <div style="
+            font-family:'{fonte_titulo_escolhida}',serif;
+            font-size:1.3rem;font-weight:800;
+            color:#fff;letter-spacing:-.5px;margin-bottom:6px;
+          ">Titulo em {fonte_titulo_escolhida}</div>
+          <div style="
+            font-family:'{fonte_corpo_escolhida}',sans-serif;
+            font-size:.88rem;color:rgba(255,255,255,.65);line-height:1.5;
+          ">Texto do corpo em {fonte_corpo_escolhida} — Hipnus Cosméticos, 
+          produtos premium para cabelos.</div>
+        </div>
+        """)
+
+    # ── Divisor ──────────────────────────────────────────────────────────────
+    st.divider()
+
+    # ── Preview completo da sidebar ──────────────────────────────────────────
+    st.markdown("#### 👁️ Preview — Sidebar + Botão SAIR")
+    fc2 = fonte_corpo_escolhida.replace(" ", "+")
+    ft2 = fonte_titulo_escolhida.replace(" ", "+")
     st.html(f"""
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&family=Syne:wght@800&display=swap');
+      @import url('https://fonts.googleapis.com/css2?
+        family={fc2}:wght@400;600;700
+        &family={ft2}:wght@700;800
+        &display=swap');
     </style>
     <div style="
       background: {cores['sidebar_bg']};
       border: 1px solid {cores['accent']}44;
       border-radius: 16px;
       padding: 20px;
-      max-width: 280px;
+      max-width: 300px;
       box-shadow: 0 0 32px {cores['glow']};
-      font-family: 'Inter', sans-serif;
+      font-family: '{fonte_corpo_escolhida}', 'Inter', sans-serif;
     ">
       <!-- Logo mock -->
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
@@ -353,16 +475,20 @@ def _tab_tema():
           width:36px;height:36px;border-radius:10px;
           background:linear-gradient(135deg,{cores['accent']},{cores['accent_dark']});
           display:flex;align-items:center;justify-content:center;
-          font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;color:#fff;
+          font-family:'{fonte_titulo_escolhida}',sans-serif;font-weight:800;
+          font-size:1rem;color:#fff;
           box-shadow:0 0 14px {cores['glow']};
         ">H</div>
         <div>
-          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.9rem;
+          <div style="
+            font-family:'{fonte_titulo_escolhida}',serif;
+            font-weight:800;font-size:.9rem;
             background:linear-gradient(90deg,#fff 20%,{cores['accent_light']} 100%);
             -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-            background-clip:text;">HIPNUS</div>
-          <div style="font-size:.5rem;color:{cores['accent_light']}66;letter-spacing:3px;
-            text-transform:uppercase;">Cosméticos</div>
+            background-clip:text;
+          ">HIPNUS</div>
+          <div style="font-size:.5rem;color:{cores['accent_light']}66;
+            letter-spacing:3px;text-transform:uppercase;">Cosméticos</div>
         </div>
       </div>
       <!-- Nav items mock -->
@@ -377,61 +503,57 @@ def _tab_tema():
         <div style="padding:8px 12px;border-radius:9px;color:rgba(255,255,255,.6);font-size:.82rem;">📊  Dashboard</div>
         <div style="padding:8px 12px;border-radius:9px;color:rgba(255,255,255,.6);font-size:.82rem;">🛍️  Catálogo</div>
       </div>
-      <!-- Divider -->
+      <!-- Divider com cor do tema -->
       <div style="height:1px;margin:14px 0;
         background:linear-gradient(90deg,transparent,{cores['accent_light']}44,transparent);"></div>
-      <!-- Botão SAIR mock -->
+      <!-- Botão SAIR — cor dinâmica do tema ativo -->
       <div style="
         padding:9px 14px;border-radius:11px;text-align:center;
-        background:linear-gradient(135deg,rgba(127,29,29,.55),rgba(153,27,27,.40));
-        border:1px solid rgba(239,68,68,.40);
-        color:#fca5a5;font-size:.82rem;font-weight:600;letter-spacing:.4px;
+        background:linear-gradient(135deg,{cores['accent_dark']}55,{cores['accent']}22);
+        border:1px solid {cores['accent']}55;
+        color:{cores['accent_light']};font-size:.82rem;font-weight:600;
+        letter-spacing:.4px;
+        box-shadow:0 0 10px {cores['glow']};
+        font-family:'{fonte_corpo_escolhida}',sans-serif;
       ">⬡  Sair da plataforma</div>
     </div>
     """)
 
-    st.divider()
-
-    # ── Informações técnicas das cores ────────────────────────────────
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.html(f"""
-        <div style="text-align:center;padding:12px;border-radius:10px;
-          background:{cores['accent']};box-shadow:0 0 16px {cores['glow']};">
-          <div style="color:#fff;font-weight:700;font-size:.75rem;">ACENTO</div>
-          <div style="color:#fff;font-size:.7rem;opacity:.8;">{cores['accent']}</div>
-        </div>""")
-    with c2:
-        st.html(f"""
-        <div style="text-align:center;padding:12px;border-radius:10px;
-          background:{cores['accent_light']};">
-          <div style="color:#000;font-weight:700;font-size:.75rem;">CLARO</div>
-          <div style="color:#000;font-size:.7rem;opacity:.7;">{cores['accent_light']}</div>
-        </div>""")
-    with c3:
-        st.html(f"""
-        <div style="text-align:center;padding:12px;border-radius:10px;
-          background:{cores['accent_dark']};">
-          <div style="color:#fff;font-weight:700;font-size:.75rem;">ESCURO</div>
-          <div style="color:#fff;font-size:.7rem;opacity:.8;">{cores['accent_dark']}</div>
-        </div>""")
-
     st.markdown("")
 
-    # ── Botão salvar ──────────────────────────────────────────────────
+    # ── Botão aplicar ────────────────────────────────────────────────────────
     col_btn, _ = st.columns([1, 2])
     with col_btn:
-        if st.button("💾 Aplicar tema", key="btn_salvar_tema", use_container_width=True):
+        if st.button("🚀 Aplicar tema agora", key="btn_salvar_tema", use_container_width=True,
+                     type="primary"):
+            # 1. Atualiza session_state IMEDIATAMENTE → inject_theme() na
+            #    próxima renderização já usa os novos valores
+            st.session_state["tema_primary"]   = cores["accent"]
+            st.session_state["tema_accent"]    = cores["accent_light"]
+            st.session_state["tema_acento"]    = tema_escolhido
+            st.session_state["fonte_corpo"]    = fonte_corpo_escolhida
+            st.session_state["fonte_titulo"]   = fonte_titulo_escolhida
+
+            # 2. Persiste no banco
             if DB_OK:
                 try:
-                    set_app_config("tema_acento", tema_escolhido)
-                    st.success(f"✅ Tema **{tema_escolhido}** salvo com sucesso!")
-                    st.info("♻️ Recarregue a página para ver o novo tema aplicado na sidebar.")
+                    set_app_config("tema_acento",    tema_escolhido)
+                    set_app_config("tema_primary",   cores["accent"])
+                    set_app_config("tema_accent",    cores["accent_light"])
+                    set_app_config("fonte_corpo",    fonte_corpo_escolhida)
+                    set_app_config("fonte_titulo",   fonte_titulo_escolhida)
+                    st.success(
+                        f"✅ Tema **{tema_escolhido}** com fonte "
+                        f"**{fonte_corpo_escolhida}** / **{fonte_titulo_escolhida}** "
+                        f"aplicado e salvo!"
+                    )
                 except Exception as e:
-                    st.error(f"❌ Erro ao salvar: {e}")
+                    st.error(f"❌ Erro ao salvar no banco: {e}")
             else:
-                st.warning("⚠️ Banco indisponível — o tema não pôde ser persistido.")
-                st.session_state["tema_acento_preview"] = tema_escolhido
+                st.warning("⚠️ Banco indisponível — tema aplicado só nesta sessão.")
+
+            # 3. Rerun com os novos valores já no session_state
+            st.rerun()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
