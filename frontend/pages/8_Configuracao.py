@@ -18,7 +18,7 @@ for _p in [str(_ROOT), str(_FRONTEND)]:
 import streamlit as st
 from lib import ui, components
 from lib.auth import require_auth, build_sidebar
-from lib import config as CFG
+import lib.config as CFG
 
 st.set_page_config(page_title="Configurações · HIPNUS", page_icon="⚙️", layout="wide")
 ui.inject_theme()
@@ -31,16 +31,15 @@ components.page_header(
     kicker="⚙️ Painel de Configuração",
 )
 
-# ── CSS extra ────────────────────────────────────────────────────────────────
+# helper: leitura segura de atributos do módulo config (não é dict!)
+def _cfg(attr: str, default=""):
+    """getattr seguro sobre o módulo lib.config."""
+    val = getattr(CFG, attr, default)
+    return val if val is not None else default
+
+# ── CSS ───────────────────────────────────────────────────────────────────
 st.html("""
 <style>
-.cfg-section {
-    background: rgba(124,58,237,0.04);
-    border: 1px solid rgba(185,131,255,0.18);
-    border-radius: 14px;
-    padding: 22px 24px;
-    margin-bottom: 18px;
-}
 .cfg-label {
     font-size: .72rem; font-weight: 700;
     text-transform: uppercase; letter-spacing: .8px;
@@ -52,139 +51,70 @@ st.html("""
     border: 1px solid rgba(185,131,255,0.3);
     border-radius: 20px;
     padding: 3px 12px;
-    font-size: .78rem;
-    font-weight: 600;
-    color: #b983ff;
-}
-.minha-conta-card {
-    background: rgba(124,58,237,0.06);
-    border: 1px solid rgba(185,131,255,0.22);
-    border-radius: 16px;
-    padding: 28px 28px 20px 28px;
-    margin-bottom: 20px;
+    font-size: .78rem; font-weight: 600; color: #b983ff;
 }
 .avatar-circle {
-    width: 72px; height: 72px;
-    border-radius: 50%;
+    width: 72px; height: 72px; border-radius: 50%;
     background: linear-gradient(135deg, #7c3aed 0%, #b983ff 100%);
     display: flex; align-items: center; justify-content: center;
     font-size: 2rem; font-weight: 700; color: #fff;
-    border: 3px solid rgba(185,131,255,0.4);
-    margin-bottom: 12px;
+    border: 3px solid rgba(185,131,255,0.4); margin-bottom: 12px;
 }
-/* Chiara card */
 .chiara-hero {
     background: linear-gradient(135deg, rgba(185,131,255,0.08) 0%, rgba(124,58,237,0.12) 100%);
     border: 1px solid rgba(185,131,255,0.25);
-    border-radius: 20px;
-    padding: 28px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 28px;
-    align-items: flex-start;
+    border-radius: 20px; padding: 28px; margin-bottom: 24px;
+    display: flex; gap: 28px; align-items: flex-start;
 }
-.chiara-avatar-wrap {
-    flex-shrink: 0;
-    text-align: center;
-}
+.chiara-avatar-wrap { flex-shrink: 0; text-align: center; }
 .chiara-avatar-img {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    object-fit: cover;
+    width: 140px; height: 140px; border-radius: 50%; object-fit: cover;
     border: 4px solid rgba(185,131,255,0.5);
     box-shadow: 0 0 28px rgba(185,131,255,0.3);
-    display: block;
-    margin: 0 auto 10px auto;
+    display: block; margin: 0 auto 10px auto;
 }
 .chiara-avatar-placeholder {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
+    width: 140px; height: 140px; border-radius: 50%;
     background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3.5rem;
-    border: 4px solid rgba(185,131,255,0.5);
-    box-shadow: 0 0 28px rgba(185,131,255,0.3);
-    margin: 0 auto 10px auto;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5rem; border: 4px solid rgba(185,131,255,0.5);
+    box-shadow: 0 0 28px rgba(185,131,255,0.3); margin: 0 auto 10px auto;
 }
-.chiara-bio {
-    flex: 1;
-}
+.chiara-bio { flex: 1; }
 .chiara-name {
-    font-size: 1.8rem;
-    font-weight: 800;
+    font-size: 1.8rem; font-weight: 800;
     background: linear-gradient(135deg, #b983ff 0%, #ec4899 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin: 0 0 4px 0;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; margin: 0 0 4px 0;
 }
-.chiara-title {
-    font-size: .9rem;
-    color: rgba(185,131,255,0.8);
-    margin: 0 0 16px 0;
-    font-style: italic;
-}
+.chiara-title { font-size: .9rem; color: rgba(185,131,255,0.8); margin: 0 0 16px 0; font-style: italic; }
 .chiara-tag {
-    display: inline-block;
-    background: rgba(124,58,237,0.2);
-    border: 1px solid rgba(185,131,255,0.3);
-    border-radius: 20px;
-    padding: 3px 12px;
-    font-size: .75rem;
-    font-weight: 600;
-    color: #b983ff;
-    margin: 0 4px 6px 0;
+    display: inline-block; background: rgba(124,58,237,0.2);
+    border: 1px solid rgba(185,131,255,0.3); border-radius: 20px;
+    padding: 3px 12px; font-size: .75rem; font-weight: 600; color: #b983ff; margin: 0 4px 6px 0;
 }
-.chiara-prop-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 16px;
-}
+.chiara-prop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
 .chiara-prop {
-    background: rgba(124,58,237,0.06);
-    border: 1px solid rgba(185,131,255,0.15);
-    border-radius: 12px;
-    padding: 12px 14px;
+    background: rgba(124,58,237,0.06); border: 1px solid rgba(185,131,255,0.15);
+    border-radius: 12px; padding: 12px 14px;
 }
 .chiara-prop-label {
-    font-size: .68rem;
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    color: rgba(185,131,255,0.6);
-    font-weight: 700;
-    margin-bottom: 4px;
+    font-size: .68rem; text-transform: uppercase; letter-spacing: .8px;
+    color: rgba(185,131,255,0.6); font-weight: 700; margin-bottom: 4px;
 }
-.chiara-prop-value {
-    font-size: .85rem;
-    color: rgba(255,255,255,0.88);
-    line-height: 1.4;
-}
-.upload-hint {
-    font-size: .75rem;
-    color: rgba(185,131,255,0.6);
-    margin-top: 6px;
-    text-align: center;
-}
+.chiara-prop-value { font-size: .85rem; color: rgba(255,255,255,0.88); line-height: 1.4; }
+.upload-hint { font-size: .75rem; color: rgba(185,131,255,0.6); margin-top: 6px; text-align: center; }
 </style>
 """)
 
-# ── Abas ─────────────────────────────────────────────────────────────────────
+# ── Abas ───────────────────────────────────────────────────────────────────
 _role = (usuario or {}).get("perfil") or (usuario or {}).get("role") or ""
 _is_admin = _role in ("super_admin", "admin")
 
 if _is_admin:
     abas = st.tabs([
-        "👤 Minha Conta",
-        "⚙️ Empresa",
-        "🔌 Integrações",
-        "🗄️ Banco de Dados",
-        "🎨 Aparência",
-        "🤖 Chiara",
+        "👤 Minha Conta", "⚙️ Empresa", "🔌 Integrações",
+        "🗄️ Banco de Dados", "🎨 Aparência", "🤖 Chiara",
     ])
     tab_conta, tab_empresa, tab_integ, tab_banco, tab_aparencia, tab_chiara = abas
 else:
@@ -193,32 +123,24 @@ else:
     tab_empresa = tab_integ = tab_banco = tab_aparencia = tab_chiara = None
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ABA 1 — 👤 MINHA CONTA
-# ════════════════════════════════════════════════════════════════════════════
+# ══ ABA 1 — MINHA CONTA ═══════════════════════════════════════════════════
 with tab_conta:
     st.markdown("### 👤 Minha Conta")
     st.caption("Visualize e edite suas informações pessoais na plataforma HIPNUS.")
 
-    _nome        = (usuario or {}).get("nome") or (usuario or {}).get("name") or ""
-    _email       = (usuario or {}).get("email") or ""
-    _username    = (usuario or {}).get("username") or ""
-    _display     = (usuario or {}).get("display_name") or _nome
-    _role_label  = {
-        "super_admin": "Super Admin 👑",
-        "admin": "Administrador 🛠️",
-        "b2b": "Parceiro B2B 💼",
-        "b2c": "Consumidor B2C 🛒",
-        "demo": "Demo 🔍",
+    _nome       = (usuario or {}).get("nome") or (usuario or {}).get("name") or ""
+    _email      = (usuario or {}).get("email") or ""
+    _username   = (usuario or {}).get("username") or ""
+    _display    = (usuario or {}).get("display_name") or _nome
+    _role_label = {
+        "super_admin": "Super Admin 👑", "admin": "Administrador 🛠️",
+        "b2b": "Parceiro B2B 💼", "b2c": "Consumidor B2C 🛒", "demo": "Demo 🔍",
     }.get(_role, _role or "—")
-    _inicial     = (_nome[0].upper() if _nome else "U")
+    _inicial = _nome[0].upper() if _nome else "U"
 
     col_av, col_info = st.columns([1, 5], gap="medium")
     with col_av:
-        st.html(f"""
-        <div class="avatar-circle">{_inicial}</div>
-        <div class="cfg-badge">{_role_label}</div>
-        """)
+        st.html(f'<div class="avatar-circle">{_inicial}</div><div class="cfg-badge">{_role_label}</div>')
     with col_info:
         st.markdown(f"**{_display or _nome or 'Usuário'}**")
         st.caption(f"@{_username}" if _username else "")
@@ -226,50 +148,41 @@ with tab_conta:
 
     st.divider()
     st.markdown("#### ✏️ Editar Dados Pessoais")
-
     with st.form("form_minha_conta", clear_on_submit=False):
-        col1, col2 = st.columns(2, gap="medium")
-        with col1:
-            novo_nome = st.text_input("Nome completo", value=_nome, placeholder="Seu nome completo")
+        c1, c2 = st.columns(2, gap="medium")
+        with c1:
+            novo_nome    = st.text_input("Nome completo",    value=_nome,    placeholder="Seu nome completo")
             novo_display = st.text_input("Nome de exibição", value=_display, placeholder="Como quer ser chamado?")
-        with col2:
+        with c2:
             novo_email = st.text_input("E-mail", value=_email, placeholder="seu@email.com")
             st.text_input("Username", value=_username, disabled=True)
-
         st.markdown("#### 🔐 Alterar Senha")
-        col3, col4, col5 = st.columns(3, gap="medium")
-        with col3:
-            senha_atual = st.text_input("Senha atual", type="password", placeholder="Digite sua senha atual")
-        with col4:
-            nova_senha = st.text_input("Nova senha", type="password", placeholder="Mínimo 8 caracteres")
-        with col5:
-            conf_senha = st.text_input("Confirmar nova senha", type="password", placeholder="Repita a nova senha")
-
+        c3, c4, c5 = st.columns(3, gap="medium")
+        with c3:
+            senha_atual = st.text_input("Senha atual",          type="password", placeholder="Senha atual")
+        with c4:
+            nova_senha  = st.text_input("Nova senha",           type="password", placeholder="Mínimo 8 caracteres")
+        with c5:
+            conf_senha  = st.text_input("Confirmar nova senha", type="password", placeholder="Repita a nova senha")
         salvar = st.form_submit_button("💾 Salvar alterações", type="primary", use_container_width=True)
 
     if salvar:
         erros: list[str] = []
-        if not novo_nome.strip():
-            erros.append("O nome completo não pode ser vazio.")
-        if not novo_email.strip() or "@" not in novo_email:
-            erros.append("Informe um e-mail válido.")
+        if not novo_nome.strip():                      erros.append("O nome completo não pode ser vazio.")
+        if not novo_email.strip() or "@" not in novo_email: erros.append("Informe um e-mail válido.")
         mudar_senha = bool(senha_atual or nova_senha or conf_senha)
         if mudar_senha:
-            if not senha_atual:
-                erros.append("Informe a senha atual para alterar a senha.")
-            if len(nova_senha) < 8:
-                erros.append("A nova senha deve ter pelo menos 8 caracteres.")
-            if nova_senha != conf_senha:
-                erros.append("As senhas não coincidem.")
+            if not senha_atual:          erros.append("Informe a senha atual.")
+            if len(nova_senha) < 8:      erros.append("Nova senha deve ter ≥8 caracteres.")
+            if nova_senha != conf_senha: erros.append("As senhas não coincidem.")
         if erros:
-            for e in erros:
-                st.error(f"❌ {e}")
+            for e in erros: st.error(f"❌ {e}")
         else:
             try:
                 from lib.user_db import get_db_session, update_user_profile
                 user_id = (usuario or {}).get("id") or (usuario or {}).get("user_id")
                 with get_db_session() as db:
-                    resultado = update_user_profile(
+                    res = update_user_profile(
                         db=db, user_id=user_id,
                         nome=novo_nome.strip(),
                         display_name=novo_display.strip() or novo_nome.strip(),
@@ -277,26 +190,26 @@ with tab_conta:
                         senha_atual=senha_atual if mudar_senha else None,
                         nova_senha=nova_senha if mudar_senha else None,
                     )
-                if resultado.get("ok"):
-                    st.success("✅ Dados atualizados com sucesso!")
+                if res.get("ok"):
+                    st.success("✅ Dados atualizados!")
                     if "usuario" in st.session_state:
-                        st.session_state["usuario"]["nome"]         = novo_nome.strip()
-                        st.session_state["usuario"]["name"]         = novo_nome.strip()
-                        st.session_state["usuario"]["display_name"] = novo_display.strip()
-                        st.session_state["usuario"]["email"]        = novo_email.strip()
+                        st.session_state["usuario"].update({
+                            "nome": novo_nome.strip(), "name": novo_nome.strip(),
+                            "display_name": novo_display.strip(), "email": novo_email.strip(),
+                        })
                     st.rerun()
                 else:
-                    st.error(f"❌ {resultado.get('erro', 'Erro ao salvar.')}")
+                    st.error(f"❌ {res.get('erro', 'Erro ao salvar.')}")
             except ImportError:
                 if "usuario" in st.session_state:
-                    st.session_state["usuario"]["nome"]         = novo_nome.strip()
-                    st.session_state["usuario"]["name"]         = novo_nome.strip()
-                    st.session_state["usuario"]["display_name"] = novo_display.strip()
-                    st.session_state["usuario"]["email"]        = novo_email.strip()
-                st.success("✅ Dados atualizados na sessão! (persistência DB não disponível)")
+                    st.session_state["usuario"].update({
+                        "nome": novo_nome.strip(), "name": novo_nome.strip(),
+                        "display_name": novo_display.strip(), "email": novo_email.strip(),
+                    })
+                st.success("✅ Dados atualizados na sessão!")
                 st.rerun()
             except Exception as ex:
-                st.error(f"❌ Erro inesperado: {ex}")
+                st.error(f"❌ Erro: {ex}")
 
     st.divider()
     st.markdown("#### ℹ️ Informações da Conta")
@@ -318,76 +231,84 @@ if not _is_admin:
     st.stop()
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ABA 2 — ⚙️ EMPRESA
-# ════════════════════════════════════════════════════════════════════════════
+# ══ ABA 2 — EMPRESA ═══════════════════════════════════════════════════════════
 with tab_empresa:
     st.markdown("### ⚙️ Configurações da Empresa")
     st.caption("Parâmetros gerais da plataforma HIPNUS.")
+    _brand = _cfg("BRAND", {})  # BRAND é um dict em config.py
+    _brand_name = _brand.get("name", "HIPNUS COSMÉTICOS") if isinstance(_brand, dict) else "HIPNUS COSMÉTICOS"
     with st.form("form_empresa"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.text_input("Nome da empresa",  value=CFG.get("COMPANY_NAME", "HIPNUS COSMÉTICOS"))
-            st.text_input("CNPJ",              value=CFG.get("COMPANY_CNPJ", ""), placeholder="00.000.000/0001-00")
-            st.text_input("E-mail de contato", value=CFG.get("COMPANY_EMAIL", ""), placeholder="contato@hipnus.com")
-        with col2:
-            st.text_input("Telefone",          value=CFG.get("COMPANY_PHONE", ""), placeholder="(31) 99999-9999")
-            st.text_input("Site",              value=CFG.get("COMPANY_SITE", ""),  placeholder="https://hipnus.com")
-            st.text_input("Cidade / UF",       value=CFG.get("COMPANY_CITY", ""),  placeholder="Belo Horizonte / MG")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.text_input("Nome da empresa",  value=_brand_name)
+            st.text_input("CNPJ",              value="",                         placeholder="00.000.000/0001-00")
+            st.text_input("E-mail de contato", value=_cfg("SMTP_USER", ""),      placeholder="contato@hipnus.com")
+        with c2:
+            st.text_input("Telefone",          value="",                         placeholder="(31) 99999-9999")
+            st.text_input("Site",              value=_cfg("APP_URL", ""),         placeholder="https://hipnus.com")
+            st.text_input("Cidade / UF",       value="",                         placeholder="Belo Horizonte / MG")
         if st.form_submit_button("💾 Salvar configurações da empresa", type="primary"):
             st.success("✅ Configurações salvas.")
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ABA 3 — 🔌 INTEGRAÇÕES
-# ════════════════════════════════════════════════════════════════════════════
+# ══ ABA 3 — INTEGRAÇÕES ════════════════════════════════════════════════════
 with tab_integ:
     st.markdown("### 🔌 Integrações")
     st.caption("Chaves e configurações de serviços externos.")
 
     with st.expander("💳 Asaas (Pagamentos)", expanded=True):
         with st.form("form_asaas"):
-            st.text_input("API Key Asaas",  value=CFG.get("ASAAS_API_KEY", ""),  type="password", placeholder="$aact_...")
-            st.selectbox("Ambiente",        options=["sandbox", "production"],    index=0 if CFG.get("ASAAS_ENV", "sandbox") == "sandbox" else 1)
+            # ASAAS_API_KEY vem dos secrets/env, não está como atributo direto do módulo
+            _asaas_key = os.getenv("ASAAS_API_KEY", "")
+            try:
+                _asaas_key = str(st.secrets.get("ASAAS_API_KEY", "") or _asaas_key)
+            except Exception:
+                pass
+            st.text_input("API Key Asaas", value=_asaas_key, type="password", placeholder="$aact_...")
+            st.selectbox("Ambiente", options=["sandbox", "production"], index=0)
             if st.form_submit_button("💾 Salvar Asaas", type="primary"):
                 st.success("✅ Integração Asaas atualizada.")
 
     with st.expander("🤖 IA Consultora (Groq)", expanded=False):
         with st.form("form_groq"):
-            st.text_input("GROQ API Key",   value=CFG.get("GROQ_API_KEY", ""),   type="password", placeholder="gsk_...")
-            st.text_input("Modelo",         value=CFG.get("GROQ_MODEL", "llama-3.3-70b-versatile"))
+            _groq_key = os.getenv("GROQ_API_KEY", "")
+            try:
+                _groq_key = str(st.secrets.get("GROQ_API_KEY", "") or _groq_key)
+            except Exception:
+                pass
+            st.text_input("GROQ API Key", value=_groq_key, type="password", placeholder="gsk_...")
+            st.text_input("Modelo", value="llama-3.3-70b-versatile")
             if st.form_submit_button("💾 Salvar Groq", type="primary"):
                 st.success("✅ Integração IA atualizada.")
 
     with st.expander("📧 SMTP (E-mail)", expanded=False):
         with st.form("form_smtp"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.text_input("Host SMTP",  value=CFG.get("SMTP_HOST", ""),       placeholder="smtp.gmail.com")
-                st.text_input("Porta",      value=CFG.get("SMTP_PORT", "587"),     placeholder="587")
-            with col2:
-                st.text_input("Usuário",    value=CFG.get("SMTP_USER", ""),        placeholder="seu@email.com")
-                st.text_input("Senha",      value=CFG.get("SMTP_PASS", ""),        type="password")
+            c1, c2 = st.columns(2)
+            with c1:
+                st.text_input("Host SMTP", value=_cfg("SMTP_HOST", ""), placeholder="smtp.gmail.com")
+                st.text_input("Porta",     value=str(_cfg("SMTP_PORT", 587)),    placeholder="587")
+            with c2:
+                st.text_input("Usuário",   value=_cfg("SMTP_USER", ""), placeholder="seu@email.com")
+                st.text_input("Senha",     value=_cfg("SMTP_PASS", ""), type="password")
             if st.form_submit_button("💾 Salvar SMTP", type="primary"):
                 st.success("✅ Configuração de e-mail atualizada.")
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ABA 4 — 🗄️ BANCO DE DADOS
-# ════════════════════════════════════════════════════════════════════════════
+# ══ ABA 4 — BANCO DE DADOS ══════════════════════════════════════════════════
 with tab_banco:
     st.markdown("### 🗄️ Banco de Dados")
     st.caption("Conexão e status do banco de dados da plataforma.")
+    _db_url = os.getenv("DATABASE_URL", "")
+    try:
+        _db_url = str(st.secrets.get("DATABASE_URL", "") or _db_url)
+    except Exception:
+        pass
     with st.form("form_banco"):
-        st.text_input(
-            "DATABASE_URL", value=CFG.get("DATABASE_URL", ""), type="password",
-            placeholder="postgresql+asyncpg://user:pass@host:5432/db",
-        )
-        col1, col2 = st.columns(2)
-        with col1:
-            st.checkbox("Echo SQL (debug)", value=CFG.get("DB_ECHO", False))
-        with col2:
-            st.number_input("Pool size", min_value=1, max_value=50, value=int(CFG.get("DB_POOL_SIZE", 5)))
+        st.text_input("DATABASE_URL", value=_db_url, type="password",
+                      placeholder="postgresql+asyncpg://user:pass@host:5432/db")
+        c1, c2 = st.columns(2)
+        with c1: st.checkbox("Echo SQL (debug)", value=False)
+        with c2: st.number_input("Pool size", min_value=1, max_value=50, value=5)
         if st.form_submit_button("💾 Salvar configuração do banco", type="primary"):
             st.success("✅ Configuração de banco atualizada.")
     st.divider()
@@ -396,50 +317,44 @@ with tab_banco:
         try:
             from lib.db_utils import test_connection
             ok, msg = test_connection()
-            if ok:
-                st.success(f"✅ Conexão OK — {msg}")
-            else:
-                st.error(f"❌ Falha na conexão: {msg}")
+            st.success(f"✅ Conexão OK — {msg}") if ok else st.error(f"❌ Falha: {msg}")
         except Exception as e:
             st.warning(f"⚠️ Módulo de teste indisponível: {e}")
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ABA 5 — 🎨 APARÊNCIA
-# ════════════════════════════════════════════════════════════════════════════
+# ══ ABA 5 — APARÊNCIA ═══════════════════════════════════════════════════════
 with tab_aparencia:
     st.markdown("### 🎨 Aparência")
     st.caption("Personalização visual da plataforma.")
+    _colors = _cfg("COLORS", {})  # COLORS é um dict em config.py
+    _c = _colors if isinstance(_colors, dict) else {}
     with st.form("form_aparencia"):
-        col1, col2 = st.columns(2)
-        with col1:
-            st.color_picker("Cor primária",     value=CFG.get("THEME_PRIMARY", "#7c3aed"))
-            st.color_picker("Cor de destaque",  value=CFG.get("THEME_ACCENT",  "#b983ff"))
-            st.color_picker("Cor de fundo",     value=CFG.get("THEME_BG",      "#0e0e16"))
-        with col2:
-            st.selectbox("Fonte do sistema",    options=["Inter", "Poppins", "Roboto", "DM Sans"], index=0)
-            st.selectbox("Modo de cores",       options=["Dark (padrão)", "Light", "Auto (sistema)"], index=0)
-            st.slider("Raio de borda (px)",     min_value=0, max_value=24, value=int(CFG.get("THEME_RADIUS", 12)))
+        c1, c2 = st.columns(2)
+        with c1:
+            st.color_picker("Cor primária",    value=_c.get("primary", "#7c3aed"))
+            st.color_picker("Cor de destaque", value=_c.get("accent",  "#b983ff"))
+            st.color_picker("Cor de fundo",    value=_c.get("bg",      "#0e0e16"))
+        with c2:
+            st.selectbox("Fonte do sistema",   options=["Inter", "Poppins", "Roboto", "DM Sans"], index=0)
+            st.selectbox("Modo de cores",      options=["Dark (padrão)", "Light", "Auto (sistema)"], index=0)
+            st.slider("Raio de borda (px)",    min_value=0, max_value=24, value=12)
         if st.form_submit_button("💾 Salvar aparência", type="primary"):
-            st.success("✅ Aparência atualizada (recarregue a página para ver as mudanças).")
+            st.success("✅ Aparência atualizada (recarregue para ver as mudanças).")
 
 
-# ════════════════════════════════════════════════════════════════════════════
-# ABA 6 — 🤖 CHIARA
-# ════════════════════════════════════════════════════════════════════════════
+# ══ ABA 6 — CHIARA ═════════════════════════════════════════════════════════════════
 with tab_chiara:
     st.markdown("### 🤖 Identidade Visual da Chiara")
     st.caption("Configure o nome, bio e foto da sua IA Consultora personalizada.")
 
-    # ── Carrega imagem salva (base64) da session ──────────────────────────
-    chiara_b64 = st.session_state.get("chiara_foto_b64", "")
+    chiara_b64  = st.session_state.get("chiara_foto_b64", "")
     chiara_name = st.session_state.get("chiara_nome", "Chiara")
 
-    # ── Hero card com avatar ──────────────────────────────────────────────
-    if chiara_b64:
-        avatar_html = f'<img src="data:image/jpeg;base64,{chiara_b64}" class="chiara-avatar-img" alt="Chiara" />'
-    else:
-        avatar_html = '<div class="chiara-avatar-placeholder">✨</div>'
+    avatar_html = (
+        f'<img src="data:image/jpeg;base64,{chiara_b64}" class="chiara-avatar-img" alt="Chiara" />'
+        if chiara_b64
+        else '<div class="chiara-avatar-placeholder">✨</div>'
+    )
 
     st.html(f"""
     <div class="chiara-hero">
@@ -457,67 +372,41 @@ with tab_chiara:
                 <span class="chiara-tag">🏆 Embaixadora HIPNUS</span>
             </div>
             <div class="chiara-prop-grid">
-                <div class="chiara-prop">
-                    <div class="chiara-prop-label">👁️ Idade aparente</div>
-                    <div class="chiara-prop-value">26 a 28 anos — maturidade profissional com jovialidade</div>
-                </div>
-                <div class="chiara-prop">
-                    <div class="chiara-prop-label">🎯 Propósito</div>
-                    <div class="chiara-prop-value">Provar que todo cabelo pode ser radiante com o cronograma capilar certo</div>
-                </div>
-                <div class="chiara-prop">
-                    <div class="chiara-prop-label">🦸 Superpoder</div>
-                    <div class="chiara-prop-value">Identifica se o fio precisa de Hidratação, Nutrição ou Reconstrução</div>
-                </div>
-                <div class="chiara-prop">
-                    <div class="chiara-prop-label">❤️ Não vive sem</div>
-                    <div class="chiara-prop-value">Touca de cetim e o reparador de pontas Hipnus</div>
-                </div>
-                <div class="chiara-prop">
-                    <div class="chiara-prop-label">🔬 Mania</div>
-                    <div class="chiara-prop-value">Explicar a ciência por trás dos ingredientes de forma leve e divertida</div>
-                </div>
-                <div class="chiara-prop">
-                    <div class="chiara-prop-label">🏛️ Ambiente</div>
-                    <div class="chiara-prop-value">Salão premium ou laboratório de estética capilar moderno</div>
-                </div>
+                <div class="chiara-prop"><div class="chiara-prop-label">👁️ Idade aparente</div><div class="chiara-prop-value">26 a 28 anos — maturidade profissional com jovialidade</div></div>
+                <div class="chiara-prop"><div class="chiara-prop-label">🎯 Propósito</div><div class="chiara-prop-value">Provar que todo cabelo pode ser radiante com o cronograma capilar certo</div></div>
+                <div class="chiara-prop"><div class="chiara-prop-label">🦸 Superpoder</div><div class="chiara-prop-value">Identifica se o fio precisa de Hidratação, Nutrição ou Reconstrução</div></div>
+                <div class="chiara-prop"><div class="chiara-prop-label">❤️ Não vive sem</div><div class="chiara-prop-value">Touca de cetim e o reparador de pontas Hipnus</div></div>
+                <div class="chiara-prop"><div class="chiara-prop-label">🔬 Mania</div><div class="chiara-prop-value">Explicar a ciência por trás dos ingredientes de forma leve e divertida</div></div>
+                <div class="chiara-prop"><div class="chiara-prop-label">🏛️ Ambiente</div><div class="chiara-prop-value">Salão premium ou laboratório de estética capilar moderno</div></div>
             </div>
         </div>
     </div>
     """)
 
     st.divider()
-
-    # ── Upload de foto ────────────────────────────────────────────────────
     st.markdown("#### 📸 Foto da Chiara")
-    st.caption("A foto será exibida no topo do chat da IA Consultora e nesta ficha.")
+    st.caption("A foto será exibida no topo do chat e nesta ficha.")
 
     col_up, col_prev = st.columns([3, 2], gap="large")
-
     with col_up:
         foto_upload = st.file_uploader(
             "Selecione a foto da Chiara",
             type=["jpg", "jpeg", "png", "webp"],
             key="chiara_foto_upload",
-            help="Formatos: JPG, PNG ou WebP. Recomendado: foto quadrada (ex: 400×400px).",
+            help="Recomendado: foto quadrada (ex: 400×400px).",
         )
-
         if foto_upload is not None:
-            # Converte para base64 e salva na session
             foto_bytes = foto_upload.read()
             b64 = base64.b64encode(foto_bytes).decode("utf-8")
-            ext = foto_upload.type.split("/")[-1].replace("jpeg", "jpg")
             st.session_state["chiara_foto_b64"]  = b64
-            st.session_state["chiara_foto_ext"]  = ext
+            st.session_state["chiara_foto_ext"]  = foto_upload.type.split("/")[-1].replace("jpeg", "jpg")
             st.session_state["chiara_foto_mime"] = foto_upload.type
             st.success("✅ Foto carregada! Ela já aparece no chat da IA Consultora.")
             st.rerun()
-
         if chiara_b64:
             if st.button("🗑️ Remover foto", key="chiara_remove_foto"):
-                st.session_state.pop("chiara_foto_b64",  None)
-                st.session_state.pop("chiara_foto_ext",  None)
-                st.session_state.pop("chiara_foto_mime", None)
+                for k in ("chiara_foto_b64", "chiara_foto_ext", "chiara_foto_mime"):
+                    st.session_state.pop(k, None)
                 st.rerun()
 
     with col_prev:
@@ -528,11 +417,10 @@ with tab_chiara:
                 <p style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;
                           color:rgba(185,131,255,0.6);font-weight:700;margin-bottom:10px;">Preview</p>
                 <img src="data:{mime};base64,{chiara_b64}"
-                     style="width:160px;height:160px;border-radius:50%;
-                            object-fit:cover;
+                     style="width:160px;height:160px;border-radius:50%;object-fit:cover;
                             border:4px solid rgba(185,131,255,0.5);
                             box-shadow:0 0 28px rgba(185,131,255,0.3);"
-                     alt="Chiara preview" />
+                     alt="Chiara" />
                 <p style="font-size:.8rem;color:rgba(185,131,255,0.7);margin-top:10px;">Aparência no chat</p>
             </div>
             """)
@@ -549,50 +437,40 @@ with tab_chiara:
             """)
 
     st.divider()
-
-    # ── Configurações de nome e personalidade ─────────────────────────────
     st.markdown("#### ✏️ Dados da IA")
     with st.form("form_chiara_dados", clear_on_submit=False):
-        col1, col2 = st.columns(2, gap="medium")
-        with col1:
+        c1, c2 = st.columns(2, gap="medium")
+        with c1:
             novo_nome_chiara = st.text_input(
                 "Nome da IA Consultora",
                 value=st.session_state.get("chiara_nome", "Chiara"),
                 placeholder="Ex: Chiara",
-                help="Nome exibido no topo do chat e nas saudações.",
             )
             cargo_chiara = st.text_input(
                 "Cargo / Título",
                 value=st.session_state.get("chiara_cargo", "Terapeuta Capilar Digital · Embaixadora HIPNUS"),
-                placeholder="Ex: Consultora Virtual Hipnus",
             )
-        with col2:
+        with c2:
             saudacao_chiara = st.text_area(
                 "Saudação inicial do chat",
                 value=st.session_state.get(
                     "chiara_saudacao",
-                    "Olá! Sou a Chiara, consultora virtual da Hipnus Cosméticos. 💜\n\nPosso te ajudar com:\n- Dúvidas sobre produtos e linhas\n- Informações sobre carrinho e pedidos\n- Como funciona o checkout e pagamento\n- Convites e cadastro de parceiros\n\nComo posso te ajudar hoje?"
+                    "Olá! Sou a Chiara, consultora virtual da Hipnus Cosméticos. 💜\n\nComo posso te ajudar hoje?"
                 ),
                 height=160,
-                placeholder="Mensagem de boas-vindas da IA...",
             )
-
         salvar_chiara = st.form_submit_button(
-            "💾 Salvar configurações da Chiara",
-            type="primary",
-            use_container_width=True,
+            "💾 Salvar configurações da Chiara", type="primary", use_container_width=True
         )
 
     if salvar_chiara:
         st.session_state["chiara_nome"]     = novo_nome_chiara.strip() or "Chiara"
         st.session_state["chiara_cargo"]    = cargo_chiara.strip()
         st.session_state["chiara_saudacao"] = saudacao_chiara.strip()
-        st.success(f"✅ Dados da {novo_nome_chiara or 'Chiara'} salvos com sucesso!")
+        st.success(f"✅ Dados da {novo_nome_chiara or 'Chiara'} salvos!")
         st.rerun()
 
-    # ── Dica sobre persistência ───────────────────────────────────────────
     st.info(
-        "💡 **Dica:** As configurações da Chiara ficam salvas durante a sessão. "
-        "Para persistência permanente, salve a imagem em `assets/chiara_foto.jpg` "
-        "via commit no repositório."
+        "💡 **Dica:** As configurações ficam salvas na sessão. "
+        "Para persistência permanente, salve a imagem em `assets/chiara_foto.jpg` via commit."
     )
