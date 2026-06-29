@@ -2,7 +2,11 @@
 10_IA_Consultora.py — HIPNUS COSMÉTICOS
 Chat com IA (Chiara) usando Groq (llama-3.3-70b) via streaming.
 
-Fix 2026-06-29 v4:
+Fix 2026-06-29 v5:
+  - _md(): adicionado re.DOTALL para capturar **negrito** e *itálico* que
+    contenham quebras de linha (\n). Sem esse flag o .+? não casava \n e o
+    re.sub lançava TypeError ao tentar passar o resultado para st.html().
+  - Adicionado isinstance(text, str) como guarda de segurança.
   - st.html() é renderizado em iframe isolado que não herda o tema escuro.
   - Cada bloco HTML agora carrega seu próprio <style> com background
     explícito para garantir visibilidade independente do tema do Streamlit.
@@ -159,9 +163,15 @@ def _user_avatar_html() -> str:
 
 
 def _md(text: str) -> str:
-    """Markdown básico → HTML seguro para exibir dentro das bolhas."""
-    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
-    text = re.sub(r'\*(.+?)\*',     r'<em>\1</em>',         text)
+    """Markdown básico → HTML seguro para exibir dentro das bolhas.
+
+    re.DOTALL faz o .+? casar também \\n, evitando TypeError quando o
+    conteúdo da mensagem contém **negrito** ou *itálico* com quebra de linha.
+    """
+    if not isinstance(text, str):
+        text = str(text)
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text, flags=re.DOTALL)
+    text = re.sub(r'\*(.+?)\*',     r'<em>\1</em>',         text, flags=re.DOTALL)
     text = text.replace("\n", "<br>")
     return text
 
