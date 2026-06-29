@@ -21,11 +21,11 @@ HOME_PAGE   = "pages/1_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
-# ─── Flag de debug ────────────────────────────────────────────
+# ─── Flag de debug ─────────────────────────────────────────────────────────────────
 DEBUG_SIDEBAR = False  # True apenas para diagnosticar problemas
 
 
-# ─── Usuários demo/seed ──────────────────────────────────────────────
+# ─── Usuários demo/seed ─────────────────────────────────────────────────────────────────
 USUARIOS_DEMO: dict[str, dict] = {
     "william": {
         "senha":        "hipnus@2026",
@@ -65,7 +65,7 @@ USUARIOS_DEMO: dict[str, dict] = {
 }
 
 
-# ─── Normalização de perfil ────────────────────────────────────────
+# ─── Normalização de perfil ────────────────────────────────────────────────────────────────
 def _normalize_role(role: str | None) -> str:
     role = (role or "demo").strip().lower()
     aliases = {
@@ -82,7 +82,7 @@ def _normalize_role(role: str | None) -> str:
     return aliases.get(role, role)
 
 
-# ─── Helpers de sessão ────────────────────────────────────────────
+# ─── Helpers de sessão ─────────────────────────────────────────────────────────────────
 def _gravar_sessao(
     nome: str, username: str, role: str,
     display_name: str, email: str, token: str | None,
@@ -222,9 +222,9 @@ def logout() -> None:
     st.switch_page(_LOGIN_PAGE)
 
 
-# ───────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────────
 # SIDEBAR PRO REDESIGN 2026
-# ───────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────────────
 
 _NAV_ITEMS = [
     ("pages/11_IA_Consultora.py",      "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
@@ -242,7 +242,7 @@ _NAV_ITEMS = [
 ]
 
 
-# ─── Helpers internos ─────────────────────────────────────────────────
+# ─── Helpers internos ────────────────────────────────────────────────────────────────────────────────
 def _page_exists(page_path: str) -> bool:
     try:
         candidates = [
@@ -320,20 +320,54 @@ def _inject_sidebar_css() -> None:
       background: linear-gradient(90deg, transparent, rgba(185,131,255,.45), rgba(0,245,255,.15), transparent);
       border: none;
     }
-    section[data-testid="stSidebar"] div.block-container div.stButton > button {
-      width: 100% !important; background: rgba(255,255,255,.05) !important;
-      color: rgba(255,255,255,.78) !important;
-      border: 1px solid rgba(185,131,255,.22) !important;
-      border-radius: 11px !important; font-family: 'Inter', sans-serif !important;
-      font-weight: 600 !important; font-size: .86rem !important;
-      padding: 10px 0 !important; min-height: 42px !important;
-      transition: all .18s ease !important; margin-top: 4px !important;
+
+    /* ──────────────────────────────────────────────────────────────────
+       BOTÃO SAIR — força texto branco em TODOS os estados
+       O tema light do Streamlit (config.toml) gera regras de alta
+       especificidade que sobrescrevem o texto. Usamos o seletor
+       mais específico possível + !important em cada propriedade.
+    ────────────────────────────────────────────────────────────────── */
+    section[data-testid="stSidebar"] div.block-container div.stButton > button,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button p,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button span {
+      width: 100% !important;
+      background: rgba(239,68,68,.15) !important;
+      color: #fca5a5 !important;
+      border: 1px solid rgba(239,68,68,.38) !important;
+      border-radius: 11px !important;
+      font-family: 'Inter', sans-serif !important;
+      font-weight: 700 !important;
+      font-size: .86rem !important;
+      padding: 10px 0 !important;
+      min-height: 44px !important;
+      transition: all .18s ease !important;
+      margin-top: 4px !important;
+      letter-spacing: .3px !important;
     }
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover {
-      background: rgba(239,68,68,.18) !important; color: #fca5a5 !important;
-      border-color: rgba(239,68,68,.45) !important;
-      box-shadow: 0 0 16px rgba(239,68,68,.2) !important;
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover p,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover span {
+      background: rgba(239,68,68,.32) !important;
+      color: #fff !important;
+      border-color: rgba(239,68,68,.65) !important;
+      box-shadow: 0 0 20px rgba(239,68,68,.28) !important;
     }
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:active,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:active p,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:active span,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus p,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus span,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus-visible,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus-visible p,
+    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus-visible span {
+      background: rgba(239,68,68,.38) !important;
+      color: #fff !important;
+      border-color: rgba(239,68,68,.8) !important;
+      outline: none !important;
+    }
+    /* ──────────────────────────────────────────────────────────────── */
+
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
     section[data-testid="stSidebar"] label,
@@ -423,11 +457,11 @@ def build_sidebar(
     # Divider + botão SAIR
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
-        if st.button("🚪  SAIR", key="sb_logout_btn", use_container_width=True):
+        if st.button("🚨\u00a0 SAIR", key="sb_logout_btn", use_container_width=True):
             logout()
 
 
-# ─── Aliases de compatibilidade ────────────────────────────────────────────────
+# ─── Aliases de compatibilidade ───────────────────────────────────────────────────────────────────────────────────────────────────────
 def sidebar_logo() -> None:
     _maybe_build_sidebar()
 
