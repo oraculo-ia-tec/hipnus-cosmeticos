@@ -2,12 +2,11 @@
 10_IA_Consultora.py — HIPNUS COSMÉTICOS
 Chat com IA (Chiara) usando Groq (llama-3.3-70b) via streaming.
 
-Fix 2026-06-29 v6:
-  - _chiara_nome e _user_nome: fallback robusto com `or` para evitar None
-    mesmo quando session_state guarda None explicitamente.
-  - CSS da .chiara-initial no topo corrigido: agora usa a mesma classe
-    .chiara-top-avatar .chiara-initial já definida no CSS global.
-  - re.DOTALL mantido na função _md() (fix v5).
+Fix 2026-06-29 v7:
+  - SANITIZAÇÃO do ia_msgs existente no session_state: qualquer mensagem
+    com content None, "None" ou vazio é corrigida (1ª msg) ou removida.
+    Resolve o "None" persistente mesmo após deploy, pois o session_state
+    do Streamlit Cloud sobrevive a redeploys enquanto a sessão está ativa.
 """
 from __future__ import annotations
 import sys, re
@@ -29,7 +28,7 @@ ui.inject_theme()
 usuario = require_auth()
 build_sidebar()
 
-# ── CSS GLOBAL — injetado no documento principal (herda tema) ──────────
+# ── CSS GLOBAL ────────────────────────────────────────────────────────
 st.markdown("""
 <style>
 .chiara-top-avatar {
@@ -79,7 +78,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── CSS DE BOLHA embutido em cada st.html() ───────────────────────────
+# ── CSS DE BOLHA ──────────────────────────────────────────────────────
 _BUBBLE_CSS = """
 <style>
   html, body { margin:0; padding:0; background:#0e0018 !important; }
@@ -118,9 +117,7 @@ _BUBBLE_CSS = """
 </style>
 """
 
-# ── Dados da Chiara e do usuário — fallback robusto com `or` ─────────────
-# Usa `or` em vez de apenas .get(key, default) porque session_state pode
-# guardar None explicitamente, o que faria .get() retornar None mesmo com default.
+# ── Dados da Chiara e do usuário — fallback robusto com `or` ─────────
 _chiara_b64   = st.session_state.get("chiara_foto_b64") or ""
 _chiara_mime  = st.session_state.get("chiara_foto_mime") or "image/jpeg"
 _chiara_nome  = st.session_state.get("chiara_nome") or "Chiara"
@@ -168,11 +165,7 @@ def _user_avatar_html() -> str:
 
 
 def _md(text: str) -> str:
-    """Markdown básico → HTML seguro para exibir dentro das bolhas.
-
-    re.DOTALL faz o .+? casar também \\n, evitando TypeError quando o
-    conteúdo da mensagem contém **negrito** ou *itálico* com quebra de linha.
-    """
+    """Markdown básico → HTML seguro. re.DOTALL evita TypeError em **negrito** multilinha."""
     if not isinstance(text, str):
         text = str(text)
     text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text, flags=re.DOTALL)
@@ -182,7 +175,6 @@ def _md(text: str) -> str:
 
 
 def _render_bubble(role: str, content: str) -> None:
-    """Renderiza uma bolha completa via st.html com CSS embutido."""
     html_content = _md(content)
     if role == "user":
         avatar = _user_avatar_html()
@@ -204,7 +196,7 @@ def _render_bubble(role: str, content: str) -> None:
         """)
 
 
-# ── Avatar da Chiara no topo ───────────────────────────────────────
+# ── Avatar da Chiara no topo ──────────────────────────────────────────
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
     initial = (_chiara_nome or "C")[0].upper()
@@ -230,7 +222,7 @@ with col_center:
         <hr class="chiara-divider" />
         """, unsafe_allow_html=True)
 
-# ── Validação da IA ────────────────────────────────────────────────
+# ── Validação da IA ───────────────────────────────────────────────────
 status = groq_status()
 if not status["configured"]:
     st.error(
@@ -239,7 +231,7 @@ if not status["configured"]:
     )
     st.stop()
 
-# ── Saudação inicial ───────────────────────────────────────────────
+# ── Saudação inicial ──────────────────────────────────────────────────
 _saudacao_padrao = (
     f"Olá! Sou a **{_chiara_nome}**, consultora virtual da Hipnus Cosméticos. 💜\n\n"
     "Posso te ajudar com:\n"
@@ -251,14 +243,46 @@ _saudacao_padrao = (
 )
 _saudacao = st.session_state.get("chiara_saudacao") or _saudacao_padrao
 
+
+def _content_invalido(v) -> bool:
+    """Retorna True se o conteúdo for None, string 'None', ou vazio."""
+    if v is None:
+        return True
+    s = str(v).strip()
+    return s == "" or s.lower() == "none"
+
+
+# ── Inicializa ou SANITIZA ia_msgs ────────────────────────────────────
+# O session_state do Streamlit Cloud sobrevive a redeploys enquanto a
+# sessão está ativa. Se ia_msgs foi inicializado com content=None em
+# deploy anterior, precisamos corrigir agora antes de renderizar.
 if "ia_msgs" not in st.session_state:
     st.session_state["ia_msgs"] = [{"role": "assistant", "content": _saudacao}]
+else:
+    msgs = st.session_state["ia_msgs"]
+    sanitized = []
+    for i, m in enumerate(msgs):
+        if not isinstance(m, dict):
+            continue
+        role = m.get("role", "user")
+        content = m.get("content")
+        if _content_invalido(content):
+            # Primeira mensagem assistant com conteúdo inválido → restaura saudação
+            if i == 0 and role == "assistant":
+                sanitized.append({"role": "assistant", "content": _saudacao})
+            # Qualquer outra mensagem inválida é descartada
+        else:
+            sanitized.append({"role": role, "content": str(content)})
+    # Garante sempre pelo menos a saudação
+    if not sanitized:
+        sanitized = [{"role": "assistant", "content": _saudacao}]
+    st.session_state["ia_msgs"] = sanitized
 
-# ── Histórico ──────────────────────────────────────────────────────
+# ── Histórico ─────────────────────────────────────────────────────────
 for msg in st.session_state["ia_msgs"]:
     _render_bubble(msg["role"], msg["content"])
 
-# ── Input + streaming ───────────────────────────────────────────────
+# ── Input + streaming ─────────────────────────────────────────────────
 if prompt := st.chat_input(f"Pergunte à {_chiara_nome} sobre produtos, pedidos, pagamentos..."):
     st.session_state["ia_msgs"].append({"role": "user", "content": prompt})
     _render_bubble("user", prompt)
@@ -317,7 +341,7 @@ if prompt := st.chat_input(f"Pergunte à {_chiara_nome} sobre produtos, pedidos,
 
     st.session_state["ia_msgs"].append({"role": "assistant", "content": resposta or ""})
 
-# ── Botão limpar ────────────────────────────────────────────────────
+# ── Botão limpar ──────────────────────────────────────────────────────
 if len(st.session_state["ia_msgs"]) > 1:
     if st.button("🗑️ Limpar conversa", key="clear_chat"):
         st.session_state["ia_msgs"] = [{"role": "assistant", "content": _saudacao}]
