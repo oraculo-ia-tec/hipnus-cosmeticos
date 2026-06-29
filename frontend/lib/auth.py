@@ -3,10 +3,12 @@ auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação + Sidebar Pro Redesign 2026.
 
-Correção 2026-06-29: ao restaurar a sessão após login, carrega automaticamente
-  - avatar do usuário (parceiros) do banco  → session_state["avatar_b64"]
-  - foto/nome/cargo da Chiara do banco      → session_state["chiara_*"]
-Isso garante que as imagens persistem mesmo após o usuário sair e voltar.
+Fix 2026-06-29 v2: persistência definitiva de imagens.
+  - Avatar do usuário: recarregado do banco a cada page-load quando ausente
+    na sessão (sem depender de flag _avatar_loaded que bloqueava a recarga).
+  - Foto da Chiara: recarregada do banco a cada page-load quando ausente
+    na sessão (sem depender de flag _chiara_loaded que bloqueava a recarga).
+  - Resultado: imagens sobrevivem a logout/login e reinicialização.
 """
 from __future__ import annotations
 
@@ -82,10 +84,16 @@ def _normalize_role(role: str | None) -> str:
 
 def _carregar_chiara_no_session() -> None:
     """
-    Lê nome, cargo e foto da Chiara do banco e injeta no session_state.
-    Chamado uma única vez por sessão (guarda flag _chiara_loaded).
+    Carrega nome, cargo e foto da Chiara do banco para o session_state.
+
+    Estratégia sem flag bloqueante:
+      - Sempre verifica se chiara_foto_b64 está presente na sessão.
+      - Se não estiver, consulta o banco e preenche todos os campos.
+      - Isso garante que a foto da Chiara reaparece após logout/login
+        sem precisar resetar manualmente nenhuma flag.
     """
-    if st.session_state.get("_chiara_loaded"):
+    # Se a foto já está na sessão, não precisa ir ao banco
+    if st.session_state.get("chiara_foto_b64"):
         return
     try:
         import sys
@@ -94,20 +102,46 @@ def _carregar_chiara_no_session() -> None:
             sys.path.insert(0, str(_root))
         from lib.user_db import carregar_config_chiara
         cfg = carregar_config_chiara()
-        # Só sobrescreve se o banco tiver valor — preserva defaults se banco vazio
         if cfg.get("nome"):
             st.session_state["chiara_nome"]      = cfg["nome"]
         if cfg.get("cargo"):
             st.session_state["chiara_cargo"]     = cfg["cargo"]
         if cfg.get("foto_b64"):
             st.session_state["chiara_foto_b64"]  = cfg["foto_b64"]
-            st.session_state["chiara_foto_mime"] = cfg["foto_mime"]
+            st.session_state["chiara_foto_mime"] = cfg.get("foto_mime", "image/jpeg")
         if cfg.get("saudacao"):
             st.session_state["chiara_saudacao"]  = cfg["saudacao"]
     except Exception:
         pass
-    finally:
-        st.session_state["_chiara_loaded"] = True
+
+
+def _restaurar_avatar_usuario(email: str) -> None:
+    """
+    Recarrega avatar_b64 do parceiro no banco quando ausente na sessão.
+
+    Estratégia sem flag bloqueante:
+      - Sempre verifica se avatar_b64 está presente na sessão.
+      - Se não estiver E houver e-mail, consulta o banco.
+      - Isso garante que o avatar reaparece após logout/login para
+        TODOS os usuários cadastrados no banco (incluindo parceiros
+        que fizeram upload de foto em sessões anteriores).
+    """
+    # Se já tem avatar na sessão, não precisa ir ao banco
+    if st.session_state.get("avatar_b64"):
+        return
+    if not email:
+        return
+    try:
+        import sys
+        _root = Path(__file__).resolve().parents[2]
+        if str(_root) not in sys.path:
+            sys.path.insert(0, str(_root))
+        from lib.user_db import buscar_por_email
+        parceiro = buscar_por_email(email)
+        if parceiro and parceiro.get("avatar_b64"):
+            st.session_state["avatar_b64"] = parceiro["avatar_b64"]
+    except Exception:
+        pass
 
 
 def _gravar_sessao(
@@ -125,39 +159,16 @@ def _gravar_sessao(
         "email":             email,
         "token":             token,
         "via_api":           via_api,
-        "avatar_b64":        avatar_b64,
+        "avatar_b64":        avatar_b64,   # None se não vier do banco; _restaurar cobre depois
         "session_start":     time.time(),
         "_jwt_dialog_shown": False,
-        # Força recarga das fotos na próxima página
-        "_chiara_loaded":    False,
-        "_avatar_loaded":    False,
+        # Limpa caches de foto para forçar recarga nas funções acima
+        "chiara_foto_b64":   None,
+        "chiara_foto_mime":  None,
+        "chiara_nome":       None,
+        "chiara_cargo":      None,
+        "chiara_saudacao":   None,
     })
-
-
-def _restaurar_avatar_usuario(email: str) -> None:
-    """
-    Recarrega avatar_b64 do parceiro no banco, caso ainda não esteja na sessão.
-    Útil quando o usuário faz login e o avatar estava apenas no banco.
-    """
-    if st.session_state.get("_avatar_loaded"):
-        return
-    if st.session_state.get("avatar_b64"):
-        # Já tem avatar na sessão (veio do login)
-        st.session_state["_avatar_loaded"] = True
-        return
-    try:
-        import sys
-        _root = Path(__file__).resolve().parents[2]
-        if str(_root) not in sys.path:
-            sys.path.insert(0, str(_root))
-        from lib.user_db import buscar_por_email
-        parceiro = buscar_por_email(email)
-        if parceiro and parceiro.get("avatar_b64"):
-            st.session_state["avatar_b64"] = parceiro["avatar_b64"]
-    except Exception:
-        pass
-    finally:
-        st.session_state["_avatar_loaded"] = True
 
 
 def _buscar_demo(identificador: str) -> tuple[str, dict] | None:
@@ -213,10 +224,24 @@ def _login_offline(identificador: str, password: str) -> bool:
     if encontrado:
         uname, u = encontrado
         if password == u["senha"]:
+            # Tenta buscar avatar no banco para usuários demo que também
+            # estão cadastrados como parceiros (ex: william tem e-mail real)
+            avatar_b64 = None
+            try:
+                import sys
+                _root = Path(__file__).resolve().parents[2]
+                if str(_root) not in sys.path:
+                    sys.path.insert(0, str(_root))
+                from lib.user_db import buscar_por_email
+                p = buscar_por_email(u["email"])
+                if p:
+                    avatar_b64 = p.get("avatar_b64")
+            except Exception:
+                pass
             _gravar_sessao(
                 nome=u["nome"], username=uname, role=u["role"],
                 display_name=u["display_name"], email=u["email"],
-                token=None, via_api=False, avatar_b64=None,
+                token=None, via_api=False, avatar_b64=avatar_b64,
             )
             return True
         return False
@@ -250,7 +275,9 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     if not st.session_state.get("autenticado"):
         st.switch_page(_LOGIN_PAGE)
 
-    # ── Restaura fotos persistidas no banco (executa 1x por sessão) ──
+    # ── Restaura fotos a cada page-load (sem flag bloqueante) ────────
+    # As funções abaixo verificam internamente se já há valor na sessão
+    # e só consultam o banco quando necessário — sem custo extra.
     email = st.session_state.get("email", "")
     _restaurar_avatar_usuario(email)
     _carregar_chiara_no_session()
