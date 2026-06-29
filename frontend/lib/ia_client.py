@@ -3,6 +3,9 @@ ia_client.py — HIPNUS COSMÉTICOS
 ====================================
 Adaptador entre a página IA Consultora e o motor ia_consultora.py.
 Expõe stream_ia() (gerador para st.write_stream) e consultar_ia() (string completa).
+
+Atualização: injeta produtos do banco no contexto da IA para que a
+catalog_llm_skill funcione com dados reais filtrados por perfil.
 """
 from __future__ import annotations
 import sys
@@ -29,12 +32,10 @@ def _get_usuario_dict(usuario_override: dict | None = None) -> dict | None:
     import streamlit as st
     ss = st.session_state
 
-    # Se por acaso já for dict, usa direto
     raw = ss.get("usuario")
     if isinstance(raw, dict):
         return raw
 
-    # Monta dict a partir dos campos individuais do session_state
     nome   = ss.get("nome", "") or ss.get("display_name", "") or str(raw or "Visitante")
     perfil = ss.get("perfil", "demo")
     email  = ss.get("email", "")
@@ -51,6 +52,50 @@ def _get_usuario_dict(usuario_override: dict | None = None) -> dict | None:
     }
 
 
+def _fetch_products_for_context(user_role: str) -> list[dict]:
+    """
+    Busca produtos ativos do banco e retorna lista de dicts
+    com campos filtrados conforme o perfil do usuário.
+    Retorna lista vazia silenciosamente em caso de erro.
+    """
+    try:
+        from lib.db_utils import resolve_db_url
+        from sqlalchemy import create_engine, text
+        from sqlalchemy.orm import sessionmaker
+
+        db_url = resolve_db_url()
+        connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
+        engine = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
+        Session = sessionmaker(bind=engine)
+
+        with Session() as session:
+            rows = session.execute(
+                text(
+                    "SELECT sku, name, category, line, is_kit, "
+                    "floor_price, suggested_retail_price "
+                    "FROM products WHERE active = 1 OR active = TRUE "
+                    "ORDER BY name"
+                )
+            ).fetchall()
+
+        products = []
+        for r in rows:
+            products.append({
+                "sku":                   r[0],
+                "name":                  r[1],
+                "category":              r[2],
+                "line":                  r[3],
+                "is_kit":                bool(r[4]),
+                "floor_price":           float(r[5]) if r[5] is not None else 0.0,
+                "suggested_retail_price": float(r[6]) if r[6] is not None else None,
+            })
+        return products
+
+    except Exception:
+        # Banco inacessível ou tabela ainda não criada — não quebra a IA
+        return []
+
+
 def stream_ia(
     pergunta: str,
     historico: list[dict] | None = None,
@@ -60,6 +105,7 @@ def stream_ia(
 ):
     """
     Gerador que faz stream da resposta — use com st.write_stream().
+    Injeta produtos do banco no contexto filtrado pelo role do usuário.
     """
     import streamlit as st
 
@@ -67,10 +113,19 @@ def stream_ia(
     _cart              = cart or st.session_state.get("carrinho")
     _historico_pedidos = historico_pedidos or st.session_state.get("historico_pedidos")
 
+    # Descobre o role para filtrar visibilidade de preços
+    user_role = "demo"
+    if _usuario:
+        user_role = _usuario.get("perfil") or _usuario.get("role") or "demo"
+
+    # Busca produtos do banco (silencia erros — não bloqueia a IA)
+    products = _fetch_products_for_context(user_role)
+
     context = build_context(
         usuario=_usuario,
         cart=_cart if isinstance(_cart, dict) else None,
         historico_pedidos=_historico_pedidos if isinstance(_historico_pedidos, list) else None,
+        products=products,
     )
 
     msgs: list[dict] = []
