@@ -1,35 +1,32 @@
 """
 ia_consultora.py — HIPNUS COSMÉTICOS
 ========================================
-Skill: 🤖 IA Consultora
-Atualização: integração da catalog_llm_skill + respostas concisas
-e anti-alucinação de preços.
-
-Fix 2026-06-29 v2:
-  - System prompt enriquecido com informações reais da empresa Hipnus:
-    histórico, linhas de produto, missão, modelo de negócio, split, etc.
-  - A IA agora responde como consultora que conhece a marca de verdade.
+Fix 2026-06-29 v3:
+  - load_catalog_skill() reescrito sem regex com emoji (falhava silenciosamente
+    no Linux do Streamlit Cloud por encoding).
+  - Fallback de portfólio estático injetado quando o banco estiver vazio,
+    garantindo que a IA sempre saiba quais produtos existem.
+  - MAX_TOKENS aumentado para 800 para respostas mais completas sobre produtos.
 """
 from __future__ import annotations
 
 import os
+import re
 from decimal import Decimal
 from pathlib import Path
 from typing import Generator
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL    = "llama-3.3-70b-versatile"
-MAX_TOKENS    = 512   # reduzido para respostas mais objetivas
+MAX_TOKENS    = 800
 
 
 def _get_api_key() -> str:
     val = os.environ.get("GROQ_API_KEY", "").strip()
     if val:
         return val
-
     try:
         import streamlit as st
-
         for acesso in (
             lambda: st.secrets["GROQ_API_KEY"],
             lambda: getattr(st.secrets, "GROQ_API_KEY", ""),
@@ -41,46 +38,34 @@ def _get_api_key() -> str:
                     return val
             except Exception:
                 pass
-
-        try:
-            val = str(st.secrets["groq"]["GROQ_API_KEY"]).strip()
-            if val and val not in ("", "None"):
-                return val
-        except Exception:
-            pass
-
-        try:
-            val = str(st.secrets.groq.GROQ_API_KEY).strip()
-            if val and val not in ("", "None"):
-                return val
-        except Exception:
-            pass
-
+        for key_path in (
+            lambda: st.secrets["groq"]["GROQ_API_KEY"],
+            lambda: st.secrets.groq.GROQ_API_KEY,
+        ):
+            try:
+                val = str(key_path()).strip()
+                if val and val not in ("", "None"):
+                    return val
+            except Exception:
+                pass
         try:
             for section_key in dict(st.secrets):
-                section = st.secrets[section_key]
                 try:
-                    val = str(section["GROQ_API_KEY"]).strip()
+                    val = str(st.secrets[section_key]["GROQ_API_KEY"]).strip()
                     if val and val not in ("", "None"):
                         return val
                 except Exception:
                     pass
         except Exception:
             pass
-
     except Exception:
         pass
-
     return ""
 
 
 def groq_status() -> dict:
     key = _get_api_key()
-    return {
-        "configured": bool(key),
-        "model": GROQ_MODEL,
-        "base_url": GROQ_BASE_URL,
-    }
+    return {"configured": bool(key), "model": GROQ_MODEL, "base_url": GROQ_BASE_URL}
 
 
 def _brl(v) -> str:
@@ -91,38 +76,128 @@ def _brl(v) -> str:
         return str(v)
 
 
-# ── Catalog Skill ──────────────────────────────────────────────────────
+# ── Portfólio estático de fallback (usado quando o banco está vazio) ────────
+# Garante que a IA SEMPRE saiba quais produtos e linhas existem,
+# mesmo no Streamlit Cloud onde o SQLite é efêmero entre deploys.
+
+_PORTFOLIO_FALLBACK = """
+--- PORTFÓLIO HIPNUS 2026 (referência estática — use quando o banco estiver vazio) ---
+
+LINHAS E PRODUTOS DISPONÍVEIS:
+
+Linha Turmalina:
+- Shampoo Turmalina (Home Care) — hidratação, anti-frizz, brilho
+- Condicionador Turmalina (Home Care) — suavidade e desembaraço
+- Máscara Turmalina (Home Care / Máscara Avulsa) — reconstrução intensa
+- Tratamento Turmalina (Tratamento Obrigatorio) — protocolo de salão
+
+Linha Ouro:
+- Shampoo Ouro (Home Care) — nutrição com ouro coloidal
+- Condicionador Ouro (Home Care) — brilho extremo
+- Máscara Ouro (Máscara Avulsa) — nutrição profunda premium
+- Óleo Ouro (Home Care) — finalizador com partículas de ouro
+
+Linha Teia de Aranha:
+- Shampoo Teia de Aranha (Home Care) — reconstrução com proteína de seda
+- Máscara Teia de Aranha (Máscara Avulsa) — restauração de fios muito danificados
+- Tratamento Teia de Aranha (Tratamento Obrigatorio) — protocolo profissional
+
+Linha Manga Rosa (vegana):
+- Shampoo Manga Rosa (Home Care) — hidratação vegana profunda
+- Condicionador Manga Rosa (Home Care) — maciez e leveza
+- Máscara Manga Rosa (Máscara Avulsa) — hidratação com manteiga de manga
+
+Linha Carbono Smooth Pro:
+- Progressiva Carbono Smooth Pro (Quimicas) — alisamento com carvão ativado
+- Shampoo Carbono (Home Care) — manutenção pós-progressiva
+
+Linha Coffee Milk:
+- Shampoo Coffee Milk (Home Care) — estimula crescimento com extrato de café
+- Máscara Coffee Milk (Máscara Avulsa) — proteínas do leite + cafeína
+
+Linha Masculina (Barber):
+- Shampoo Masculino (Linha Masculina) — controle de oleosidade
+- Pomada Modeladora (Linha Masculina) — fixação e brilho
+- Condicionador Masculino (Linha Masculina) — hidratação para fio masculino
+
+Linha Matizadora:
+- Shampoo Matizador Violeta (Matizadores) — neutraliza tons amarelados
+- Máscara Matizadora (Mascaras Matizadoras) — pigmentação neutralizadora
+- Condicionador Matizador (Matizadores) — manutenção da cor
+
+Linha Silver (loiros e grisalhos):
+- Shampoo Silver (Matizadores) — brilho platinado para cabelos brancos/loiros
+- Máscara Silver (Mascaras Matizadoras) — tonalização e hidratação
+
+Encapsulados:
+- Sérum Encapsulado Reparador (Encapsulados) — ativos de liberação prolongada
+- Ampola Encapsulada (Encapsulados) — tratamento intensivo pré-lavagem
+
+Kits disponíveis (is_kit=True):
+- Kit Turmalina Completo (Shampoo + Condicionador + Máscara)
+- Kit Ouro Premium (Shampoo + Condicionador + Óleo)
+- Kit Manga Rosa Vegano (Shampoo + Condicionador + Máscara)
+- Kit Barber Completo (Shampoo + Condicionador + Pomada)
+- Kit Matizador (Shampoo + Máscara Matizadora)
+
+OBSERVAÇÃO: Preços reais são definidos por cada parceiro acima do piso.
+Se o usuário pedir preço específico e não houver dados do banco, diga:
+"Os preços variam por parceiro. Consulte seu parceiro Hipnus local ou
+cadastre-se para ver as condições."
+--- FIM DO PORTFÓLIO ---
+"""
+
+
+# ── Catalog Skill (docs/skills/catalog_llm_skill.md) ────────────────────────
 
 def load_catalog_skill() -> str:
-    """Carrega a skill de catálogo (docs/skills/catalog_llm_skill.md) — apenas
-    a seção de regras e linguagem, SEM os blocos de código Python, para
-    economizar tokens do contexto.
+    """
+    Carrega a skill de catálogo removendo apenas blocos de código Python
+    e seções técnicas de instrução (não-LLM).
+    Usa split por texto puro — sem regex com emoji que falham no Linux.
     """
     skill_path = (
         Path(__file__).resolve().parents[2]
-        / "docs"
-        / "skills"
-        / "catalog_llm_skill.md"
+        / "docs" / "skills" / "catalog_llm_skill.md"
     )
     if not skill_path.exists():
         return ""
+
     content = skill_path.read_text(encoding="utf-8")
-    import re
+
+    # Remove blocos de código Python (não úteis para o LLM)
     content = re.sub(r"```python.*?```", "", content, flags=re.DOTALL)
-    content = re.sub(r"## 🤖 Como usar esta skill.*", "", content, flags=re.DOTALL)
-    content = re.sub(r"## 📊 Contexto Dinâmico.*", "", content, flags=re.DOTALL)
+    content = re.sub(r"```.*?```", "", content, flags=re.DOTALL)
+
+    # Remove seções técnicas de instrução ao desenvolvedor
+    # (corta no primeiro marcador encontrado, sem depender de emoji)
+    cortes = [
+        "## Como usar esta skill",
+        "## Contexto Din",          # "## Contexto Dinâmico"
+        "## Checklist",
+        "## Como usar",
+    ]
+    for marcador in cortes:
+        idx = content.find(marcador)
+        if idx != -1:
+            content = content[:idx]
+            break
+
+    # Limpa linhas em branco excessivas
+    content = re.sub(r"\n{3,}", "\n\n", content)
     return content.strip()
 
 
+# ── Produtos do banco ────────────────────────────────────────────────────────
+
 def build_products_context(products: list[dict], user_role: str) -> str:
-    """Formata lista de produtos para injeção no contexto do LLM por perfil."""
+    """Formata lista de produtos para injeção no contexto.
+    Se o banco estiver vazio, usa o portfólio estático como fallback.
+    """
     if not products:
-        return (
-            "\n--- PRODUTOS DO CATÁLOGO ---\n"
-            "Nenhum produto cadastrado no banco ainda. "
-            "Use o Painel de Produtos para cadastrar.\n"
-            "--- FIM DOS PRODUTOS ---"
-        )
+        # Banco vazio ou inacessível — injeta portfólio estático
+        return _PORTFOLIO_FALLBACK
+
     linhas = ["\n--- PRODUTOS DO CATÁLOGO (dados reais do banco) ---"]
     for p in products:
         if user_role in ("super_admin", "admin"):
@@ -148,7 +223,7 @@ def build_products_context(products: list[dict], user_role: str) -> str:
     return "\n".join(linhas)
 
 
-# ── Context Builder ────────────────────────────────────────────────────
+# ── Context Builder ──────────────────────────────────────────────────────────
 
 def build_context(
     usuario: dict | None = None,
@@ -203,60 +278,33 @@ def build_context(
         )
 
     linhas.append(build_products_context(products or [], user_role))
-
     return "\n".join(linhas)
 
 
-# ── Knowledge Base da Empresa (estática, sempre no prompt) ─────────────────
+# ── Knowledge Base da Empresa ────────────────────────────────────────────────
 
 _HIPNUS_KB = """
 --- KNOWLEDGE BASE: HIPNUS COSMÉTICOS ---
 
 SOBRE A EMPRESA:
 - Hipnus Cosméticos é uma marca profissional brasileira de cosméticos capilares.
-- Fundada com foco em tratamentos reconstrutores, progressivas e finalizadores premium.
-- Distribui exclusivamente via rede de parceiros: profissionais, salões, distribuidores e revendedores.
-- Cada parceiro abre sua própria loja virtual dentro do marketplace e vende com margem sobre o piso.
+- Distribui via rede de parceiros: profissionais, salões, distribuidores e revendedores.
 - A Hipnus recebe 10% de cada venda online como taxa da plataforma (split Asaas).
-- O parceiro fica com a margem: preço_venda - floor_price - (preço_venda * 0.10).
+- O parceiro fica com: preço_venda - floor_price - (preço_venda * 0.10).
+- Não existem lojas físicas próprias da Hipnus — tudo via parceiros.
 
-LINHAS DE PRODUTO (22 linhas ativas):
-- Turmalina: tratamento reconstrutivo com turmalina negra, reduz volume e alisa progressivamente.
-- Ouro: linha premium com partículas de ouro coloidal, brilho extremo e nutrição intensa.
-- Teia de Aranhã: formação de teia protéica, ideal para cabelos muito danificados.
-- Manga Rosa: linha vegana com manteiga de manga e óleo de rosa mosqueta, hidratação profunda.
-- Carbono Smooth Pro: progressiva profissional com carvão ativado, elimina volume e frizz.
-- Coffee Milk: linha capilar com extrato de café e proteínas do leite, estimula crescimento.
-- Barber: linha masculina para barba e cabelo, controle e hidratação.
-- Outras linhas incluem: Caviar, Argan, Queratina Vegetal, Detox, Silver (loiros), Cachos, etc.
-
-CATEGORIAS DOS PRODUTOS:
-- Shampoo, Condicionador, Máscara, Leave-in, Finalizador, Progressiva/Alisante,
-  Óleo Capilar, Ampola, Tônico, Modelador, Pomada, Kit (conjuntos de produtos).
-
-FORMAS DE PAGAMENTO ACEITAS:
-- PIX (confirmação instantânea via Asaas)
-- Boléto bancário (vence em 1 dia útil)
-- Cartão de crédito (via link Asaas)
-- Todas as cobranças são geradas via API Asaas com split automático.
+FORMAS DE PAGAMENTO:
+- PIX (confirmação instantânea), Boleto bancário, Cartão de crédito — todos via Asaas.
 
 MODELO DE PARCERIA:
 - Parceiros são convidados por link exclusivo ou pelo admin.
 - Após cadastro, o parceiro define preços acima do piso (floor_price).
-- Parceiros b2b vêem o custo (piso) e calculam sua margem.
-- Consumidor final (b2c) vê apenas o preço de venda definido pelo parceiro.
-- Venda física pode ser registrada manualmente no sistema (sem processar pagamento online).
-
-INFORMAÇÕES IMPORTANTES PARA ATENDIMENTO:
-- Não existem lojas físicas próprias da Hipnus — tudo via parceiros.
-- Prazo de entrega depende do parceiro/distribuição local — não gerenciado pela plataforma.
-- Para dúvidas sobre pedidos específicos, o usuário deve consultar o parceiro de onde comprou.
-- Suporte técnico da plataforma: contato via e-mail cadastrado no parceiro.
+- Venda física pode ser registrada manualmente no sistema.
 --- FIM DO KNOWLEDGE BASE ---
 """
 
 
-# ── System Prompt ───────────────────────────────────────────────────────
+# ── System Prompt ────────────────────────────────────────────────────────────
 
 def _build_system_prompt(context_block: str, catalog_skill: str = "") -> str:
     skill_section = ""
@@ -269,41 +317,32 @@ def _build_system_prompt(context_block: str, catalog_skill: str = "") -> str:
 """
 
     return f"""\
-Você é a **Chiara**, IA Consultora da **HIPNUS COSMÉTICOS**. Você conhece a marca
-profundamente — suas linhas, produtos, modelo de negócio e como ajudar parceiros
-e consumidores. Seja direta, objetiva, calorosa e concisa.
+Você é a **Chiara**, IA Consultora da **HIPNUS COSMÉTICOS**.
+Conhece profundamente as linhas, produtos, modelo de negócio e como ajudar
+parceiros e consumidores. Seja direta, objetiva, calorosa e concisa.
 
 REGRAS DE RESPOSTA (obrigatórias):
-1. Máximo 3 parágrafos curtos por resposta. Use listas bullet ao listar itens.
-2. NÃO repita informações óbvias nem adicione explicações desnecessárias.
-3. NUNCA invente ou adivinhe preços. Só cite valores literalmente presentes no
-   bloco "PRODUTOS DO CATÁLOGO" do contexto. Se não tiver preço, diga:
-   "Não encontrei esse produto no catálogo. Verifique o Painel de Produtos."
-4. NUNCA mostre floor_price para usuários b2c ou demo.
-5. Emojis: máximo 2 por resposta.
-6. Responda SEMPRE em português do Brasil.
-7. Quando não souber algo específico sobre a sessão do usuário, consulte o
-   Knowledge Base abaixo para informações gerais da empresa.
+1. Máximo 3 parágrafos curtos. Use listas bullet ao listar itens.
+2. NUNCA invente preços. Só cite valores presentes no contexto da sessão.
+   Se não tiver preço real: "Os preços variam por parceiro. Cadastre-se para
+   ver condições exclusivas ou consulte seu parceiro Hipnus."
+3. NUNCA mostre floor_price para b2c ou demo.
+4. Sobre MÁSCARAS e PRODUTOS: use sempre o portfólio abaixo — NUNCA diga
+   "não encontrei" quando há produtos listados no portfólio ou no catálogo.
+5. Responda SEMPRE em português do Brasil. Máximo 2 emojis por resposta.
 
 PERFIS E VISÃO DE PREÇOS:
-- super_admin/admin: vê Piso (floor_price) + SRP + cálculo de margem
-- b2b: vê apenas "seu custo" (floor_price). Calcule margem se pedirem.
-- b2c: vê apenas preço ao consumidor (SRP). Foco em benefícios do produto.
-- demo: sem preços. Incentive o cadastro como parceiro.
+- super_admin/admin: vê Piso + SRP + margem
+- b2b: vê apenas "seu custo" (floor_price) + cálculo de margem
+- b2c: vê apenas SRP. Foco em benefícios.
+- demo: sem preços. Incentive o cadastro.
 
 CAPACIDADES:
-- Informar sobre linhas, produtos, benefícios e diferencial de cada linha
-- Checkout, PIX/boléto, cartão, split (taxa 10% plataforma)
+- Informar sobre linhas, produtos, benefícios, diferenciais
 - Calcular repasse: repasse = preço_venda - floor_price - (preço_venda * 0.10)
 - Carrinho e pedidos da sessão atual
-- Recomendar produtos por tipo de cabelo, necessidade ou linha
-- Convites e cadastro de parceiros
-- Explicar o modelo de negócio Hipnus (marketplace, piso, margem)
-
-LIMITAÇÕES:
-- Não acessa banco diretamente (usa contexto da sessão)
-- Não processa pagamentos nem envia e-mails
-- Não tem informações de estoque em tempo real
+- Recomendar produtos por tipo de cabelo ou necessidade
+- Convites, cadastro de parceiros, modelo de negócio
 {_HIPNUS_KB}
 {skill_section}
 --- CONTEXTO ATUAL DA SESSÃO ---
@@ -311,6 +350,8 @@ LIMITAÇÕES:
 --- FIM DO CONTEXTO ---
 """
 
+
+# ── Chat Stream ──────────────────────────────────────────────────────────────
 
 def chat_stream(
     messages: list[dict],
@@ -321,7 +362,6 @@ def chat_stream(
         raise RuntimeError(
             "GROQ_API_KEY não configurada. Adicione-a nos Secrets do Streamlit."
         )
-
     try:
         from openai import OpenAI
     except ImportError:
@@ -330,7 +370,6 @@ def chat_stream(
     catalog_skill = load_catalog_skill()
 
     client = OpenAI(api_key=api_key, base_url=GROQ_BASE_URL)
-
     full_messages = [
         {"role": "system", "content": _build_system_prompt(context_block, catalog_skill)},
         *messages,
