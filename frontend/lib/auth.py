@@ -2,11 +2,6 @@
 auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação + Sidebar Pro Redesign 2026.
-Nav usa st.sidebar.page_link() para navegação real no Streamlit.
-
-Funções legadas mantidas como aliases para compatibilidade:
-  sidebar_logo(), sidebar_user_info(), sidebar_logout_button(),
-  sidebar_nav_highlight(), sidebar_section_label(), sidebar_divider()
 """
 from __future__ import annotations
 
@@ -21,11 +16,10 @@ HOME_PAGE   = "pages/1_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
-# ─── Flag de debug ─────────────────────────────────────────────────────────────────
-DEBUG_SIDEBAR = False  # True apenas para diagnosticar problemas
+DEBUG_SIDEBAR = False
 
 
-# ─── Usuários demo/seed ─────────────────────────────────────────────────────────────────
+# ─── Usuários demo/seed ──────────────────────────────────────────────
 USUARIOS_DEMO: dict[str, dict] = {
     "william": {
         "senha":        "hipnus@2026",
@@ -65,7 +59,6 @@ USUARIOS_DEMO: dict[str, dict] = {
 }
 
 
-# ─── Normalização de perfil ────────────────────────────────────────────────────────────────
 def _normalize_role(role: str | None) -> str:
     role = (role or "demo").strip().lower()
     aliases = {
@@ -82,7 +75,6 @@ def _normalize_role(role: str | None) -> str:
     return aliases.get(role, role)
 
 
-# ─── Helpers de sessão ─────────────────────────────────────────────────────────────────
 def _gravar_sessao(
     nome: str, username: str, role: str,
     display_name: str, email: str, token: str | None,
@@ -204,7 +196,6 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
         "avatar_b64":   st.session_state.get("avatar_b64", None),
     }
     st.session_state["perfil"] = usuario["perfil"]
-
     if perfis_permitidos and usuario["perfil"] not in perfis_permitidos:
         st.error("🚫 Você não tem permissão para acessar esta página.")
         st.stop()
@@ -222,9 +213,9 @@ def logout() -> None:
     st.switch_page(_LOGIN_PAGE)
 
 
-# ──────────────────────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────────
 # SIDEBAR PRO REDESIGN 2026
-# ──────────────────────────────────────────────────────────────────────────────────────
+# ───────────────────────────────────────────────────────────────────────
 
 _NAV_ITEMS = [
     ("pages/11_IA_Consultora.py",      "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
@@ -242,7 +233,6 @@ _NAV_ITEMS = [
 ]
 
 
-# ─── Helpers internos ────────────────────────────────────────────────────────────────────────────────
 def _page_exists(page_path: str) -> bool:
     try:
         candidates = [
@@ -278,7 +268,57 @@ def _debug_sidebar_state(perfil: str) -> None:
             st.json(dict(st.session_state))
 
 
+# ─── CSS do botão SAIR ────────────────────────────────────────────────
+# Injetado via st.markdown() no <head> do documento — máxima precedência.
+# O tema light do Streamlit gera regras com alta especificidade que
+# sobrescrevem qualquer CSS injetado via st.sidebar.html().
+# A única forma confiável de vencer é usar st.markdown com
+# unsafe_allow_html=True, que coloca o <style> no <head> após as regras
+# do tema, ganhando por ordem de cascata (mesmo seletor, último vence).
+_SAIR_CSS = """
+<style>
+/* HIPNUS — Botão SAIR na sidebar */
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button p {
+    background-color: rgba(185, 28, 28, 0.25) !important;
+    background-image: none !important;
+    color: #fca5a5 !important;
+    border: 1.5px solid rgba(239, 68, 68, 0.45) !important;
+    border-radius: 11px !important;
+    font-weight: 700 !important;
+    font-size: 0.86rem !important;
+    min-height: 44px !important;
+    transition: all 0.18s ease !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover > div,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p {
+    background-color: rgba(220, 38, 38, 0.40) !important;
+    color: #ffffff !important;
+    border-color: rgba(239, 68, 68, 0.75) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.30) !important;
+}
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:active,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:active > div,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus > div,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:active p,
+section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus p {
+    background-color: rgba(220, 38, 38, 0.50) !important;
+    color: #ffffff !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+</style>
+"""
+
+
 def _inject_sidebar_css() -> None:
+    # 1. CSS do botão SAIR — injetado no <head> via st.markdown (máxima precedência)
+    st.markdown(_SAIR_CSS, unsafe_allow_html=True)
+
+    # 2. CSS geral da sidebar — injetado via st.sidebar.html
     st.sidebar.html("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
@@ -320,58 +360,9 @@ def _inject_sidebar_css() -> None:
       background: linear-gradient(90deg, transparent, rgba(185,131,255,.45), rgba(0,245,255,.15), transparent);
       border: none;
     }
-
-    /* ──────────────────────────────────────────────────────────────────
-       BOTÃO SAIR — força texto branco em TODOS os estados
-       O tema light do Streamlit (config.toml) gera regras de alta
-       especificidade que sobrescrevem o texto. Usamos o seletor
-       mais específico possível + !important em cada propriedade.
-    ────────────────────────────────────────────────────────────────── */
-    section[data-testid="stSidebar"] div.block-container div.stButton > button,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button p,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button span {
-      width: 100% !important;
-      background: rgba(239,68,68,.15) !important;
-      color: #fca5a5 !important;
-      border: 1px solid rgba(239,68,68,.38) !important;
-      border-radius: 11px !important;
-      font-family: 'Inter', sans-serif !important;
-      font-weight: 700 !important;
-      font-size: .86rem !important;
-      padding: 10px 0 !important;
-      min-height: 44px !important;
-      transition: all .18s ease !important;
-      margin-top: 4px !important;
-      letter-spacing: .3px !important;
-    }
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover p,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:hover span {
-      background: rgba(239,68,68,.32) !important;
-      color: #fff !important;
-      border-color: rgba(239,68,68,.65) !important;
-      box-shadow: 0 0 20px rgba(239,68,68,.28) !important;
-    }
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:active,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:active p,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:active span,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus p,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus span,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus-visible,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus-visible p,
-    section[data-testid="stSidebar"] div.block-container div.stButton > button:focus-visible span {
-      background: rgba(239,68,68,.38) !important;
-      color: #fff !important;
-      border-color: rgba(239,68,68,.8) !important;
-      outline: none !important;
-    }
-    /* ──────────────────────────────────────────────────────────────── */
-
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] div { color: rgba(255,255,255,.75); }
+    section[data-testid="stSidebar"] label { color: rgba(255,255,255,.75); }
     section[data-testid="stSidebar"] strong { color: #fff; }
     section[data-testid="stSidebar"] ::-webkit-scrollbar { width: 4px; }
     section[data-testid="stSidebar"] ::-webkit-scrollbar-track { background: transparent; }
@@ -392,7 +383,7 @@ def build_sidebar(
     st.session_state["perfil"] = perfil
 
     _inject_sidebar_css()
-    _debug_sidebar_state(perfil)  # no-op quando DEBUG_SIDEBAR=False
+    _debug_sidebar_state(perfil)
 
     # Logo
     st.sidebar.html("""
@@ -457,11 +448,11 @@ def build_sidebar(
     # Divider + botão SAIR
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
-        if st.button("🚨\u00a0 SAIR", key="sb_logout_btn", use_container_width=True):
+        if st.button("🚨  SAIR", key="sb_logout_btn", use_container_width=True):
             logout()
 
 
-# ─── Aliases de compatibilidade ───────────────────────────────────────────────────────────────────────────────────────────────────────
+# ─── Aliases de compatibilidade ──────────────────────────────────────
 def sidebar_logo() -> None:
     _maybe_build_sidebar()
 
