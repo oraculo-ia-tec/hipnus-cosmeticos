@@ -36,26 +36,26 @@ st.html("""
 }
 .chiara-top-avatar img,
 .chiara-top-avatar .chiara-initial {
-    width: 100px;
-    height: 100px;
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid rgba(185,131,255,0.5);
-    box-shadow: 0 0 32px rgba(185,131,255,0.35), 0 0 8px rgba(236,72,153,0.2);
+    border: 4px solid rgba(185,131,255,0.6);
+    box-shadow: 0 0 48px rgba(185,131,255,0.45), 0 0 16px rgba(236,72,153,0.25);
     display: block;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 .chiara-top-avatar .chiara-initial {
     background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.8rem;
+    font-size: 3.5rem;
     font-weight: 800;
     color: #fff;
 }
 .chiara-top-name {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     font-weight: 800;
     background: linear-gradient(135deg, #b983ff 0%, #ec4899 100%);
     -webkit-background-clip: text;
@@ -137,7 +137,7 @@ with col_center:
         <hr class="chiara-divider" />
         """)
 
-# ── Status da IA ──────────────────────────────────────────────────────────────
+# ── Validação silenciosa da IA (sem exibir info técnica) ─────────────────────
 status = groq_status()
 if not status["configured"]:
     st.error(
@@ -147,8 +147,6 @@ if not status["configured"]:
         "💡 Crie sua chave grátis em [console.groq.com](https://console.groq.com)"
     )
     st.stop()
-else:
-    st.caption(f"🟢 IA ativa · Modelo: `{status['model']}`")
 
 # ── Saudação inicial personalizada ───────────────────────────────────────────
 _saudacao_padrao = (
