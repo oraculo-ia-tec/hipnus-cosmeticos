@@ -3,12 +3,9 @@ auth.py — HIPNUS COSMÉTICOS
 ==============================
 Guarda de autenticação + Sidebar Pro Redesign 2026.
 
-Fix 2026-06-29 v2: persistência definitiva de imagens.
-  - Avatar do usuário: recarregado do banco a cada page-load quando ausente
-    na sessão (sem depender de flag _avatar_loaded que bloqueava a recarga).
-  - Foto da Chiara: recarregada do banco a cada page-load quando ausente
-    na sessão (sem depender de flag _chiara_loaded que bloqueava a recarga).
-  - Resultado: imagens sobrevivem a logout/login e reinicialização.
+Fix 2026-06-29 v3:
+  - Card do usuário na sidebar exibe <img> real quando avatar_b64 existe.
+  - Persistência de imagens: sem flags bloqueantes (_avatar_loaded removido).
 """
 from __future__ import annotations
 
@@ -83,16 +80,6 @@ def _normalize_role(role: str | None) -> str:
 
 
 def _carregar_chiara_no_session() -> None:
-    """
-    Carrega nome, cargo e foto da Chiara do banco para o session_state.
-
-    Estratégia sem flag bloqueante:
-      - Sempre verifica se chiara_foto_b64 está presente na sessão.
-      - Se não estiver, consulta o banco e preenche todos os campos.
-      - Isso garante que a foto da Chiara reaparece após logout/login
-        sem precisar resetar manualmente nenhuma flag.
-    """
-    # Se a foto já está na sessão, não precisa ir ao banco
     if st.session_state.get("chiara_foto_b64"):
         return
     try:
@@ -116,17 +103,6 @@ def _carregar_chiara_no_session() -> None:
 
 
 def _restaurar_avatar_usuario(email: str) -> None:
-    """
-    Recarrega avatar_b64 do parceiro no banco quando ausente na sessão.
-
-    Estratégia sem flag bloqueante:
-      - Sempre verifica se avatar_b64 está presente na sessão.
-      - Se não estiver E houver e-mail, consulta o banco.
-      - Isso garante que o avatar reaparece após logout/login para
-        TODOS os usuários cadastrados no banco (incluindo parceiros
-        que fizeram upload de foto em sessões anteriores).
-    """
-    # Se já tem avatar na sessão, não precisa ir ao banco
     if st.session_state.get("avatar_b64"):
         return
     if not email:
@@ -159,10 +135,9 @@ def _gravar_sessao(
         "email":             email,
         "token":             token,
         "via_api":           via_api,
-        "avatar_b64":        avatar_b64,   # None se não vier do banco; _restaurar cobre depois
+        "avatar_b64":        avatar_b64,
         "session_start":     time.time(),
         "_jwt_dialog_shown": False,
-        # Limpa caches de foto para forçar recarga nas funções acima
         "chiara_foto_b64":   None,
         "chiara_foto_mime":  None,
         "chiara_nome":       None,
@@ -224,8 +199,6 @@ def _login_offline(identificador: str, password: str) -> bool:
     if encontrado:
         uname, u = encontrado
         if password == u["senha"]:
-            # Tenta buscar avatar no banco para usuários demo que também
-            # estão cadastrados como parceiros (ex: william tem e-mail real)
             avatar_b64 = None
             try:
                 import sys
@@ -275,9 +248,6 @@ def require_auth(perfis_permitidos: list[str] | None = None) -> dict:
     if not st.session_state.get("autenticado"):
         st.switch_page(_LOGIN_PAGE)
 
-    # ── Restaura fotos a cada page-load (sem flag bloqueante) ────────
-    # As funções abaixo verificam internamente se já há valor na sessão
-    # e só consultam o banco quando necessário — sem custo extra.
     email = st.session_state.get("email", "")
     _restaurar_avatar_usuario(email)
     _carregar_chiara_no_session()
@@ -323,7 +293,7 @@ _NAV_ITEMS = [
     ("pages/0_Dashboard.py",           "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/2_Catalogo.py",            "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
     ("pages/3_Linhas.py",              "✨  Linhas",            {"super_admin","admin","b2b","b2c"}),
-    ("pages/4_Loja_Parceiro.py",       "🏪  Loja Parceiro",     {"super_admin","admin","b2b"}),
+    ("pages/4_Loja_Parceiro.py",       "🏡  Loja Parceiro",     {"super_admin","admin","b2b"}),
     ("pages/5_Carrinho.py",            "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
     ("pages/6_Checkout.py",            "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
     ("pages/7_Convites.py",            "✉️  Convites",          {"super_admin","admin"}),
@@ -370,7 +340,6 @@ def _debug_sidebar_state(perfil: str) -> None:
 
 _SAIR_CSS = """
 <style>
-/* HIPNUS — Botão SAIR na sidebar */
 section[data-testid="stSidebar"] div[data-testid="stButton"] > button,
 section[data-testid="stSidebar"] div[data-testid="stButton"] > button > div,
 section[data-testid="stSidebar"] div[data-testid="stButton"] > button p {
@@ -391,17 +360,6 @@ section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover p {
     color: #ffffff !important;
     border-color: rgba(239, 68, 68, 0.75) !important;
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.30) !important;
-}
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:active,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:active > div,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus > div,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:active p,
-section[data-testid="stSidebar"] div[data-testid="stButton"] > button:focus p {
-    background-color: rgba(220, 38, 38, 0.50) !important;
-    color: #ffffff !important;
-    outline: none !important;
-    box-shadow: none !important;
 }
 </style>
 """
@@ -463,13 +421,28 @@ def _inject_sidebar_css() -> None:
     """)
 
 
+def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color: str = "#7c3aed") -> str:
+    """Retorna HTML do avatar do usuário: foto real ou inicial colorida."""
+    if avatar_b64:
+        src = avatar_b64 if avatar_b64.startswith("data:") else f"data:image/jpeg;base64,{avatar_b64}"
+        return f'<img src="{src}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid {badge_color};" alt="avatar" />'
+    initial = (display_nm or "U")[0].upper()
+    return (
+        f'<div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;'
+        f'background:linear-gradient(135deg,{badge_color},{badge_color}88);'
+        f'border:1.5px solid {badge_color}44;'
+        f'display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:#fff;">'
+        f'{initial}</div>'
+    )
+
+
 def build_sidebar(
     show_cart: bool = True,
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """Sidebar Pro 2026 — menu completo, persistente em todas as páginas."""
-    perfil = _normalize_role(st.session_state.get("perfil", "demo"))
+    """Sidebar Pro 2026 — menu completo com avatar real do usuário."""
+    perfil     = _normalize_role(st.session_state.get("perfil", "demo"))
     st.session_state["perfil"] = perfil
 
     _inject_sidebar_css()
@@ -497,21 +470,28 @@ def build_sidebar(
       background:linear-gradient(90deg,transparent,rgba(185,131,255,.3),transparent);"></div>
     """)
 
-    # Card usuário
+    # Card usuário com foto real
     nome       = st.session_state.get("nome", "Visitante")
     display_nm = st.session_state.get("display_name", "") or nome
+    avatar_b64 = st.session_state.get("avatar_b64", "")
     role_label = perfil.replace("_", " ").upper()
-    icone      = {"super_admin":"⭐","admin":"🛡️","b2b":"🎤","b2c":"👤","demo":"👀"}.get(perfil, "👤")
+
+    badge_map = {
+        "super_admin": "#7c3aed",
+        "admin":       "#2563eb",
+        "b2b":         "#059669",
+        "b2c":         "#d97706",
+        "demo":        "#6b7280",
+    }
+    badge_color = badge_map.get(perfil, "#7c3aed")
+    avatar_html = _build_user_avatar_html(display_nm, avatar_b64, badge_color)
 
     st.sidebar.html(f"""
     <div style="display:flex;align-items:center;gap:10px;
       padding:10px 12px;margin:0 8px 8px;
       background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(185,131,255,.07));
       border:1px solid rgba(185,131,255,.28);border-radius:14px;">
-      <div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;
-        background:linear-gradient(135deg,rgba(124,58,237,.5),rgba(185,131,255,.2));
-        border:1.5px solid rgba(185,131,255,.4);
-        display:flex;align-items:center;justify-content:center;font-size:1rem;">{icone}</div>
+      {avatar_html}
       <div style="min-width:0;">
         <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:.84rem;
           color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
