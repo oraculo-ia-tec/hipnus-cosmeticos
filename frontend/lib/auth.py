@@ -1,10 +1,10 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v11 — 2026-06-29:
-  - Botão SAIR com o mesmo estilo visual do card Chiara:
-    fundo gradient(135deg, primary 22%, accent 10%),
-    borda accent 32%, texto branco, hover primary 32%/accent 16%.
+v12 — 2026-06-30:
+  - fix: remove capa branca do botão SAIR.
+    Separado seletor "button p" para receber APENAS color:#fff
+    (sem background nem border-radius), evitando sobreposição branca.
 """
 from __future__ import annotations
 
@@ -286,8 +286,6 @@ def logout() -> None:
 # SIDEBAR PRO REDESIGN 2026
 # ───────────────────────────────────────────────────────────────────────
 
-# ATENÇÃO: Home (pages/1_Home.py) e Linhas (pages/3_Linhas.py) foram
-# removidos intencionalmente do menu a pedido do cliente (v9).
 _NAV_ITEMS = [
     ("pages/11_IA_Consultora.py",      "__chiara__",            {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/0_Dashboard.py",           "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
@@ -363,27 +361,26 @@ def _inject_sidebar_css() -> None:
     a_45 = _hex_rgba(cor_accent,  0.45)
     a_65 = _hex_rgba(cor_accent,  0.65)
 
-    # ── Botão SAIR — mesmo visual do card Chiara ──────────────────────
-    # Chiara: background linear-gradient(135deg, primary 0.22, accent 0.10)
-    #         border: 1px solid accent 0.32
-    #         hover:  border accent 0.65, bg primary 0.32 / accent 0.16
     sair_bg       = f"linear-gradient(135deg,{p_22},{a_10})"
     sair_border   = a_32
-    sair_color    = "#ffffff"
     sair_shadow   = _hex_rgba(cor_primary, 0.18)
     sair_hover_bg = f"linear-gradient(135deg,{p_32},{a_16})"
     sair_hover_bd = a_65
     sair_glow     = _hex_rgba(cor_primary, 0.32)
 
+    # ── REGRA CRÍTICA ─────────────────────────────────────────────────
+    # O seletor "button p" recebe APENAS color (sem background nem
+    # border-radius). Qualquer background no <p> interno cria uma
+    # camada branca que oculta o texto do botão. Somente o <button>
+    # recebe o gradiente de fundo.
+    # ────────────────────────────────────────────────────────
     st.markdown(f"""
 <style>
-/* ── Botão SAIR — estilo Chiara ────────────────────────────── */
+/* Botão SAIR — apenas o <button> recebe fundo/borda */
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button,
-section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button {{
     background:{sair_bg} !important;
-    color:{sair_color} !important;
+    color:#fff !important;
     border:1px solid {sair_border} !important;
     border-radius:10px !important;
     font-family:'Inter',sans-serif !important;
@@ -394,16 +391,27 @@ section[data-testid="stSidebar"]
     transition:all .18s ease !important;
     box-shadow:0 2px 10px {sair_shadow} !important;
 }}
+/* <p> interno: SOMENTE cor do texto — sem background, sem border-radius */
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover,
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
+    color:#fff !important;
+    background:transparent !important;
+}}
+/* Hover */
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {{
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover {{
     background:{sair_hover_bg} !important;
     color:#fff !important;
     border-color:{sair_hover_bd} !important;
     box-shadow:0 0 14px {sair_glow} !important;
     transform:translateY(-1px) !important;
 }}
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {{
+    color:#fff !important;
+    background:transparent !important;
+}}
+/* Active */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {{
     transform:translateY(0px) !important;
