@@ -1,12 +1,11 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v8 — 2026-06-29:
-  - Fix definitivo item Chiara: CSS + HTML no mesmo st.sidebar.html() (mesmo iframe).
-    O Streamlit isola cada html() num iframe separado, por isso o CSS do bloco
-    anterior não alcançava o <a>. Agora tudo está no mesmo bloco.
-  - Layout: [ foto 32x32 ◀ esquerda ] [ nome ▶ direita ] [ badge IA ]
-  - Botão SAIR usa cor dinâmica do tema.
+v9 — 2026-06-29:
+  - Remove itens Home e Linhas do menu lateral.
+  - Corrige item Chiara: substituído <a href=...> por st.sidebar.page_link
+    para não derrubar a sessão do Streamlit ao clicar.
+    O <a href> fazia uma navegação HTTP pura, limpando o session_state.
 """
 from __future__ import annotations
 
@@ -288,12 +287,12 @@ def logout() -> None:
 # SIDEBAR PRO REDESIGN 2026
 # ───────────────────────────────────────────────────────────────────────
 
+# ATENÇÃO: Home (pages/1_Home.py) e Linhas (pages/3_Linhas.py) foram
+# removidos intencionalmente do menu a pedido do cliente (v9).
 _NAV_ITEMS = [
     ("pages/11_IA_Consultora.py",      "__chiara__",            {"super_admin","admin","b2b","b2c","demo"}),
-    ("pages/1_Home.py",                "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/0_Dashboard.py",           "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/2_Catalogo.py",            "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
-    ("pages/3_Linhas.py",              "✨  Linhas",            {"super_admin","admin","b2b","b2c"}),
     ("pages/4_Loja_Parceiro.py",       "🏡  Loja Parceiro",     {"super_admin","admin","b2b"}),
     ("pages/5_Carrinho.py",            "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
     ("pages/6_Checkout.py",            "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
@@ -470,14 +469,15 @@ def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color
 
 def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     """
-    Renderiza o item Chiara num único st.sidebar.html().
+    Renderiza o item Chiara como visual decorativo (HTML) + link real (page_link).
 
-    IMPORTANT: cada st.sidebar.html() é um iframe isolado no Streamlit.
-    O CSS só alcanaça elementos dentro do MESMO html(). Por isso o <style>
-    e o <a> devem estar no MESMO bloco.
-
-    Layout final (horizontal, linha única):
-      [ foto circular 32px ] [ Chiara (nome) ] [ pill IA ]
+    IMPORTANTE: <a href=...> dentro de st.sidebar.html() faz navegação HTTP pura
+    e limpa o session_state, causando logout. A solução é:
+      1. Exibir o card visual via st.sidebar.html() (foto + nome + badge).
+      2. Sobrepor com st.sidebar.page_link() que usa o roteador interno do Streamlit
+         e preserva a sessão.
+      3. CSS posiciona o page_link por cima do card com margin-top negativo,
+         tornando o card clicável de forma transparente.
     """
     foto_b64  = st.session_state.get("chiara_foto_b64", "") or ""
     foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg") or "image/jpeg"
@@ -505,12 +505,12 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
             f'">C</div>'
         )
 
-    # CSS + HTML no mesmo bloco (mesmo iframe)
+    # 1) Card visual (NÃO tem <a href> para não matar a sessão)
     st.sidebar.html(f"""
     <style>
       *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
       body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-      .chi-link{{
+      .chi-card{{
         display:flex;
         flex-direction:row;
         align-items:center;
@@ -520,16 +520,8 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         border-radius:10px;
         border:1px solid {_hex_rgba(cor_accent, 0.32)};
         background:linear-gradient(135deg,{_hex_rgba(cor_primary,0.22)},{_hex_rgba(cor_accent,0.10)});
-        text-decoration:none;
-        cursor:pointer;
-        transition:all .18s ease;
-        width:calc(100% - 12px);
         min-height:44px;
-      }}
-      .chi-link:hover{{
-        border-color:{_hex_rgba(cor_accent,0.65)};
-        box-shadow:0 0 14px {_hex_rgba(cor_primary,0.32)};
-        background:linear-gradient(135deg,{_hex_rgba(cor_primary,0.32)},{_hex_rgba(cor_accent,0.16)});
+        pointer-events:none;
       }}
       .chi-nome{{
         flex:1;
@@ -558,12 +550,33 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         line-height:1.4;
       }}
     </style>
-    <a href="/IA_Consultora" target="_self" class="chi-link">
+    <div class="chi-card">
       {avatar_html}
       <span class="chi-nome">{nome}</span>
       <span class="chi-badge">IA</span>
-    </a>
+    </div>
     """)
+
+    # 2) page_link real por cima — usa roteador do Streamlit (preserva sessão)
+    #    margin-top negativo sobrepõe visualmente o card acima
+    st.sidebar.markdown(
+        """
+        <style>
+        section[data-testid="stSidebar"]
+          div[data-testid="stPageLink"]:has(a[href*="IA_Consultora"]) {
+            margin-top: -54px !important;
+            opacity: 0 !important;
+            height: 54px !important;
+            pointer-events: all !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    try:
+        st.sidebar.page_link("pages/11_IA_Consultora.py", label=nome)
+    except Exception:
+        pass
 
 
 def build_sidebar(
