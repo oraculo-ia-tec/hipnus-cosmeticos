@@ -1,11 +1,9 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v9 — 2026-06-29:
-  - Remove itens Home e Linhas do menu lateral.
-  - Corrige item Chiara: substituído <a href=...> por st.sidebar.page_link
-    para não derrubar a sessão do Streamlit ao clicar.
-    O <a href> fazia uma navegação HTTP pura, limpando o session_state.
+v10 — 2026-06-29:
+  - Adiciona divider estilizado acima do menu Dashboard
+    (entre o bloco Chiara e os itens de navegação normais).
 """
 from __future__ import annotations
 
@@ -558,7 +556,6 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     """)
 
     # 2) page_link real por cima — usa roteador do Streamlit (preserva sessão)
-    #    margin-top negativo sobrepõe visualmente o card acima
     st.sidebar.markdown(
         """
         <style>
@@ -651,12 +648,20 @@ def build_sidebar(
     """)
 
     # Itens de menu
+    # _chiara_done: flag para inserir o divider UMA única vez
+    # após o bloco Chiara, antes do primeiro item normal (Dashboard).
+    _chiara_done = False
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
             continue
         if label == "__chiara__":
             _build_chiara_menu_item(cor_primary, cor_accent)
+            _chiara_done = True
             continue
+        # Divider entre Chiara e o primeiro item normal
+        if _chiara_done:
+            st.sidebar.html('<hr class="hip-sidebar-divider">')
+            _chiara_done = False  # garante que só aparece uma vez
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
         try:
             st.sidebar.page_link(page_path, label=lbl)
