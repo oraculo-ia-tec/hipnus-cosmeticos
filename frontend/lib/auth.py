@@ -1,7 +1,9 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v5 — 2026-06-29:
+v6 — 2026-06-29:
+  - Menu "IA Consultora" renomeado para "Chiara".
+  - Avatar da Chiara (foto real ou inicial) exibido à esquerda do nome no menu.
   - Botão SAIR usa cor dinâmica do tema (tema_primary / tema_accent) do session_state.
   - _inject_sidebar_css lê session_state para gerar o CSS correto a cada renderização.
   - Sidebar background também responde ao tema ativo.
@@ -286,8 +288,9 @@ def logout() -> None:
 # SIDEBAR PRO REDESIGN 2026
 # ───────────────────────────────────────────────────────────────────────
 
+# Itens de menu — Chiara substitui IA Consultora (label especial marcado com "__chiara__")
 _NAV_ITEMS = [
-    ("pages/11_IA_Consultora.py",      "🤖  IA Consultora",     {"super_admin","admin","b2b","b2c","demo"}),
+    ("pages/11_IA_Consultora.py",      "__chiara__",            {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/1_Home.py",                "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/0_Dashboard.py",           "📊  Dashboard",         {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/2_Catalogo.py",            "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
@@ -343,11 +346,9 @@ def _inject_sidebar_css() -> None:
     Lê tema_primary e tema_accent — se não definidos, usa Violeta como padrão.
     O botão SAIR herda as cores do acento do tema selecionado.
     """
-    # Cor primária e accent do tema ativo
     cor_primary = st.session_state.get("tema_primary", "#7c3aed")
     cor_accent  = st.session_state.get("tema_accent",  "#b983ff")
 
-    # Gera rgba para glow e transparências
     def _hex_rgba(hex_color: str, alpha: float) -> str:
         try:
             h = hex_color.lstrip("#")
@@ -370,7 +371,6 @@ def _inject_sidebar_css() -> None:
     a_45  = _hex_rgba(cor_accent,  0.45)
     a_50  = _hex_rgba(cor_accent,  0.50)
 
-    # Botão SAIR — usa cor do tema em vez de vermelho fixo
     sair_bg       = f"linear-gradient(135deg, {_hex_rgba(cor_primary, 0.30)}, {_hex_rgba(cor_primary, 0.18)})"
     sair_border   = _hex_rgba(cor_accent, 0.45)
     sair_color    = cor_accent
@@ -378,6 +378,22 @@ def _inject_sidebar_css() -> None:
     sair_hover_bg = f"linear-gradient(135deg, {_hex_rgba(cor_primary, 0.55)}, {_hex_rgba(cor_primary, 0.40)})"
     sair_hover_bd = _hex_rgba(cor_accent, 0.75)
     sair_glow     = _hex_rgba(cor_primary, 0.40)
+
+    # CSS para o item Chiara no menu (link da página 11)
+    chiara_item_css = f"""
+section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="IA_Consultora"],
+section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="Consultora"] {{
+  background: linear-gradient(135deg, {_hex_rgba(cor_primary, 0.18)}, {_hex_rgba(cor_accent, 0.10)}) !important;
+  border-color: {_hex_rgba(cor_accent, 0.35)} !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}}
+section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="IA_Consultora"]:hover,
+section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="Consultora"]:hover {{
+  box-shadow: 0 0 16px {_hex_rgba(cor_primary, 0.35)} !important;
+  border-color: {_hex_rgba(cor_accent, 0.60)} !important;
+}}
+"""
 
     st.markdown(f"""
 <style>
@@ -414,6 +430,7 @@ section[data-testid="stSidebar"]
     transform: translateY(0px) !important;
     box-shadow: 0 0 10px {sair_shadow} !important;
 }}
+{chiara_item_css}
 </style>
 """, unsafe_allow_html=True)
 
@@ -486,6 +503,82 @@ def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color
     )
 
 
+def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
+    """
+    Renderiza o item Chiara no menu da sidebar:
+    foto circular (ou inicial 'C') + nome + badge IA.
+    Ao clicar, navega para a página 11_IA_Consultora.
+    """
+    foto_b64  = st.session_state.get("chiara_foto_b64", "")
+    foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg")
+    nome      = st.session_state.get("chiara_nome", "Chiara") or "Chiara"
+
+    def _hex_rgba(hex_color: str, alpha: float) -> str:
+        try:
+            h = hex_color.lstrip("#")
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return f"rgba({r},{g},{b},{alpha})"
+        except Exception:
+            return f"rgba(124,58,237,{alpha})"
+
+    # Monta o src da foto ou usa inicial
+    if foto_b64:
+        src = foto_b64 if foto_b64.startswith("data:") else f"data:{foto_mime};base64,{foto_b64}"
+        avatar_part = (
+            f'<img src="{src}" alt="Chiara" '
+            f'style="width:28px;height:28px;border-radius:50%;object-fit:cover;'
+            f'flex-shrink:0;border:1.5px solid {_hex_rgba(cor_accent, 0.7)};" />'
+        )
+    else:
+        avatar_part = (
+            f'<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;'
+            f'background:linear-gradient(135deg,{cor_primary},{cor_accent});'
+            f'border:1.5px solid {_hex_rgba(cor_accent, 0.5)};'
+            f'display:flex;align-items:center;justify-content:center;'
+            f'font-size:.8rem;font-weight:800;color:#fff;">C</div>'
+        )
+
+    # CSS do item customizado + link real via page_link do Streamlit
+    # Usamos um container HTML para exibir o avatar e depois o page_link por baixo
+    st.sidebar.html(f"""
+    <style>
+    /* Esconde o texto padrão do page_link Chiara e deixa só o nosso HTML visível */
+    div[data-chiara-nav="1"] [data-testid="stPageLink"] a span {{
+        display: none !important;
+    }}
+    div[data-chiara-nav="1"] [data-testid="stPageLink"] a {{
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        min-height: 0 !important;
+    }}
+    </style>
+    <div data-chiara-nav="1"
+         style="display:flex;align-items:center;gap:9px;
+                padding:7px 14px;margin:1px 6px;
+                border-radius:10px;border:1px solid {_hex_rgba(cor_accent, 0.32)};
+                background:linear-gradient(135deg,{_hex_rgba(cor_primary, 0.18)},{_hex_rgba(cor_accent, 0.08)});
+                cursor:pointer;transition:all .18s ease;
+                font-family:'Inter',sans-serif;">
+      {avatar_part}
+      <span style="font-size:.86rem;font-weight:600;color:#fff;
+                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                   max-width:110px;">{nome}</span>
+      <span style="margin-left:auto;font-size:.55rem;font-weight:700;
+                   letter-spacing:.6px;text-transform:uppercase;
+                   background:{_hex_rgba(cor_primary, 0.4)};color:{cor_accent};
+                   border:1px solid {_hex_rgba(cor_accent, 0.4)};
+                   padding:2px 7px;border-radius:999px;">IA</span>
+    </div>
+    """)
+
+    # page_link real (invisível — apenas para navegação)
+    try:
+        st.sidebar.page_link("pages/11_IA_Consultora.py", label=" ")
+    except Exception:
+        pass
+
+
 def build_sidebar(
     show_cart: bool = True,
     cart_count: int = 0,
@@ -495,14 +588,13 @@ def build_sidebar(
     perfil     = _normalize_role(st.session_state.get("perfil", "demo"))
     st.session_state["perfil"] = perfil
 
-    # Cor do tema ativo para o logo e card do usuário
     cor_primary = st.session_state.get("tema_primary", "#7c3aed")
     cor_accent  = st.session_state.get("tema_accent",  "#b983ff")
 
     _inject_sidebar_css()
     _debug_sidebar_state(perfil)
 
-    # Logo — usa cor do tema
+    # Logo
     st.sidebar.html(f"""
     <div style="display:flex;align-items:center;gap:11px;padding:20px 16px 14px;">
       <div style="width:38px;height:38px;border-radius:11px;flex-shrink:0;
@@ -524,7 +616,7 @@ def build_sidebar(
       background:linear-gradient(90deg,transparent,{cor_accent}44,transparent);"></div>
     """)
 
-    # Card usuário com foto real
+    # Card usuário
     nome       = st.session_state.get("nome", "Visitante")
     display_nm = st.session_state.get("display_name", "") or nome
     avatar_b64 = st.session_state.get("avatar_b64", "")
@@ -559,17 +651,23 @@ def build_sidebar(
     </div>
     """)
 
-    # Menus flat
+    # Itens de menu
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
             continue
+
+        # Item especial: Chiara
+        if label == "__chiara__":
+            _build_chiara_menu_item(cor_primary, cor_accent)
+            continue
+
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
         try:
             st.sidebar.page_link(page_path, label=lbl)
         except Exception:
             pass
 
-    # Divider + botão SAIR com cor do tema
+    # Divider + SAIR
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
         if st.button(
