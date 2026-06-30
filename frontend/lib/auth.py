@@ -1,10 +1,10 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v13 — 2026-06-30:
-  - fix definitivo: botão SAIR migrado para HTML puro via st.sidebar.html.
-    Remove o st.button que gerava <p> interno com cor branca bloqueada
-    pelo CSS nativo do Streamlit. Logout via query_params ?logout=1.
+v12 — 2026-06-30:
+  - fix: remove capa branca do botão SAIR.
+    Separado seletor "button p" para receber APENAS color:#fff
+    (sem background nem border-radius), evitando sobreposição branca.
 """
 from __future__ import annotations
 
@@ -355,9 +355,70 @@ def _inject_sidebar_css() -> None:
     a_10 = _hex_rgba(cor_accent,  0.10)
     a_12 = _hex_rgba(cor_accent,  0.12)
     a_15 = _hex_rgba(cor_accent,  0.15)
+    a_16 = _hex_rgba(cor_accent,  0.16)
     a_25 = _hex_rgba(cor_accent,  0.25)
     a_32 = _hex_rgba(cor_accent,  0.32)
     a_45 = _hex_rgba(cor_accent,  0.45)
+    a_65 = _hex_rgba(cor_accent,  0.65)
+
+    sair_bg       = f"linear-gradient(135deg,{p_22},{a_10})"
+    sair_border   = a_32
+    sair_shadow   = _hex_rgba(cor_primary, 0.18)
+    sair_hover_bg = f"linear-gradient(135deg,{p_32},{a_16})"
+    sair_hover_bd = a_65
+    sair_glow     = _hex_rgba(cor_primary, 0.32)
+
+    # ── REGRA CRÍTICA ─────────────────────────────────────────────────
+    # O seletor "button p" recebe APENAS color (sem background nem
+    # border-radius). Qualquer background no <p> interno cria uma
+    # camada branca que oculta o texto do botão. Somente o <button>
+    # recebe o gradiente de fundo.
+    # ────────────────────────────────────────────────────────
+    st.markdown(f"""
+<style>
+/* Botão SAIR — apenas o <button> recebe fundo/borda */
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button {{
+    background:{sair_bg} !important;
+    color:#fff !important;
+    border:1px solid {sair_border} !important;
+    border-radius:10px !important;
+    font-family:'Inter',sans-serif !important;
+    font-weight:600 !important;
+    font-size:.86rem !important;
+    letter-spacing:.3px !important;
+    min-height:44px !important;
+    transition:all .18s ease !important;
+    box-shadow:0 2px 10px {sair_shadow} !important;
+}}
+/* <p> interno: SOMENTE cor do texto — sem background, sem border-radius */
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
+    color:#fff !important;
+    background:transparent !important;
+}}
+/* Hover */
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover {{
+    background:{sair_hover_bg} !important;
+    color:#fff !important;
+    border-color:{sair_hover_bd} !important;
+    box-shadow:0 0 14px {sair_glow} !important;
+    transform:translateY(-1px) !important;
+}}
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {{
+    color:#fff !important;
+    background:transparent !important;
+}}
+/* Active */
+section[data-testid="stSidebar"]
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {{
+    transform:translateY(0px) !important;
+    box-shadow:0 0 8px {sair_shadow} !important;
+}}
+</style>
+""", unsafe_allow_html=True)
 
     st.sidebar.html(f"""
     <style>
@@ -395,40 +456,6 @@ def _inject_sidebar_css() -> None:
       height:1px; margin:14px 16px 10px;
       background:linear-gradient(90deg,transparent,{a_45},rgba(0,245,255,.15),transparent);
       border:none;
-    }}
-    /* Botão SAIR — HTML puro, sem dependência do <p> do Streamlit */
-    .hip-sair-btn {{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      width:calc(100% - 24px);
-      margin:4px 12px 12px;
-      padding:11px 16px;
-      min-height:44px;
-      background:linear-gradient(135deg,{p_22},{a_10});
-      color:#ffffff !important;
-      border:1px solid {a_32};
-      border-radius:10px;
-      font-family:'Inter',sans-serif;
-      font-size:.86rem;
-      font-weight:600;
-      letter-spacing:.3px;
-      cursor:pointer;
-      text-decoration:none;
-      box-shadow:0 2px 10px {_hex_rgba(cor_primary,0.18)};
-      transition:all .18s ease;
-    }}
-    .hip-sair-btn:hover {{
-      background:linear-gradient(135deg,{p_32},{a_10}) !important;
-      border-color:{a_45} !important;
-      color:#ffffff !important;
-      box-shadow:0 0 14px {_hex_rgba(cor_primary,0.32)} !important;
-      transform:translateY(-1px);
-    }}
-    .hip-sair-btn:active {{
-      transform:translateY(0);
-      box-shadow:0 0 8px {_hex_rgba(cor_primary,0.18)} !important;
     }}
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
@@ -560,64 +587,6 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         pass
 
 
-def _build_sair_button(cor_primary: str, cor_accent: str) -> None:
-    """Botão SAIR em HTML puro — sem <p> interno do Streamlit.
-
-    Usa um <a> com href "?logout=1" que aciona require_auth() no
-    próximo ciclo de renderização via st.query_params.
-    """
-    p_22 = _hex_rgba(cor_primary, 0.22)
-    p_32 = _hex_rgba(cor_primary, 0.32)
-    p_18 = _hex_rgba(cor_primary, 0.18)
-    p_32g = _hex_rgba(cor_primary, 0.32)
-    a_10 = _hex_rgba(cor_accent,  0.10)
-    a_32 = _hex_rgba(cor_accent,  0.32)
-    a_45 = _hex_rgba(cor_accent,  0.45)
-
-    st.sidebar.html(f"""
-    <style>
-      *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
-      body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-      .hip-sair {{
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        gap:8px;
-        width:calc(100% - 24px);
-        margin:4px 12px 10px;
-        padding:11px 16px;
-        min-height:44px;
-        background:linear-gradient(135deg,{p_22},{a_10});
-        color:#ffffff;
-        border:1px solid {a_32};
-        border-radius:10px;
-        font-family:'Inter',sans-serif;
-        font-size:.86rem;
-        font-weight:600;
-        letter-spacing:.3px;
-        cursor:pointer;
-        text-decoration:none;
-        box-shadow:0 2px 10px {p_18};
-        transition:all .18s ease;
-      }}
-      .hip-sair:hover {{
-        background:linear-gradient(135deg,{p_32},{a_10});
-        border-color:{a_45};
-        color:#ffffff;
-        box-shadow:0 0 14px {p_32g};
-        transform:translateY(-1px);
-        text-decoration:none;
-      }}
-      .hip-sair:active {{
-        transform:translateY(0);
-      }}
-    </style>
-    <a href="?logout=1" class="hip-sair" title="Encerrar sessão">
-      ⬡&nbsp;&nbsp;Sair da plataforma
-    </a>
-    """)
-
-
 def build_sidebar(
     show_cart: bool = True,
     cart_count: int = 0,
@@ -707,9 +676,16 @@ def build_sidebar(
         except Exception:
             pass
 
-    # Divider + SAIR (HTML puro)
+    # Divider + SAIR
     st.sidebar.html('<hr class="hip-sidebar-divider">')
-    _build_sair_button(cor_primary, cor_accent)
+    with st.sidebar:
+        if st.button(
+            "⬡  Sair da plataforma",
+            key="sb_logout_btn",
+            use_container_width=True,
+            help="Encerrar sessão e voltar ao login",
+        ):
+            logout()
 
 
 # ─── Aliases de compatibilidade ──────────────────────────────────────
