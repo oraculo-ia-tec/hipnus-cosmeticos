@@ -1,12 +1,12 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v6 — 2026-06-29:
-  - Menu "IA Consultora" renomeado para "Chiara".
-  - Avatar da Chiara (foto real ou inicial) exibido à esquerda do nome no menu.
-  - Botão SAIR usa cor dinâmica do tema (tema_primary / tema_accent) do session_state.
-  - _inject_sidebar_css lê session_state para gerar o CSS correto a cada renderização.
-  - Sidebar background também responde ao tema ativo.
+v7 — 2026-06-29:
+  - Fix layout item Chiara: usa <a href> nativo num único st.sidebar.html().
+    Elimina o problema de imagem+texto misturados causado por dois elementos
+    Streamlit separados (html + page_link).
+  - Botão SAIR usa cor dinâmica do tema.
+  - Sidebar responde ao tema ativo.
 """
 from __future__ import annotations
 
@@ -288,7 +288,6 @@ def logout() -> None:
 # SIDEBAR PRO REDESIGN 2026
 # ───────────────────────────────────────────────────────────────────────
 
-# Itens de menu — Chiara substitui IA Consultora (label especial marcado com "__chiara__")
 _NAV_ITEMS = [
     ("pages/11_IA_Consultora.py",      "__chiara__",            {"super_admin","admin","b2b","b2c","demo"}),
     ("pages/1_Home.py",                "🏠  Home",              {"super_admin","admin","b2b","b2c","demo"}),
@@ -340,243 +339,235 @@ def _debug_sidebar_state(perfil: str) -> None:
             st.json(dict(st.session_state))
 
 
+def _hex_rgba(hex_color: str, alpha: float) -> str:
+    """Utilitário global: converte hex + alpha em rgba()."""
+    try:
+        h = hex_color.lstrip("#")
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return f"rgba({r},{g},{b},{alpha})"
+    except Exception:
+        return f"rgba(124,58,237,{alpha})"
+
+
 def _inject_sidebar_css() -> None:
-    """
-    Injeta CSS da sidebar usando as cores do tema ativo via session_state.
-    Lê tema_primary e tema_accent — se não definidos, usa Violeta como padrão.
-    O botão SAIR herda as cores do acento do tema selecionado.
-    """
     cor_primary = st.session_state.get("tema_primary", "#7c3aed")
     cor_accent  = st.session_state.get("tema_accent",  "#b983ff")
 
-    def _hex_rgba(hex_color: str, alpha: float) -> str:
-        try:
-            h = hex_color.lstrip("#")
-            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-            return f"rgba({r},{g},{b},{alpha})"
-        except Exception:
-            return f"rgba(124,58,237,{alpha})"
+    p_20 = _hex_rgba(cor_primary, 0.20)
+    p_32 = _hex_rgba(cor_primary, 0.32)
+    p_50 = _hex_rgba(cor_primary, 0.50)
+    a_12 = _hex_rgba(cor_accent,  0.12)
+    a_15 = _hex_rgba(cor_accent,  0.15)
+    a_25 = _hex_rgba(cor_accent,  0.25)
+    a_45 = _hex_rgba(cor_accent,  0.45)
 
-    p_20  = _hex_rgba(cor_primary, 0.20)
-    p_25  = _hex_rgba(cor_primary, 0.25)
-    p_30  = _hex_rgba(cor_primary, 0.30)
-    p_32  = _hex_rgba(cor_primary, 0.32)
-    p_45  = _hex_rgba(cor_accent,  0.45)
-    p_50  = _hex_rgba(cor_primary, 0.50)
-    a_12  = _hex_rgba(cor_accent,  0.12)
-    a_15  = _hex_rgba(cor_accent,  0.15)
-    a_25  = _hex_rgba(cor_accent,  0.25)
-    a_28  = _hex_rgba(cor_accent,  0.28)
-    a_30  = _hex_rgba(cor_accent,  0.30)
-    a_45  = _hex_rgba(cor_accent,  0.45)
-    a_50  = _hex_rgba(cor_accent,  0.50)
-
-    sair_bg       = f"linear-gradient(135deg, {_hex_rgba(cor_primary, 0.30)}, {_hex_rgba(cor_primary, 0.18)})"
+    sair_bg       = f"linear-gradient(135deg,{_hex_rgba(cor_primary,0.30)},{_hex_rgba(cor_primary,0.18)})"
     sair_border   = _hex_rgba(cor_accent, 0.45)
     sair_color    = cor_accent
     sair_shadow   = _hex_rgba(cor_primary, 0.20)
-    sair_hover_bg = f"linear-gradient(135deg, {_hex_rgba(cor_primary, 0.55)}, {_hex_rgba(cor_primary, 0.40)})"
+    sair_hover_bg = f"linear-gradient(135deg,{_hex_rgba(cor_primary,0.55)},{_hex_rgba(cor_primary,0.40)})"
     sair_hover_bd = _hex_rgba(cor_accent, 0.75)
     sair_glow     = _hex_rgba(cor_primary, 0.40)
 
-    # CSS para o item Chiara no menu (link da página 11)
-    chiara_item_css = f"""
-section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="IA_Consultora"],
-section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="Consultora"] {{
-  background: linear-gradient(135deg, {_hex_rgba(cor_primary, 0.18)}, {_hex_rgba(cor_accent, 0.10)}) !important;
-  border-color: {_hex_rgba(cor_accent, 0.35)} !important;
-  color: #fff !important;
-  font-weight: 600 !important;
-}}
-section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="IA_Consultora"]:hover,
-section[data-testid="stSidebar"] [data-testid="stPageLink"] a[href*="Consultora"]:hover {{
-  box-shadow: 0 0 16px {_hex_rgba(cor_primary, 0.35)} !important;
-  border-color: {_hex_rgba(cor_accent, 0.60)} !important;
-}}
-"""
-
     st.markdown(f"""
 <style>
-/* ── Botão SAIR — cor dinâmica do tema ativo ─────────────────────── */
+/* ── Botão SAIR ─────────────────────────────────────── */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button,
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
-    background: {sair_bg} !important;
-    color: {sair_color} !important;
-    border: 1px solid {sair_border} !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    font-size: .82rem !important;
-    letter-spacing: .4px !important;
-    min-height: 42px !important;
-    transition: all .2s cubic-bezier(.16,1,.3,1) !important;
-    box-shadow: 0 2px 10px {sair_shadow},
-                inset 0 1px 0 rgba(255,255,255,.06) !important;
+    background:{sair_bg} !important; color:{sair_color} !important;
+    border:1px solid {sair_border} !important; border-radius:12px !important;
+    font-weight:600 !important; font-size:.82rem !important;
+    letter-spacing:.4px !important; min-height:42px !important;
+    transition:all .2s cubic-bezier(.16,1,.3,1) !important;
+    box-shadow:0 2px 10px {sair_shadow},inset 0 1px 0 rgba(255,255,255,.06) !important;
 }}
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover,
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {{
-    background: {sair_hover_bg} !important;
-    color: #fff !important;
-    border-color: {sair_hover_bd} !important;
-    box-shadow: 0 0 22px {sair_glow},
-                0 4px 14px {sair_shadow} !important;
-    transform: translateY(-1px) !important;
+    background:{sair_hover_bg} !important; color:#fff !important;
+    border-color:{sair_hover_bd} !important;
+    box-shadow:0 0 22px {sair_glow},0 4px 14px {sair_shadow} !important;
+    transform:translateY(-1px) !important;
 }}
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {{
-    transform: translateY(0px) !important;
-    box-shadow: 0 0 10px {sair_shadow} !important;
+    transform:translateY(0px) !important;
+    box-shadow:0 0 10px {sair_shadow} !important;
 }}
-{chiara_item_css}
 </style>
 """, unsafe_allow_html=True)
 
     st.sidebar.html(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
-
     section[data-testid="stSidebar"] > div {{
       background:
         radial-gradient(ellipse at 10% 10%, {p_20} 0%, transparent 55%),
         radial-gradient(ellipse at 90% 85%, rgba(0,245,255,.07) 0%, transparent 50%),
-        linear-gradient(180deg, #0a0015 0%, #110028 55%, #0a0015 100%) !important;
+        linear-gradient(180deg,#0a0015 0%,#110028 55%,#0a0015 100%) !important;
     }}
     [data-testid="stSidebarNav"],
     [data-testid="stSidebarNavSeparator"],
-    [data-testid="stSidebarNavItems"] {{ display: none !important; }}
-
+    [data-testid="stSidebarNavItems"] {{ display:none !important; }}
     section[data-testid="stSidebar"] [data-testid="stPageLink"] a,
     section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {{
-      display: flex !important; align-items: center !important; gap: 8px !important;
-      padding: 9px 14px !important; margin: 1px 6px !important;
-      border-radius: 10px !important; border: 1px solid transparent !important;
-      font-family: 'Inter', sans-serif !important; font-size: .86rem !important;
-      font-weight: 500 !important; color: rgba(255,255,255,.78) !important;
-      text-decoration: none !important; transition: all .18s ease !important;
-      background: transparent !important;
+      display:flex !important; align-items:center !important; gap:8px !important;
+      padding:9px 14px !important; margin:1px 6px !important;
+      border-radius:10px !important; border:1px solid transparent !important;
+      font-family:'Inter',sans-serif !important; font-size:.86rem !important;
+      font-weight:500 !important; color:rgba(255,255,255,.78) !important;
+      text-decoration:none !important; transition:all .18s ease !important;
+      background:transparent !important;
     }}
-    section[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover,
-    section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover {{
-      color: #fff !important; background: {a_12} !important;
-      border-color: {a_25} !important;
+    section[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {{
+      color:#fff !important; background:{a_12} !important;
+      border-color:{a_25} !important;
     }}
-    section[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"],
-    section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"][aria-current="page"] {{
-      color: #fff !important;
-      background: linear-gradient(135deg, {p_32}, {a_12}) !important;
-      border-color: {a_45} !important;
-      font-weight: 600 !important; box-shadow: 0 0 14px {a_15} !important;
+    section[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {{
+      color:#fff !important;
+      background:linear-gradient(135deg,{p_32},{a_12}) !important;
+      border-color:{a_45} !important;
+      font-weight:600 !important; box-shadow:0 0 14px {a_15} !important;
     }}
     .hip-sidebar-divider {{
-      height: 1px; margin: 14px 16px 10px;
-      background: linear-gradient(90deg, transparent, {a_45}, rgba(0,245,255,.15), transparent);
-      border: none;
+      height:1px; margin:14px 16px 10px;
+      background:linear-gradient(90deg,transparent,{a_45},rgba(0,245,255,.15),transparent);
+      border:none;
     }}
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label {{ color: rgba(255,255,255,.75); }}
-    section[data-testid="stSidebar"] strong {{ color: #fff; }}
-    section[data-testid="stSidebar"] ::-webkit-scrollbar {{ width: 4px; }}
-    section[data-testid="stSidebar"] ::-webkit-scrollbar-track {{ background: transparent; }}
+    section[data-testid="stSidebar"] label {{ color:rgba(255,255,255,.75); }}
+    section[data-testid="stSidebar"] strong {{ color:#fff; }}
+    section[data-testid="stSidebar"] ::-webkit-scrollbar {{ width:4px; }}
+    section[data-testid="stSidebar"] ::-webkit-scrollbar-track {{ background:transparent; }}
     section[data-testid="stSidebar"] ::-webkit-scrollbar-thumb {{
-      background: {p_50}; border-radius: 4px;
+      background:{p_50}; border-radius:4px;
+    }}
+
+    /* ── Item Chiara: link nativo ────────────────────── */
+    .chiara-nav-item {{
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      padding: 8px 14px !important;
+      margin: 1px 6px !important;
+      border-radius: 10px !important;
+      border: 1px solid {_hex_rgba(cor_accent, 0.30)} !important;
+      background: linear-gradient(135deg,{_hex_rgba(cor_primary, 0.20)},{_hex_rgba(cor_accent, 0.09)}) !important;
+      text-decoration: none !important;
+      cursor: pointer !important;
+      transition: all .18s ease !important;
+      box-sizing: border-box !important;
+    }}
+    .chiara-nav-item:hover {{
+      border-color: {_hex_rgba(cor_accent, 0.60)} !important;
+      box-shadow: 0 0 16px {_hex_rgba(cor_primary, 0.30)} !important;
+      background: linear-gradient(135deg,{_hex_rgba(cor_primary, 0.30)},{_hex_rgba(cor_accent, 0.15)}) !important;
+    }}
+    .chiara-nav-avatar {{
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      flex-shrink: 0 !important;
+      border: 1.5px solid {_hex_rgba(cor_accent, 0.70)} !important;
+      display: block !important;
+    }}
+    .chiara-nav-avatar-fallback {{
+      width: 28px !important;
+      height: 28px !important;
+      border-radius: 50% !important;
+      flex-shrink: 0 !important;
+      background: linear-gradient(135deg,{cor_primary},{cor_accent}) !important;
+      border: 1.5px solid {_hex_rgba(cor_accent, 0.55)} !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: .78rem !important;
+      font-weight: 800 !important;
+      color: #fff !important;
+      font-family: 'Inter', sans-serif !important;
+      line-height: 1 !important;
+    }}
+    .chiara-nav-nome {{
+      font-size: .86rem !important;
+      font-weight: 600 !important;
+      color: #fff !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      flex: 1 !important;
+      min-width: 0 !important;
+      font-family: 'Inter', sans-serif !important;
+      line-height: 1 !important;
+    }}
+    .chiara-nav-badge {{
+      font-size: .54rem !important;
+      font-weight: 700 !important;
+      letter-spacing: .6px !important;
+      text-transform: uppercase !important;
+      background: {_hex_rgba(cor_primary, 0.38)} !important;
+      color: {cor_accent} !important;
+      border: 1px solid {_hex_rgba(cor_accent, 0.40)} !important;
+      padding: 2px 7px !important;
+      border-radius: 999px !important;
+      flex-shrink: 0 !important;
+      line-height: 1.4 !important;
     }}
     </style>
     """)
 
 
 def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color: str = "#7c3aed") -> str:
-    """Retorna HTML do avatar do usuário: foto real ou inicial colorida."""
     if avatar_b64:
         src = avatar_b64 if avatar_b64.startswith("data:") else f"data:image/jpeg;base64,{avatar_b64}"
-        return f'<img src="{src}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid {badge_color};" alt="avatar" />'
+        return (
+            f'<img src="{src}" '
+            f'style="width:38px;height:38px;border-radius:50%;object-fit:cover;'
+            f'flex-shrink:0;border:1.5px solid {badge_color};" alt="avatar" />'
+        )
     initial = (display_nm or "U")[0].upper()
     return (
         f'<div style="width:38px;height:38px;border-radius:50%;flex-shrink:0;'
         f'background:linear-gradient(135deg,{badge_color},{badge_color}88);'
         f'border:1.5px solid {badge_color}44;'
-        f'display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:#fff;">'
+        f'display:flex;align-items:center;justify-content:center;'
+        f'font-size:1rem;font-weight:800;color:#fff;">'
         f'{initial}</div>'
     )
 
 
 def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     """
-    Renderiza o item Chiara no menu da sidebar:
-    foto circular (ou inicial 'C') + nome + badge IA.
-    Ao clicar, navega para a página 11_IA_Consultora.
+    Renderiza o item Chiara como um único bloco HTML com <a href> nativo.
+    Estrutura visual:
+      [ avatar 28x28 ] [ nome ] [ badge IA ]
+    Todo o item é um único st.sidebar.html() — sem page_link separado,
+    eliminando o problema de elementos Streamlit empilhados verticalmente.
     """
-    foto_b64  = st.session_state.get("chiara_foto_b64", "")
-    foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg")
+    foto_b64  = st.session_state.get("chiara_foto_b64", "") or ""
+    foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg") or "image/jpeg"
     nome      = st.session_state.get("chiara_nome", "Chiara") or "Chiara"
 
-    def _hex_rgba(hex_color: str, alpha: float) -> str:
-        try:
-            h = hex_color.lstrip("#")
-            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
-            return f"rgba({r},{g},{b},{alpha})"
-        except Exception:
-            return f"rgba(124,58,237,{alpha})"
-
-    # Monta o src da foto ou usa inicial
+    # Monta o avatar HTML
     if foto_b64:
         src = foto_b64 if foto_b64.startswith("data:") else f"data:{foto_mime};base64,{foto_b64}"
-        avatar_part = (
-            f'<img src="{src}" alt="Chiara" '
-            f'style="width:28px;height:28px;border-radius:50%;object-fit:cover;'
-            f'flex-shrink:0;border:1.5px solid {_hex_rgba(cor_accent, 0.7)};" />'
-        )
+        avatar_html = f'<img src="{src}" alt="{nome}" class="chiara-nav-avatar" />'
     else:
-        avatar_part = (
-            f'<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;'
-            f'background:linear-gradient(135deg,{cor_primary},{cor_accent});'
-            f'border:1.5px solid {_hex_rgba(cor_accent, 0.5)};'
-            f'display:flex;align-items:center;justify-content:center;'
-            f'font-size:.8rem;font-weight:800;color:#fff;">C</div>'
-        )
+        avatar_html = f'<div class="chiara-nav-avatar-fallback">C</div>'
 
-    # CSS do item customizado + link real via page_link do Streamlit
-    # Usamos um container HTML para exibir o avatar e depois o page_link por baixo
+    # HTML completo do item: um único bloco, sem depender de nenhum widget Streamlit
+    # O <a> usa href relativo que o Streamlit Cloud interpreta corretamente
     st.sidebar.html(f"""
-    <style>
-    /* Esconde o texto padrão do page_link Chiara e deixa só o nosso HTML visível */
-    div[data-chiara-nav="1"] [data-testid="stPageLink"] a span {{
-        display: none !important;
-    }}
-    div[data-chiara-nav="1"] [data-testid="stPageLink"] a {{
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-        min-height: 0 !important;
-    }}
-    </style>
-    <div data-chiara-nav="1"
-         style="display:flex;align-items:center;gap:9px;
-                padding:7px 14px;margin:1px 6px;
-                border-radius:10px;border:1px solid {_hex_rgba(cor_accent, 0.32)};
-                background:linear-gradient(135deg,{_hex_rgba(cor_primary, 0.18)},{_hex_rgba(cor_accent, 0.08)});
-                cursor:pointer;transition:all .18s ease;
-                font-family:'Inter',sans-serif;">
-      {avatar_part}
-      <span style="font-size:.86rem;font-weight:600;color:#fff;
-                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                   max-width:110px;">{nome}</span>
-      <span style="margin-left:auto;font-size:.55rem;font-weight:700;
-                   letter-spacing:.6px;text-transform:uppercase;
-                   background:{_hex_rgba(cor_primary, 0.4)};color:{cor_accent};
-                   border:1px solid {_hex_rgba(cor_accent, 0.4)};
-                   padding:2px 7px;border-radius:999px;">IA</span>
-    </div>
+    <a href="/IA_Consultora" target="_self" class="chiara-nav-item">
+      {avatar_html}
+      <span class="chiara-nav-nome">{nome}</span>
+      <span class="chiara-nav-badge">IA</span>
+    </a>
     """)
-
-    # page_link real (invisível — apenas para navegação)
-    try:
-        st.sidebar.page_link("pages/11_IA_Consultora.py", label=" ")
-    except Exception:
-        pass
 
 
 def build_sidebar(
@@ -584,7 +575,6 @@ def build_sidebar(
     cart_count: int = 0,
     cart_total: float = 0.0,
 ) -> None:
-    """Sidebar Pro 2026 — menu completo com avatar real do usuário."""
     perfil     = _normalize_role(st.session_state.get("perfil", "demo"))
     st.session_state["perfil"] = perfil
 
@@ -655,12 +645,9 @@ def build_sidebar(
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
             continue
-
-        # Item especial: Chiara
         if label == "__chiara__":
             _build_chiara_menu_item(cor_primary, cor_accent)
             continue
-
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
         try:
             st.sidebar.page_link(page_path, label=lbl)
