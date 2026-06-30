@@ -1,12 +1,12 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v7 — 2026-06-29:
-  - Fix layout item Chiara: usa <a href> nativo num único st.sidebar.html().
-    Elimina o problema de imagem+texto misturados causado por dois elementos
-    Streamlit separados (html + page_link).
+v8 — 2026-06-29:
+  - Fix definitivo item Chiara: CSS + HTML no mesmo st.sidebar.html() (mesmo iframe).
+    O Streamlit isola cada html() num iframe separado, por isso o CSS do bloco
+    anterior não alcançava o <a>. Agora tudo está no mesmo bloco.
+  - Layout: [ foto 32x32 ◀ esquerda ] [ nome ▶ direita ] [ badge IA ]
   - Botão SAIR usa cor dinâmica do tema.
-  - Sidebar responde ao tema ativo.
 """
 from __future__ import annotations
 
@@ -340,7 +340,6 @@ def _debug_sidebar_state(perfil: str) -> None:
 
 
 def _hex_rgba(hex_color: str, alpha: float) -> str:
-    """Utilitário global: converte hex + alpha em rgba()."""
     try:
         h = hex_color.lstrip("#")
         r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
@@ -446,77 +445,6 @@ section[data-testid="stSidebar"]
     section[data-testid="stSidebar"] ::-webkit-scrollbar-thumb {{
       background:{p_50}; border-radius:4px;
     }}
-
-    /* ── Item Chiara: link nativo ────────────────────── */
-    .chiara-nav-item {{
-      display: flex !important;
-      align-items: center !important;
-      gap: 10px !important;
-      padding: 8px 14px !important;
-      margin: 1px 6px !important;
-      border-radius: 10px !important;
-      border: 1px solid {_hex_rgba(cor_accent, 0.30)} !important;
-      background: linear-gradient(135deg,{_hex_rgba(cor_primary, 0.20)},{_hex_rgba(cor_accent, 0.09)}) !important;
-      text-decoration: none !important;
-      cursor: pointer !important;
-      transition: all .18s ease !important;
-      box-sizing: border-box !important;
-    }}
-    .chiara-nav-item:hover {{
-      border-color: {_hex_rgba(cor_accent, 0.60)} !important;
-      box-shadow: 0 0 16px {_hex_rgba(cor_primary, 0.30)} !important;
-      background: linear-gradient(135deg,{_hex_rgba(cor_primary, 0.30)},{_hex_rgba(cor_accent, 0.15)}) !important;
-    }}
-    .chiara-nav-avatar {{
-      width: 28px !important;
-      height: 28px !important;
-      border-radius: 50% !important;
-      object-fit: cover !important;
-      flex-shrink: 0 !important;
-      border: 1.5px solid {_hex_rgba(cor_accent, 0.70)} !important;
-      display: block !important;
-    }}
-    .chiara-nav-avatar-fallback {{
-      width: 28px !important;
-      height: 28px !important;
-      border-radius: 50% !important;
-      flex-shrink: 0 !important;
-      background: linear-gradient(135deg,{cor_primary},{cor_accent}) !important;
-      border: 1.5px solid {_hex_rgba(cor_accent, 0.55)} !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      font-size: .78rem !important;
-      font-weight: 800 !important;
-      color: #fff !important;
-      font-family: 'Inter', sans-serif !important;
-      line-height: 1 !important;
-    }}
-    .chiara-nav-nome {{
-      font-size: .86rem !important;
-      font-weight: 600 !important;
-      color: #fff !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      flex: 1 !important;
-      min-width: 0 !important;
-      font-family: 'Inter', sans-serif !important;
-      line-height: 1 !important;
-    }}
-    .chiara-nav-badge {{
-      font-size: .54rem !important;
-      font-weight: 700 !important;
-      letter-spacing: .6px !important;
-      text-transform: uppercase !important;
-      background: {_hex_rgba(cor_primary, 0.38)} !important;
-      color: {cor_accent} !important;
-      border: 1px solid {_hex_rgba(cor_accent, 0.40)} !important;
-      padding: 2px 7px !important;
-      border-radius: 999px !important;
-      flex-shrink: 0 !important;
-      line-height: 1.4 !important;
-    }}
     </style>
     """)
 
@@ -542,30 +470,98 @@ def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color
 
 def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     """
-    Renderiza o item Chiara como um único bloco HTML com <a href> nativo.
-    Estrutura visual:
-      [ avatar 28x28 ] [ nome ] [ badge IA ]
-    Todo o item é um único st.sidebar.html() — sem page_link separado,
-    eliminando o problema de elementos Streamlit empilhados verticalmente.
+    Renderiza o item Chiara num único st.sidebar.html().
+
+    IMPORTANT: cada st.sidebar.html() é um iframe isolado no Streamlit.
+    O CSS só alcanaça elementos dentro do MESMO html(). Por isso o <style>
+    e o <a> devem estar no MESMO bloco.
+
+    Layout final (horizontal, linha única):
+      [ foto circular 32px ] [ Chiara (nome) ] [ pill IA ]
     """
     foto_b64  = st.session_state.get("chiara_foto_b64", "") or ""
     foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg") or "image/jpeg"
     nome      = st.session_state.get("chiara_nome", "Chiara") or "Chiara"
 
-    # Monta o avatar HTML
     if foto_b64:
         src = foto_b64 if foto_b64.startswith("data:") else f"data:{foto_mime};base64,{foto_b64}"
-        avatar_html = f'<img src="{src}" alt="{nome}" class="chiara-nav-avatar" />'
+        avatar_html = (
+            f'<img src="{src}" alt="{nome}" '
+            f'style="'
+            f'width:32px;height:32px;border-radius:50%;object-fit:cover;'
+            f'flex-shrink:0;display:block;'
+            f'border:2px solid {_hex_rgba(cor_accent, 0.75)};'
+            f'" />'
+        )
     else:
-        avatar_html = f'<div class="chiara-nav-avatar-fallback">C</div>'
+        avatar_html = (
+            f'<div style="'
+            f'width:32px;height:32px;border-radius:50%;flex-shrink:0;'
+            f'background:linear-gradient(135deg,{cor_primary},{cor_accent});'
+            f'border:2px solid {_hex_rgba(cor_accent, 0.55)};'
+            f'display:flex;align-items:center;justify-content:center;'
+            f'font-size:.8rem;font-weight:800;color:#fff;'
+            f'font-family:Inter,sans-serif;line-height:1;'
+            f'">C</div>'
+        )
 
-    # HTML completo do item: um único bloco, sem depender de nenhum widget Streamlit
-    # O <a> usa href relativo que o Streamlit Cloud interpreta corretamente
+    # CSS + HTML no mesmo bloco (mesmo iframe)
     st.sidebar.html(f"""
-    <a href="/IA_Consultora" target="_self" class="chiara-nav-item">
+    <style>
+      *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
+      body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
+      .chi-link{{
+        display:flex;
+        flex-direction:row;
+        align-items:center;
+        gap:10px;
+        padding:7px 12px;
+        margin:1px 6px;
+        border-radius:10px;
+        border:1px solid {_hex_rgba(cor_accent, 0.32)};
+        background:linear-gradient(135deg,{_hex_rgba(cor_primary,0.22)},{_hex_rgba(cor_accent,0.10)});
+        text-decoration:none;
+        cursor:pointer;
+        transition:all .18s ease;
+        width:calc(100% - 12px);
+        min-height:44px;
+      }}
+      .chi-link:hover{{
+        border-color:{_hex_rgba(cor_accent,0.65)};
+        box-shadow:0 0 14px {_hex_rgba(cor_primary,0.32)};
+        background:linear-gradient(135deg,{_hex_rgba(cor_primary,0.32)},{_hex_rgba(cor_accent,0.16)});
+      }}
+      .chi-nome{{
+        flex:1;
+        min-width:0;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        font-family:Inter,sans-serif;
+        font-size:.86rem;
+        font-weight:600;
+        color:#fff;
+        line-height:1;
+      }}
+      .chi-badge{{
+        flex-shrink:0;
+        font-family:Inter,sans-serif;
+        font-size:.54rem;
+        font-weight:700;
+        letter-spacing:.6px;
+        text-transform:uppercase;
+        background:{_hex_rgba(cor_primary,0.40)};
+        color:{cor_accent};
+        border:1px solid {_hex_rgba(cor_accent,0.42)};
+        padding:2px 7px;
+        border-radius:999px;
+        line-height:1.4;
+      }}
+    </style>
+    <a href="/IA_Consultora" target="_self" class="chi-link">
       {avatar_html}
-      <span class="chiara-nav-nome">{nome}</span>
-      <span class="chiara-nav-badge">IA</span>
+      <span class="chi-nome">{nome}</span>
+      <span class="chi-badge">IA</span>
     </a>
     """)
 
