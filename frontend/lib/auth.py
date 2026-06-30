@@ -1,9 +1,10 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v10 — 2026-06-29:
-  - Adiciona divider estilizado acima do menu Dashboard
-    (entre o bloco Chiara e os itens de navegação normais).
+v11 — 2026-06-29:
+  - Botão SAIR com o mesmo estilo visual do card Chiara:
+    fundo gradient(135deg, primary 22%, accent 10%),
+    borda accent 32%, texto branco, hover primary 32%/accent 16%.
 """
 from __future__ import annotations
 
@@ -350,48 +351,63 @@ def _inject_sidebar_css() -> None:
     cor_accent  = st.session_state.get("tema_accent",  "#b983ff")
 
     p_20 = _hex_rgba(cor_primary, 0.20)
+    p_22 = _hex_rgba(cor_primary, 0.22)
     p_32 = _hex_rgba(cor_primary, 0.32)
     p_50 = _hex_rgba(cor_primary, 0.50)
+    a_10 = _hex_rgba(cor_accent,  0.10)
     a_12 = _hex_rgba(cor_accent,  0.12)
     a_15 = _hex_rgba(cor_accent,  0.15)
+    a_16 = _hex_rgba(cor_accent,  0.16)
     a_25 = _hex_rgba(cor_accent,  0.25)
+    a_32 = _hex_rgba(cor_accent,  0.32)
     a_45 = _hex_rgba(cor_accent,  0.45)
+    a_65 = _hex_rgba(cor_accent,  0.65)
 
-    sair_bg       = f"linear-gradient(135deg,{_hex_rgba(cor_primary,0.30)},{_hex_rgba(cor_primary,0.18)})"
-    sair_border   = _hex_rgba(cor_accent, 0.45)
-    sair_color    = cor_accent
-    sair_shadow   = _hex_rgba(cor_primary, 0.20)
-    sair_hover_bg = f"linear-gradient(135deg,{_hex_rgba(cor_primary,0.55)},{_hex_rgba(cor_primary,0.40)})"
-    sair_hover_bd = _hex_rgba(cor_accent, 0.75)
-    sair_glow     = _hex_rgba(cor_primary, 0.40)
+    # ── Botão SAIR — mesmo visual do card Chiara ──────────────────────
+    # Chiara: background linear-gradient(135deg, primary 0.22, accent 0.10)
+    #         border: 1px solid accent 0.32
+    #         hover:  border accent 0.65, bg primary 0.32 / accent 0.16
+    sair_bg       = f"linear-gradient(135deg,{p_22},{a_10})"
+    sair_border   = a_32
+    sair_color    = "#ffffff"
+    sair_shadow   = _hex_rgba(cor_primary, 0.18)
+    sair_hover_bg = f"linear-gradient(135deg,{p_32},{a_16})"
+    sair_hover_bd = a_65
+    sair_glow     = _hex_rgba(cor_primary, 0.32)
 
     st.markdown(f"""
 <style>
-/* ── Botão SAIR ─────────────────────────────────────── */
+/* ── Botão SAIR — estilo Chiara ────────────────────────────── */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button,
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
-    background:{sair_bg} !important; color:{sair_color} !important;
-    border:1px solid {sair_border} !important; border-radius:12px !important;
-    font-weight:600 !important; font-size:.82rem !important;
-    letter-spacing:.4px !important; min-height:42px !important;
-    transition:all .2s cubic-bezier(.16,1,.3,1) !important;
-    box-shadow:0 2px 10px {sair_shadow},inset 0 1px 0 rgba(255,255,255,.06) !important;
+    background:{sair_bg} !important;
+    color:{sair_color} !important;
+    border:1px solid {sair_border} !important;
+    border-radius:10px !important;
+    font-family:'Inter',sans-serif !important;
+    font-weight:600 !important;
+    font-size:.86rem !important;
+    letter-spacing:.3px !important;
+    min-height:44px !important;
+    transition:all .18s ease !important;
+    box-shadow:0 2px 10px {sair_shadow} !important;
 }}
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover,
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {{
-    background:{sair_hover_bg} !important; color:#fff !important;
+    background:{sair_hover_bg} !important;
+    color:#fff !important;
     border-color:{sair_hover_bd} !important;
-    box-shadow:0 0 22px {sair_glow},0 4px 14px {sair_shadow} !important;
+    box-shadow:0 0 14px {sair_glow} !important;
     transform:translateY(-1px) !important;
 }}
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {{
     transform:translateY(0px) !important;
-    box-shadow:0 0 10px {sair_shadow} !important;
+    box-shadow:0 0 8px {sair_shadow} !important;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -466,17 +482,6 @@ def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color
 
 
 def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
-    """
-    Renderiza o item Chiara como visual decorativo (HTML) + link real (page_link).
-
-    IMPORTANTE: <a href=...> dentro de st.sidebar.html() faz navegação HTTP pura
-    e limpa o session_state, causando logout. A solução é:
-      1. Exibir o card visual via st.sidebar.html() (foto + nome + badge).
-      2. Sobrepor com st.sidebar.page_link() que usa o roteador interno do Streamlit
-         e preserva a sessão.
-      3. CSS posiciona o page_link por cima do card com margin-top negativo,
-         tornando o card clicável de forma transparente.
-    """
     foto_b64  = st.session_state.get("chiara_foto_b64", "") or ""
     foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg") or "image/jpeg"
     nome      = st.session_state.get("chiara_nome", "Chiara") or "Chiara"
@@ -503,7 +508,6 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
             f'">C</div>'
         )
 
-    # 1) Card visual (NÃO tem <a href> para não matar a sessão)
     st.sidebar.html(f"""
     <style>
       *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
@@ -555,7 +559,6 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     </div>
     """)
 
-    # 2) page_link real por cima — usa roteador do Streamlit (preserva sessão)
     st.sidebar.markdown(
         """
         <style>
@@ -648,8 +651,6 @@ def build_sidebar(
     """)
 
     # Itens de menu
-    # _chiara_done: flag para inserir o divider UMA única vez
-    # após o bloco Chiara, antes do primeiro item normal (Dashboard).
     _chiara_done = False
     for page_path, label, roles_ok in _NAV_ITEMS:
         if perfil not in roles_ok:
@@ -658,10 +659,9 @@ def build_sidebar(
             _build_chiara_menu_item(cor_primary, cor_accent)
             _chiara_done = True
             continue
-        # Divider entre Chiara e o primeiro item normal
         if _chiara_done:
             st.sidebar.html('<hr class="hip-sidebar-divider">')
-            _chiara_done = False  # garante que só aparece uma vez
+            _chiara_done = False
         lbl = f"{label}  ({cart_count})" if "Carrinho" in label and cart_count > 0 else label
         try:
             st.sidebar.page_link(page_path, label=lbl)
