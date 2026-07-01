@@ -10,15 +10,6 @@ Tabela `parceiros`:
 
 Tabela `app_configs`  (chave-valor global — usada para Chiara e config IA)
   id, chave, valor, updated_at
-
-Alterações vs versão anterior:
-  - DDL SQL raw (SQLite-only AUTOINCREMENT, ON CONFLICT) substituído por
-    models SQLAlchemy declarativos (Parceiro, AppConfig) compatíveis com
-    PostgreSQL/Supabase e SQLite local.
-  - Base.metadata.create_all() gera DDL correto automaticamente por dialeto.
-  - Upsert de app_configs usa ORM (merge/query) em vez de ON CONFLICT raw.
-  - avatar_b64 e chiara_foto_b64 persistem no banco — não são perdidos
-    quando o usuário encerra a sessão do Streamlit.
 """
 from __future__ import annotations
 
@@ -42,27 +33,16 @@ def _hash_senha(senha: str) -> str:
 
 
 def _ensure_tables(db) -> None:
-    """
-    Garante que as tabelas parceiros e app_configs existam.
-    Usa Base.metadata.create_all() via models SQLAlchemy
-    — gera DDL correto para SQLite e PostgreSQL automaticamente.
-    """
     try:
         from app.db.base import Base
-        import app.domains.partners.models.parceiros  # noqa: F401 — registra no metadata
+        import app.domains.partners.models.parceiros  # noqa: F401
         Base.metadata.create_all(bind=db.get_bind())
     except Exception:
         pass
 
 
-# ─── app_configs: chave-valor global ─────────────────────────────────────────────────
+# ─── app_configs: chave-valor global ──────────────────────────────────────────────────────────────────────
 def set_app_config(chave: str, valor: str) -> bool:
-    """
-    Grava ou atualiza uma config global.
-    Usa upsert portável (query + merge) — funciona em SQLite e PostgreSQL.
-    A imagem da Chiara (chiara_foto_b64) é persistida aqui e sobrevive
-    ao encerramento de qualquer sessão Streamlit.
-    """
     db, err = get_db_session()
     if not db:
         return False
@@ -90,7 +70,6 @@ def set_app_config(chave: str, valor: str) -> bool:
 
 
 def get_app_config(chave: str) -> str | None:
-    """Recupera uma config global pelo nome da chave."""
     db, _ = get_db_session()
     if not db:
         return None
@@ -105,16 +84,14 @@ def get_app_config(chave: str) -> str | None:
         db.close()
 
 
-# ─── Foto da Chiara (IA Consultora) ────────────────────────────────────────────────
+# ─── Foto da Chiara (IA Consultora) ────────────────────────────────────────────────────────────────────
 def salvar_foto_chiara(b64: str, mime: str = "image/jpeg") -> bool:
-    """Persiste foto e mime-type da Chiara no banco (sobrevive a qualquer sessão)."""
     ok1 = set_app_config("chiara_foto_b64",  b64)
     ok2 = set_app_config("chiara_foto_mime", mime)
     return ok1 and ok2
 
 
 def carregar_foto_chiara() -> tuple[str, str]:
-    """Retorna (b64, mime) da foto da Chiara. Sempre carrega do banco."""
     b64  = get_app_config("chiara_foto_b64")  or ""
     mime = get_app_config("chiara_foto_mime") or "image/jpeg"
     return b64, mime
@@ -127,7 +104,6 @@ def salvar_nome_chiara(nome: str, cargo: str = "") -> bool:
 
 
 def carregar_config_chiara() -> dict:
-    """Retorna dict com nome, cargo, foto_b64, foto_mime, saudacao da Chiara."""
     return {
         "nome":      get_app_config("chiara_nome")      or "Chiara",
         "cargo":     get_app_config("chiara_cargo")     or "Terapeuta Capilar Digital · Embaixadora HIPNUS",
@@ -137,7 +113,7 @@ def carregar_config_chiara() -> dict:
     }
 
 
-# ─── Listar parceiros ─────────────────────────────────────────────────────────────────────
+# ─── Listar parceiros ───────────────────────────────────────────────────────────────────────────────────────
 def listar_parceiros() -> list[dict]:
     """Retorna todos os parceiros cadastrados (para painel admin)."""
     db, _ = get_db_session()
@@ -163,7 +139,7 @@ def listar_parceiros() -> list[dict]:
         db.close()
 
 
-# ─── Criar parceiro ──────────────────────────────────────────────────────────────────────────
+# ─── Criar parceiro ──────────────────────────────────────────────────────────────────────────────────────────
 def criar_parceiro(
     nome: str,
     email: str,
@@ -215,7 +191,7 @@ def criar_parceiro(
         db.close()
 
 
-# ─── Alias: cadastrar_parceiro (compat) ───────────────────────────────────────────────
+# ─── Alias: cadastrar_parceiro (compat) ────────────────────────────────────────────────────────────────────────────────
 def cadastrar_parceiro(
     nome: str,
     email: str,
@@ -233,7 +209,7 @@ def cadastrar_parceiro(
         raise ValueError(msg)
 
 
-# ─── Deletar parceiro ───────────────────────────────────────────────────────────────────────
+# ─── Deletar parceiro ──────────────────────────────────────────────────────────────────────────────────────────
 def deletar_parceiro(email: str) -> None:
     db, err = get_db_session()
     if not db:
@@ -255,8 +231,8 @@ def deletar_parceiro(email: str) -> None:
         db.close()
 
 
-# ─── Buscar parceiro por email ───────────────────────────────────────────────────────────────
-de buscar_por_email (email: str) -> dict | None:
+# ─── Buscar parceiro por email ───────────────────────────────────────────────────────────────────────────────────────────
+def buscar_por_email(email: str) -> dict | None:
     db, _ = get_db_session()
     if not db:
         return None
@@ -278,7 +254,7 @@ de buscar_por_email (email: str) -> dict | None:
         db.close()
 
 
-# ─── Autenticar parceiro ───────────────────────────────────────────────────────────────────────────
+# ─── Autenticar parceiro ──────────────────────────────────────────────────────────────────────────────────────────────
 def autenticar_parceiro(email: str, senha: str) -> dict | None:
     parceiro = buscar_por_email(email)
     if not parceiro:
@@ -288,7 +264,7 @@ def autenticar_parceiro(email: str, senha: str) -> dict | None:
     return parceiro
 
 
-# ─── Atualizar perfil (inclui avatar_b64) ──────────────────────────────────────────────
+# ─── Atualizar perfil (inclui avatar_b64) ────────────────────────────────────────────────────────────────────────────
 def atualizar_perfil(
     email: str,
     nome: str | None = None,
@@ -300,11 +276,6 @@ def atualizar_perfil(
     bio: str | None = None,
     avatar_b64: str | None = None,
 ) -> tuple[bool, str]:
-    """
-    Atualiza campos do parceiro incluindo a foto (avatar_b64).
-    A foto é gravada diretamente na coluna `avatar_b64` da tabela `parceiros`
-    no Supabase/PostgreSQL — persiste indefinidamente entre sessões.
-    """
     db, err = get_db_session()
     if not db:
         return False, f"Banco indisponível: {err}"
@@ -337,7 +308,7 @@ def atualizar_perfil(
         db.close()
 
 
-# ─── Persistir CPF/CNPJ e telefone vindos do checkout ───────────────────────────────
+# ─── Persistir CPF/CNPJ e telefone vindos do checkout ──────────────────────────────────────────────────────────────────
 def atualizar_cpf_phone(
     email: str,
     cpf_cnpj: str | None = None,
@@ -371,7 +342,7 @@ def atualizar_cpf_phone(
         db.close()
 
 
-# ─── Alterar senha ──────────────────────────────────────────────────────────────────────────────
+# ─── Alterar senha ────────────────────────────────────────────────────────────────────────────────────────────────────────
 def alterar_senha(email: str, senha_atual: str, nova_senha: str) -> tuple[bool, str]:
     parceiro = autenticar_parceiro(email, senha_atual)
     if not parceiro:
@@ -400,7 +371,7 @@ def alterar_senha(email: str, senha_atual: str, nova_senha: str) -> tuple[bool, 
         db.close()
 
 
-# ─── Encode/decode avatar ───────────────────────────────────────────────────────────────────────
+# ─── Encode/decode avatar ──────────────────────────────────────────────────────────────────────────────────────────────────
 def image_to_b64(file_bytes: bytes, mime: str = "image/jpeg") -> str:
     b64 = base64.b64encode(file_bytes).decode("utf-8")
     return f"data:{mime};base64,{b64}"
