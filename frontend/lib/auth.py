@@ -1,10 +1,15 @@
 """
 auth.py — HIPNUS COSMÉTICOS
 ==============================
-v12 — 2026-06-30:
-  - fix: remove capa branca do botão SAIR.
-    Separado seletor "button p" para receber APENAS color:#fff
-    (sem background nem border-radius), evitando sobreposição branca.
+v13 — 2026-07-01:
+  - fix: _gravar_sessao NÃO zera chiara_foto_b64/mime ao fazer login.
+    Antes, cada login apagava a foto da Chiara do session_state,
+    forçando recarregar do banco na próxima página. Agora preserva
+    valores já carregados se existirem.
+  - fix: _restaurar_avatar_usuario normaliza o valor lido do banco
+    para data-URI completo (data:image/jpeg;base64,...), garantindo
+    que <img src> funcione corretamente após restauração de sessão.
+  - fix: remove capa branca do botão SAIR (v12 mantido).
 """
 from __future__ import annotations
 
@@ -22,7 +27,7 @@ _HOME_PAGE  = HOME_PAGE
 DEBUG_SIDEBAR = False
 
 
-# ─── Usuários demo/seed ──────────────────────────────────────────────
+# ─── Usuários demo/seed ───────────────────────────────────────────────────────────
 USUARIOS_DEMO: dict[str, dict] = {
     "william": {
         "senha":        "hipnus@2026",
@@ -78,6 +83,20 @@ def _normalize_role(role: str | None) -> str:
     return aliases.get(role, role)
 
 
+def _normalize_avatar(raw: str | None) -> str | None:
+    """
+    Garante que o avatar esteja no formato data-URI completo.
+    Se o banco retornar base64 puro (sem prefixo), adiciona o prefixo JPEG.
+    Se já começar com 'data:' retorna sem alteração.
+    """
+    if not raw:
+        return None
+    if raw.startswith("data:"):
+        return raw
+    # base64 puro — adiciona prefixo JPEG como default seguro
+    return f"data:image/jpeg;base64,{raw}"
+
+
 def _carregar_chiara_no_session() -> None:
     if st.session_state.get("chiara_foto_b64"):
         return
@@ -102,7 +121,16 @@ def _carregar_chiara_no_session() -> None:
 
 
 def _restaurar_avatar_usuario(email: str) -> None:
+    """
+    Restaura o avatar do usuário do banco após reinicialização de sessão.
+    Normaliza o valor para data-URI completo antes de salvar no session_state,
+    garantindo que <img src> funcione corretamente.
+    """
     if st.session_state.get("avatar_b64"):
+        # Já existe na sessão — garante que está em data-URI
+        current = st.session_state["avatar_b64"]
+        if current and not current.startswith("data:"):
+            st.session_state["avatar_b64"] = f"data:image/jpeg;base64,{current}"
         return
     if not email:
         return
@@ -114,7 +142,7 @@ def _restaurar_avatar_usuario(email: str) -> None:
         from lib.user_db import buscar_por_email
         parceiro = buscar_por_email(email)
         if parceiro and parceiro.get("avatar_b64"):
-            st.session_state["avatar_b64"] = parceiro["avatar_b64"]
+            st.session_state["avatar_b64"] = _normalize_avatar(parceiro["avatar_b64"])
     except Exception:
         pass
 
@@ -124,7 +152,21 @@ def _gravar_sessao(
     display_name: str, email: str, token: str | None,
     via_api: bool, avatar_b64: str | None = None,
 ) -> None:
+    """
+    Grava os dados da sessão após login.
+    IMPORTANTE: NÃO zera chiara_foto_b64/mime se já estiverem carregados
+    no session_state — evita perda da foto da Chiara a cada login.
+    O avatar do usuário é normalizado para data-URI antes de gravar.
+    """
     import time
+
+    # Preserva Chiara se já carregado (não zera no login)
+    chiara_b64  = st.session_state.get("chiara_foto_b64")  or None
+    chiara_mime = st.session_state.get("chiara_foto_mime") or None
+    chiara_nome = st.session_state.get("chiara_nome")      or None
+    chiara_cargo= st.session_state.get("chiara_cargo")     or None
+    chiara_sau  = st.session_state.get("chiara_saudacao")  or None
+
     st.session_state.update({
         "autenticado":       True,
         "usuario":           username,
@@ -134,14 +176,16 @@ def _gravar_sessao(
         "email":             email,
         "token":             token,
         "via_api":           via_api,
-        "avatar_b64":        avatar_b64,
+        # Avatar normalizado para data-URI
+        "avatar_b64":        _normalize_avatar(avatar_b64),
         "session_start":     time.time(),
         "_jwt_dialog_shown": False,
-        "chiara_foto_b64":   None,
-        "chiara_foto_mime":  None,
-        "chiara_nome":       None,
-        "chiara_cargo":      None,
-        "chiara_saudacao":   None,
+        # Chiara: preserva valores existentes ou None (serão carregados por _carregar_chiara_no_session)
+        "chiara_foto_b64":   chiara_b64,
+        "chiara_foto_mime":  chiara_mime,
+        "chiara_nome":       chiara_nome,
+        "chiara_cargo":      chiara_cargo,
+        "chiara_saudacao":   chiara_sau,
     })
 
 
@@ -368,15 +412,8 @@ def _inject_sidebar_css() -> None:
     sair_hover_bd = a_65
     sair_glow     = _hex_rgba(cor_primary, 0.32)
 
-    # ── REGRA CRÍTICA ─────────────────────────────────────────────────
-    # O seletor "button p" recebe APENAS color (sem background nem
-    # border-radius). Qualquer background no <p> interno cria uma
-    # camada branca que oculta o texto do botão. Somente o <button>
-    # recebe o gradiente de fundo.
-    # ────────────────────────────────────────────────────────
     st.markdown(f"""
 <style>
-/* Botão SAIR — apenas o <button> recebe fundo/borda */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button {{
     background:{sair_bg} !important;
@@ -391,13 +428,11 @@ section[data-testid="stSidebar"]
     transition:all .18s ease !important;
     box-shadow:0 2px 10px {sair_shadow} !important;
 }}
-/* <p> interno: SOMENTE cor do texto — sem background, sem border-radius */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
     color:#fff !important;
     background:transparent !important;
 }}
-/* Hover */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover {{
     background:{sair_hover_bg} !important;
@@ -411,7 +446,6 @@ section[data-testid="stSidebar"]
     color:#fff !important;
     background:transparent !important;
 }}
-/* Active */
 section[data-testid="stSidebar"]
   div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {{
     transform:translateY(0px) !important;
@@ -680,7 +714,7 @@ def build_sidebar(
     st.sidebar.html('<hr class="hip-sidebar-divider">')
     with st.sidebar:
         if st.button(
-            "⬡  Sair da plataforma",
+            "⧡  Sair da plataforma",
             key="sb_logout_btn",
             use_container_width=True,
             help="Encerrar sessão e voltar ao login",
@@ -688,7 +722,7 @@ def build_sidebar(
             logout()
 
 
-# ─── Aliases de compatibilidade ──────────────────────────────────────
+# ─── Aliases de compatibilidade ─────────────────────────────────────────────────────────
 def sidebar_logo() -> None:
     _maybe_build_sidebar()
 
