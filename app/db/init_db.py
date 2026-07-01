@@ -27,7 +27,6 @@ def _resolve_database_url() -> str:
       2. os.environ
       3. Pydantic settings (default lowercase)
     """
-    # 1. Tenta st.secrets
     try:
         import streamlit as st
         val = st.secrets.get("DATABASE_URL") or st.secrets.get("default", {}).get("DATABASE_URL")
@@ -36,15 +35,13 @@ def _resolve_database_url() -> str:
     except Exception:
         pass
 
-    # 2. Tenta os.environ
     val = os.environ.get("DATABASE_URL")
     if val:
         return val.strip()
 
-    # 3. Default do Pydantic settings (Pydantic v2 = lowercase)
     try:
         from app.core.config import settings
-        return settings.database_url  # <─ CORRIGIDO: lowercase
+        return settings.database_url
     except Exception:
         return "sqlite:///./data/hipnus.db"
 
@@ -57,34 +54,37 @@ def init_db() -> None:
     2. Importa todos os models disponíveis (garante registro no Base.metadata)
     3. Cria o diretório do arquivo SQLite se não existir
     4. Executa create_all (idempotente)
+
+    Tabelas gerenciadas:
+      - invites         (app.domains.invites.models)
+      - users           (app.domains.users.models)
+      - parceiros       (app.domains.partners.models.parceiros)  ← avatar_b64
+      - app_configs     (app.domains.partners.models.parceiros)  ← foto Chiara
+      - partners, catalog, orders (se disponíveis)
     """
     try:
         db_url = _resolve_database_url()
         logger.info("[init_db] DATABASE_URL resolvido: %s", db_url[:40])
 
         from sqlalchemy import create_engine
-
-        # Importa Base do projeto
         from app.db.base import Base
 
-        # Importa models para registrar no metadata
+        # ─ Models obrigatórios ──────────────────────────────────────────────
         import app.domains.invites.models  # noqa: F401
-        try:
-            import app.domains.users.models    # noqa: F401
-        except ImportError:
-            pass
-        try:
-            import app.domains.partners.models  # noqa: F401
-        except ImportError:
-            pass
-        try:
-            import app.domains.catalog.models   # noqa: F401
-        except ImportError:
-            pass
-        try:
-            import app.domains.orders.models    # noqa: F401
-        except ImportError:
-            pass
+
+        # Parceiros e AppConfig (imagens do usuário e da Chiara)
+        import app.domains.partners.models.parceiros  # noqa: F401
+
+        # ─ Models opcionais ───────────────────────────────────────────────
+        for _mod in [
+            "app.domains.users.models",
+            "app.domains.catalog.models",
+            "app.domains.orders.models",
+        ]:
+            try:
+                __import__(_mod)
+            except ImportError:
+                pass
 
         # Garante diretório para SQLite
         if db_url.startswith("sqlite:///"):
