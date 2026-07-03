@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>HIPNUS COSMETICOS - Mapa de Paginas e Menus por Perfil</title>
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #0f0f14;
+    color: #e5e7eb;
+    overflow: hidden;
+  }
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    padding: 60px 80px;
+    flex-direction: column;
+    justify-content: center;
+    background: radial-gradient(circle at top right, #1e1b2e, #0f0f14 60%);
+  }
+  .slide.active { display: flex; }
+  h1 {
+    font-size: 42px;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 28px;
+    color: #f3f4f6;
+    margin-bottom: 24px;
+    border-left: 4px solid #a855f7;
+    padding-left: 14px;
+  }
+  .subtitle { color: #9ca3af; font-size: 18px; margin-bottom: 40px; }
+  .cards { display: flex; gap: 24px; flex-wrap: wrap; }
+  .card {
+    background: #16141f;
+    border: 1px solid #2a2740;
+    border-radius: 16px;
+    padding: 24px;
+    flex: 1;
+    min-width: 260px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .card h3 {
+    font-size: 20px;
+    margin-bottom: 14px;
+    color: #c084fc;
+  }
+  .card ul { list-style:none; padding-left:0; }
+  .card li {
+    padding: 6px 0;
+    border-bottom: 1px solid #232030;
+    font-size: 15px;
+    color: #d1d5db;
+  }
+  .card li:last-child { border-bottom: none; }
+  .badge {
+    display:inline-block;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+    font-weight:600;
+  }
+  .badge.admin { background:#312e81; color:#c7d2fe; }
+  .badge.partner { background:#4c1d95; color:#e9d5ff; }
+  .badge.customer { background:#831843; color:#fbcfe8; }
+  table { width:100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { text-align:left; padding: 10px 14px; font-size:14px; }
+  th { background:#1f1b2e; color:#c084fc; }
+  tr:nth-child(even) { background:#151220; }
+  tr:nth-child(odd) { background:#191527; }
+  .footer-nav {
+    position: fixed;
+    bottom: 24px;
+    left: 80px;
+    right: 80px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .btn {
+    background:#1f1b2e;
+    border:1px solid #3730a3;
+    color:#e5e7eb;
+    padding:10px 20px;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .btn:hover { background:#312e81; }
+  .progress { color:#6b7280; font-size:13px; }
+  .tree {
+    font-family: 'Consolas', monospace;
+    font-size: 14px;
+    background:#0d0b14;
+    border:1px solid #2a2740;
+    border-radius:12px;
+    padding: 20px;
+    line-height: 1.7;
+    color:#a5b4fc;
+    white-space: pre;
+    overflow:auto;
+    max-height: 60vh;
+  }
+  .icon-menu { color:#f472b6; }
+  .comment { color:#6b7280; }
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1 -->
+<div class="slide active">
+  <h1>HIPNUS COSMETICOS</h1>
+  <div class="subtitle">Mapa completo de paginas, menus e permissoes por perfil de usuario — Streamlit + Supabase</div>
+  <div class="cards">
+    <div class="card">
+      <h3>Objetivo</h3>
+      <ul>
+        <li>Organizar estrutura de pastas <b>pages/</b></li>
+        <li>Definir menus visiveis por role</li>
+        <li>Fechar o ciclo banco -> queries -> interface</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Perfis mapeados</h3>
+      <ul>
+        <li><span class="badge admin">ADMIN</span> super_admin / admin</li>
+        <li><span class="badge partner">PARCEIRO</span> distribuidor / salao</li>
+        <li><span class="badge customer">CLIENTE</span> cliente final</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Base tecnica</h3>
+      <ul>
+        <li>Streamlit multipage</li>
+        <li>Supabase Auth + RLS</li>
+        <li>Views por perfil</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 2: super_admin/admin -->
+<div class="slide">
+  <h2>Perfil: Admin / Super Admin <span class="badge admin">ADMIN</span></h2>
+  <div class="cards">
+    <div class="card">
+      <h3>📊 Dashboard</h3>
+      <ul>
+        <li>KPIs gerais da plataforma</li>
+        <li>Faturamento vendas x abastecimento</li>
+        <li>Receita da plataforma (taxa)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📦 Pedidos</h3>
+      <ul>
+        <li>Aba Pedidos B2B (abastecimento)</li>
+        <li>Aba Pedidos B2C (venda cliente)</li>
+        <li>Aba Separacao</li>
+        <li>Aba Logistica</li>
+        <li>Aba Entregas</li>
+        <li>Aba Ocorrencias</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🏬 Estoque</h3>
+      <ul>
+        <li>Estoque central Hipnus</li>
+        <li>Estoque por loja de parceiro</li>
+        <li>Historico de movimentos</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cards" style="margin-top:20px">
+    <div class="card">
+      <h3>🤝 Parceiros</h3>
+      <ul>
+        <li>Aprovacao de cadastro</li>
+        <li>Gestao de status (ativo/suspenso)</li>
+        <li>Provisionamento Asaas</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🛒 Catalogo Master</h3>
+      <ul>
+        <li>Cadastro de produtos e linhas</li>
+        <li>Tabela de precos (floor/distribuidor/salao)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>⚙️ Configuracoes</h3>
+      <ul>
+        <li>Taxa de plataforma (platform_settings)</li>
+        <li>Usuarios do sistema</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: distribuidor/salao -->
+<div class="slide">
+  <h2>Perfil: Distribuidor / Salao <span class="badge partner">PARCEIRO</span></h2>
+  <div class="cards">
+    <div class="card">
+      <h3>🛒 Catalogo Hipnus (B2B)</h3>
+      <ul>
+        <li>Precos diferenciados por tipo</li>
+        <li>Carrinho de abastecimento</li>
+        <li>Envio de pedido de compra</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🏪 Minha Loja</h3>
+      <ul>
+        <li>URL personalizada (/loja/slug)</li>
+        <li>Gestao de produtos na vitrine</li>
+        <li>Definicao de preco de revenda</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📦 Estoque da Loja</h3>
+      <ul>
+        <li>Saldo por produto</li>
+        <li>Atualizado automaticamente por trigger</li>
+      </ul>
+    </div>
+  </div>
+  <div class="cards" style="margin-top:20px">
+    <div class="card">
+      <h3>📑 Pedidos da Loja</h3>
+      <ul>
+        <li>Gestao de vendas ao cliente final</li>
+        <li>Status de pagamento e entrega</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>✉️ Convites</h3>
+      <ul>
+        <li>Gerar link de cadastro</li>
+        <li>Gerar link direto da loja</li>
+        <li>Historico de links enviados</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>💰 Financeiro</h3>
+      <ul>
+        <li>Comissoes recebidas (split Asaas)</li>
+        <li>Historico de repasses</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: cliente -->
+<div class="slide">
+  <h2>Perfil: Cliente Final <span class="badge customer">CLIENTE</span></h2>
+  <div class="cards">
+    <div class="card">
+      <h3>🛒 Catalogo</h3>
+      <ul>
+        <li>Somente da loja vinculada</li>
+        <li>Preco de cliente final</li>
+        <li>Acesso via link de cadastro ou direto</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>👤 Minha Conta</h3>
+      <ul>
+        <li>Aba Carrinho</li>
+        <li>Aba Meus Pedidos</li>
+        <li>Aba Meus Pagamentos</li>
+        <li>Aba Configuracoes</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🤖 Chiara</h3>
+      <ul>
+        <li>Chat com IA consultora</li>
+        <li>Duvidas sobre produtos e linhas</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: demo -->
+<div class="slide">
+  <h2>Perfil: Visitante <span class="badge">DEMO</span></h2>
+  <div class="cards">
+    <div class="card">
+      <h3>👁️ Vitrine Publica</h3>
+      <ul>
+        <li>Visualizacao somente leitura</li>
+        <li>Sem preco, sem carrinho</li>
+        <li>Chamada para cadastro/login</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 6: matriz de permissoes -->
+<div class="slide">
+  <h2>Matriz de Menus por Perfil</h2>
+  <table>
+    <tr>
+      <th>Menu</th>
+      <th>Admin</th>
+      <th>Distribuidor / Salao</th>
+      <th>Cliente</th>
+      <th>Demo</th>
+    </tr>
+    <tr><td>Dashboard</td><td>✅</td><td>—</td><td>—</td><td>—</td></tr>
+    <tr><td>Catalogo B2B (abastecimento)</td><td>✅</td><td>✅</td><td>—</td><td>—</td></tr>
+    <tr><td>Catalogo B2C (loja)</td><td>—</td><td>—</td><td>✅ (loja vinculada)</td><td>Somente leitura</td></tr>
+    <tr><td>Minha Loja</td><td>—</td><td>✅</td><td>—</td><td>—</td></tr>
+    <tr><td>Estoque</td><td>✅ (central + lojas)</td><td>✅ (propria loja)</td><td>—</td><td>—</td></tr>
+    <tr><td>Pedidos</td><td>✅ (todos)</td><td>✅ (propria loja)</td><td>✅ (proprios)</td><td>—</td></tr>
+    <tr><td>Convites</td><td>—</td><td>✅</td><td>—</td><td>—</td></tr>
+    <tr><td>Minha Conta</td><td>—</td><td>—</td><td>✅</td><td>—</td></tr>
+    <tr><td>Financeiro</td><td>✅ (global)</td><td>✅ (propria comissao)</td><td>✅ (proprios pagamentos)</td><td>—</td></tr>
+    <tr><td>Chiara (IA)</td><td>—</td><td>✅</td><td>✅</td><td>—</td></tr>
+  </table>
+</div>
+
+<!-- SLIDE 7: estrutura de pastas -->
+<div class="slide">
+  <h2>Estrutura sugerida — <span class="icon-menu">pages/</span> Streamlit</h2>
+  <div class="tree">frontend/
+├── Home.py                          <span class="comment">login + redirecionamento por role</span>
+├── pages/
+│   ├── 0_📊_Dashboard.py            <span class="comment">admin/super_admin</span>
+│   ├── 1_🛒_Catalogo.py             <span class="comment">B2B (parceiro) ou B2C (cliente)</span>
+│   ├── 2_🏪_Minha_Loja.py           <span class="comment">distribuidor/salao</span>
+│   ├── 3_✉️_Convites.py             <span class="comment">distribuidor/salao</span>
+│   ├── 4_📦_Estoque.py              <span class="comment">admin (central+lojas) / parceiro (propria loja)</span>
+│   ├── 5_💳_Checkout.py             <span class="comment">cliente final</span>
+│   ├── 6_📑_Pedidos.py              <span class="comment">admin (logistica/entrega) / parceiro / cliente</span>
+│   ├── 7_💰_Financeiro.py           <span class="comment">admin / parceiro / cliente</span>
+│   ├── 8_👤_Minha_Conta.py          <span class="comment">cliente: carrinho, pedidos, pagamentos, config</span>
+│   └── 10_🤖_Chiara.py             <span class="comment">cliente e parceiro</span>
+└── lib/
+    ├── auth.py                      <span class="comment">JWT + require_auth(role)</span>
+    ├── supabase_client.py
+    ├── session_guard.py
+    └── queries.py</div>
+</div>
+
+<!-- SLIDE 8: fluxo de acesso -->
+<div class="slide">
+  <h2>Fluxo de Acesso por Role</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>1. Login</h3>
+      <ul>
+        <li>Supabase Auth valida credenciais</li>
+        <li>JWT retornado com sessao</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>2. Resolucao de perfil</h3>
+      <ul>
+        <li>Busca role em public.users</li>
+        <li>Define menu visivel na sidebar</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>3. Filtro de dados</h3>
+      <ul>
+        <li>RLS aplica regra por linha</li>
+        <li>Views ja retornam dados do escopo</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>4. Encerramento</h3>
+      <ul>
+        <li>Botao Sair na sidebar</li>
+        <li>supabase.auth.sign_out()</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: fechamento -->
+<div class="slide">
+  <h1>Ciclo Completo</h1>
+  <div class="subtitle">Banco de dados (Supabase) → Queries (Python) → Interface (Streamlit)</div>
+  <div class="cards">
+    <div class="card">
+      <h3>Banco</h3>
+      <ul>
+        <li>19 tabelas + RLS + triggers</li>
+        <li>11 views por perfil</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Queries</h3>
+      <ul>
+        <li>Funcoes Python por pagina</li>
+        <li>supabase-py + RLS respeitado</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Interface</h3>
+      <ul>
+        <li>Menus dinamicos por role</li>
+        <li>Botoes estilizados por acao</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="footer-nav">
+  <button class="btn" onclick="prevSlide()">← Anterior</button>
+  <span class="progress" id="progress">1 / 9</span>
+  <button class="btn" onclick="nextSlide()">Proximo →</button>
+</div>
+
+<script>
+  let current = 0;
+  const slides = document.querySelectorAll('.slide');
+  function showSlide(i) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[i].classList.add('active');
+    document.getElementById('progress').innerText = (i+1) + ' / ' + slides.length;
+  }
+  function nextSlide() { current = (current + 1) % slides.length; showSlide(current); }
+  function prevSlide() { current = (current - 1 + slides.length) % slides.length; showSlide(current); }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') nextSlide();
+    if (e.key === 'ArrowLeft') prevSlide();
+  });
+</script>
+
+</body>
+</html>
