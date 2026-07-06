@@ -55,11 +55,18 @@ def get_supabase() -> Client:
     key = _get_secret("SUPABASE_ANON_KEY")
 
     if not url or not key:
+        # Diagnóstico: mostra quais chaves estão disponíveis (sem os valores)
+        try:
+            available = list(st.secrets.keys())
+        except Exception:
+            available = []
+
         st.error(
             "⚠️ **Supabase não configurado.**\n\n"
+            f"Chaves disponíveis nos Secrets: `{available}`\n\n"
             "Adicione nos Secrets do Streamlit Cloud:\n"
             "```\nSUPABASE_URL = \"https://omqcuaffmlwwusgmmzml.supabase.co\"\n"
-            "SUPABASE_ANON_KEY = \"<sua anon key>\"\n```"
+            "SUPABASE_ANON_KEY = \"eyJ...<sua anon key>\"\n```"
         )
         st.stop()
 
