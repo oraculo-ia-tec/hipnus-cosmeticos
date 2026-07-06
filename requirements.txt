@@ -8,6 +8,8 @@ httpx==0.28.1
 python-dotenv==1.0.1
 # Produção PostgreSQL (Supabase)
 psycopg2-binary==2.9.10
+# Supabase Python SDK
+supabase>=2.3.0
 # Frontend
 streamlit==1.45.1
 # IA Consultora — SDK OpenAI-compatible para Groq
