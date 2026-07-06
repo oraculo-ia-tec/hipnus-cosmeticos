@@ -47,10 +47,13 @@ def get_supabase() -> Client:
     key = _get_secret("SUPABASE_ANON_KEY")
 
     if not url or not key:
-        raise RuntimeError(
-            "SUPABASE_URL e SUPABASE_ANON_KEY não encontrados. "
-            "Configure nos Secrets do Streamlit Cloud ou em variáveis de ambiente."
+        st.error(
+            "⚠️ **Supabase não configurado.**\n\n"
+            "Adicione nos Secrets do Streamlit Cloud:\n"
+            "```\nSUPABASE_URL = \"https://omqcuaffmlwwusgmmzml.supabase.co\"\n"
+            "SUPABASE_ANON_KEY = \"<sua anon key>\"\n```"
         )
+        st.stop()
 
     return create_client(url, key)
 
