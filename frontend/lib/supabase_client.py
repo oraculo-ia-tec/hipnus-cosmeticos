@@ -35,9 +35,17 @@ def _get_secret(key: str) -> str:
 
 
 @st.cache_resource
+def _build_client(url: str, key: str) -> Client:
+    """Cria e cacheia o cliente Supabase. Separado da validação para evitar cache de exceção."""
+    return create_client(url, key)
+
+
 def get_supabase() -> Client:
     """
-    Retorna o cliente Supabase (cached por sessão do Streamlit).
+    Retorna o cliente Supabase, criando-o na primeira chamada e reutilizando nas demais.
+
+    Lê as secrets a cada chamada (sem cache), garantindo que atualizações de
+    secrets no Streamlit Cloud sejam captadas sem reboot.
 
     Requer nos Secrets do Streamlit Cloud:
         SUPABASE_URL      = "https://omqcuaffmlwwusgmmzml.supabase.co"
@@ -55,7 +63,7 @@ def get_supabase() -> Client:
         )
         st.stop()
 
-    return create_client(url, key)
+    return _build_client(url, key)
 
 
 def get_supabase_with_auth(access_token: str) -> Client:
