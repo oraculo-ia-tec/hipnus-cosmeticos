@@ -24,13 +24,22 @@ from supabase import Client, create_client
 
 
 def _get_secret(key: str) -> str:
-    """Lê de st.secrets com fallback para os.environ."""
+    """Lê de st.secrets (raiz, [default] ou os.environ)."""
+    # 1. Nível raiz
     try:
         val = st.secrets.get(key)
         if val:
             return str(val)
     except Exception:
         pass
+    # 2. Seção [default] — onde Streamlit Cloud coloca variáveis sem seção explícita
+    try:
+        val = st.secrets["default"].get(key)
+        if val:
+            return str(val)
+    except Exception:
+        pass
+    # 3. Variável de ambiente (local)
     return os.getenv(key, "")
 
 
