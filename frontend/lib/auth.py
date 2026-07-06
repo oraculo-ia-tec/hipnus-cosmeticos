@@ -341,6 +341,8 @@ _NAV_ITEMS = [
     ("pages/8_Cadastro_Parceiro.py",   "➕  Cadastro Parceiro", {"super_admin","admin"}),
     ("pages/9_Configuracao.py",        "⚙️  Configurações",     {"super_admin","admin"}),
     ("pages/10_Usuarios.py",           "👥  Usuários",          {"super_admin"}),
+    ("pages/12_Onboarding.py",         "🔖  Onboarding",        {"super_admin","admin"}),
+    ("pages/13_Minha_Loja_Config.py",  "🏪  Minha Loja",        {"super_admin","admin","b2b"}),
 ]
 
 
