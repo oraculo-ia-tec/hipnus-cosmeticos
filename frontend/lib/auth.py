@@ -712,10 +712,14 @@ def build_sidebar(
           color:#3a2620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           max-width:130px;line-height:1.3;" title="{display_nm}">{display_nm}</div>
         <div style="display:inline-block;margin-top:4px;
-          background:linear-gradient(135deg,#b76e79cc,#c9a04e99);
-          color:#fff;font-size:.56rem;font-weight:700;
-          letter-spacing:.8px;padding:2px 9px;border-radius:999px;
-          text-transform:uppercase;">{role_label}</div>
+          border:1px solid rgba(201,160,78,0.55);border-radius:999px;
+          padding:2px 10px;background:rgba(201,160,78,0.06);">
+          <span style="font-family:'Manrope',sans-serif;font-size:.56rem;font-weight:700;
+            letter-spacing:1.2px;text-transform:uppercase;
+            background:linear-gradient(90deg,#b76e79,#c9a04e);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            background-clip:text;">{role_label}</span>
+        </div>
       </div>
     </div>
     """)
