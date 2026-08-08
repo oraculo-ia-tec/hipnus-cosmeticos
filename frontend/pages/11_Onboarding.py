@@ -51,7 +51,7 @@ def page_partner_signup():
     st.title("Torne-se Parceiro Tálya")
     st.caption("Cadastre-se como Distribuidor ou Salão e ganhe sua loja virtual personalizada.")
 
-    status = get_my_partner_status(supabase, st.session_state.user_id)
+    status = get_my_partner_status(supabase, _current_user_id)
 
     if status:
         render_status_banner(status["status"])
@@ -77,7 +77,7 @@ def page_partner_signup():
             if not (name and cpf_cnpj and email):
                 st.error("Preencha nome, CPF/CNPJ e e-mail.")
             else:
-                create_partner_application(supabase, st.session_state.user_id, {
+                create_partner_application(supabase, _current_user_id, {
                     "name": name, "legal_name": legal_name, "email": email,
                     "phone": phone, "cpf_cnpj": cpf_cnpj, "partner_type": partner_type,
                 })
@@ -143,11 +143,11 @@ def page_admin_partner_approval():
                     st.warning("Documentos ainda não enviados.")
             with c2:
                 if st.button("✅ Aprovar", key=f"btn_approve_{partner['id']}", type="primary", use_container_width=True):
-                    approve_partner(supabase, partner["id"], st.session_state.user_id)
+                    approve_partner(supabase, partner["id"], _current_user_id)
                     st.success("Parceiro aprovado! Loja criada automaticamente.")
                     st.rerun()
                 if st.button("❌ Rejeitar", key=f"btn_reject_{partner['id']}", use_container_width=True):
-                    reject_partner(supabase, partner["id"], st.session_state.user_id, "Documentação incompleta")
+                    reject_partner(supabase, partner["id"], _current_user_id, "Documentação incompleta")
                     st.warning("Parceiro rejeitado.")
                     st.rerun()
 
@@ -284,11 +284,24 @@ def _render_store_preview(theme: dict, sections: list[dict]):
 # ============================================================
 perfil = usuario.get("perfil", "demo")
 
-if not _ONBOARDING_OK:
+# Extrai UUID do usuário logado decodificando o JWT (campo 'sub')
+def _parse_user_uuid() -> str:
+    import base64, json
+    token = st.session_state.get("token", "")
+    if not token:
+        return st.session_state.get("usuario", "")
+    try:
+        seg = token.split(".")[1]
+        seg += "=" * (4 - len(seg) % 4)
+        return json.loads(base64.b64decode(seg)).get("sub", "")
+    except Exception:
+        return st.session_state.get("usuario", "")
+
+_current_user_id = _parse_user_uuid()
     st.error("❌ Módulo `onboarding_queries` não encontrado. Verifique a instalação.")
     st.stop()
 
-_user_id = st.session_state.get("usuario", "")
+_user_id = _current_user_id
 
 if perfil in ("super_admin", "admin"):
     tab_parceiro, tab_aprovacao, tab_loja = st.tabs([
