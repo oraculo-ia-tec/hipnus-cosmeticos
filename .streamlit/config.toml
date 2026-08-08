@@ -1,4 +1,4 @@
-# .streamlit/config.toml — HIPNUS COSMÉTICOS
+# .streamlit/config.toml — TÁLYA COSMÉTICOS
 # Configurações do servidor Streamlit para produção (Streamlit Cloud)
 # e desenvolvimento local.
 
@@ -13,8 +13,8 @@ gatherUsageStats = false
 
 [theme]
 base = "light"
-primaryColor = "#7C3AED"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F6F4FB"
-textColor = "#1A1430"
+primaryColor = "#b76e79"
+backgroundColor = "#fbf6f2"
+secondaryBackgroundColor = "#f1e4da"
+textColor = "#3a2620"
 font = "sans serif"

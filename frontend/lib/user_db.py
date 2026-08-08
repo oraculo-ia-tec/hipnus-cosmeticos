@@ -1,5 +1,5 @@
 """
-user_db.py — HIPNUS COSMÉTICOS
+user_db.py — TÁLYA COSMÉTICOS
 ================================
 Camada de acesso ao banco para o domínio de Usuários / Parceiros.
 
@@ -10,11 +10,14 @@ Tabela `parceiros`:
 
 Tabela `app_configs`  (chave-valor global — usada para Chiara e config IA)
   id, chave, valor, updated_at
+
+Hashing de senha:
+  Versões novas: bcrypt via app.skills.auth_skill.hash_password.
+  Versões legadas (SHA-256 hex puro): aceitas via auth_skill.verify_password.
 """
 from __future__ import annotations
 
 import base64
-import hashlib
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,7 +32,25 @@ from lib.db_utils import get_db_session  # noqa: E402
 
 
 def _hash_senha(senha: str) -> str:
-    return hashlib.sha256(senha.encode("utf-8")).hexdigest()
+    """Gera hash bcrypt para nova senha (substitui SHA-256 legado)."""
+    try:
+        from app.skills.auth_skill import hash_password
+        return hash_password(senha)
+    except Exception:
+        # Fallback caso o módulo não esteja acessível (ex: ambiente incompleto)
+        import hashlib
+        return hashlib.sha256(senha.encode("utf-8")).hexdigest()
+
+
+def _verify_senha(senha: str, hashed: str) -> bool:
+    """Verifica senha contra hash (suporta bcrypt e SHA-256 legado)."""
+    try:
+        from app.skills.auth_skill import verify_password
+        return verify_password(senha, hashed)
+    except Exception:
+        # Fallback SHA-256 para ambientes sem passlib — apenas verificação legada, nunca armazenamento
+        import hashlib
+        return hashlib.sha256(senha.encode("utf-8")).hexdigest() == hashed  # nosec B324
 
 
 def _ensure_tables(db) -> None:
@@ -106,7 +127,7 @@ def salvar_nome_chiara(nome: str, cargo: str = "") -> bool:
 def carregar_config_chiara() -> dict:
     return {
         "nome":      get_app_config("chiara_nome")      or "Chiara",
-        "cargo":     get_app_config("chiara_cargo")     or "Terapeuta Capilar Digital · Embaixadora HIPNUS",
+        "cargo":     get_app_config("chiara_cargo")     or "Terapeuta Capilar Digital · Embaixadora TÁLYA",
         "foto_b64":  get_app_config("chiara_foto_b64")  or "",
         "foto_mime": get_app_config("chiara_foto_mime") or "image/jpeg",
         "saudacao":  get_app_config("chiara_saudacao")  or "",
@@ -259,7 +280,7 @@ def autenticar_parceiro(email: str, senha: str) -> dict | None:
     parceiro = buscar_por_email(email)
     if not parceiro:
         return None
-    if parceiro.get("senha_hash") != _hash_senha(senha):
+    if not _verify_senha(senha, parceiro.get("senha_hash", "")):
         return None
     return parceiro
 

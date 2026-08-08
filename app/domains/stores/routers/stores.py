@@ -33,7 +33,7 @@ def list_listings(store_id: int, db: Session = Depends(get_db)):
 @router.post("/{store_id}/listings", response_model=StoreListingOut, status_code=201)
 def add_listing(store_id: int, data: StoreListingCreate, db: Session = Depends(get_db)):
     """
-    Adiciona um produto Hipnus à loja do parceiro com preço de venda.
+    Adiciona um produto Tálya à loja do parceiro com preço de venda.
 
     Parâmetros: product_id, sale_price, stock_qty, featured.
     Retorno: oferta criada.

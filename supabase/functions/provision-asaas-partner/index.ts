@@ -62,7 +62,7 @@ serve(async (req) => {
       email: partner.email,
       cpfCnpj: partner.cpf_cnpj,
       mobilePhone: partner.phone,
-      incomeValue: 5000,
+      incomeValue: onboarding?.income_value ?? 5000,
       companyType: partner.partner_type === "distribuidor" ? "LIMITED" : "MEI",
     };
 

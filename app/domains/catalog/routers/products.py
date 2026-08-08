@@ -1,5 +1,5 @@
 """
-Router de catálogo — endpoints públicos de produtos Hipnus.
+Router de catálogo — endpoints públicos de produtos Tálya.
 
 Base: /api/v1/catalog
 """
@@ -22,7 +22,7 @@ def list_products(
     db: Session = Depends(get_db),
 ):
     """
-    Lista produtos ativos do catálogo oficial Hipnus.
+    Lista produtos ativos do catálogo oficial Tálya.
 
     Parâmetros: filtros opcionais por categoria, linha e termo de busca.
     Retorno: lista de produtos com piso e preço sugerido.
@@ -40,7 +40,7 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 @router.post("/products", response_model=ProductOut, status_code=201)
 def create_product(data: ProductCreate, db: Session = Depends(get_db)):
     """
-    Cria um produto no catálogo (uso administrativo Hipnus).
+    Cria um produto no catálogo (uso administrativo Tálya).
 
     Regras: SKU único; floor_price obrigatório (>= 0).
     Efeitos colaterais: persiste novo produto disponível a todas as lojas.

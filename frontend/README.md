@@ -1,6 +1,6 @@
-# Frontend — Vitrine HIPNUS COSMÉTICOS (Streamlit)
+# Frontend — Vitrine TÁLYA COSMÉTICOS (Streamlit)
 
-Vitrine multipágina da marca Hipnus, com visual clean/premium institucional.
+Vitrine multipágina da marca Tálya, com visual clean/premium institucional.
 Consume a API FastAPI do backend e funciona também em **modo demonstração**
 (catálogo local) quando o backend não está no ar.
 
@@ -47,9 +47,9 @@ Variáveis de ambiente (ou Streamlit Secrets):
 ```
 SMTP_HOST     smtp.hostinger.com
 SMTP_PORT     465
-SMTP_USER     no-reply@hipnuscosmeticos.com.br
+SMTP_USER     no-reply@talyacosmeticos.com.br
 SMTP_PASSWORD ...
-SMTP_FROM     no-reply@hipnuscosmeticos.com.br
+SMTP_FROM     no-reply@talyacosmeticos.com.br
 ```
 
 ---
@@ -176,15 +176,15 @@ streamlit run frontend/Home.py
 Variáveis opcionais (`.env` ou `.streamlit/secrets.toml`):
 
 ```
-HIPNUS_API_URL       http://localhost:8000
+TALYA_API_URL       http://localhost:8000
 ASAAS_API_KEY        $aact_...
 ASAAS_BASE_URL       https://api-sandbox.asaas.com/v3
 PARTNER_WALLET_ID    (walletId subconta parceiro)
 SMTP_HOST            smtp.hostinger.com
 SMTP_PORT            465
-SMTP_USER            no-reply@hipnuscosmeticos.com.br
+SMTP_USER            no-reply@talyacosmeticos.com.br
 SMTP_PASSWORD        ...
-SMTP_FROM            no-reply@hipnuscosmeticos.com.br
+SMTP_FROM            no-reply@talyacosmeticos.com.br
 GROQ_API_KEY         gsk_...
 ```
 
@@ -192,7 +192,7 @@ GROQ_API_KEY         gsk_...
 
 ## Notas de design
 
-- Paleta: roxo Hipnus (`#7C3AED`) + dourado (linha Ouro) sobre fundo claro.
+- Paleta: rosa Tálya (`#b76e79`) + dourado (`#c9a04e`, linha Ouro) sobre fundo quente (`#fbf6f2`).
 - Preço exibido prioriza o **preço de varejo sugerido**; o **piso** do parceiro
   é mostrado como referência.
 - Na **Loja do Parceiro**, o card usa o **preço de venda** definido pelo parceiro

@@ -1,5 +1,5 @@
 """
-ui.py — HIPNUS COSMÉTICOS
+ui.py — TÁLYA COSMÉTICOS
 =====================================
 Façade de compatibilidade: re-exporta tudo dos novos módulos do design system.
 
@@ -8,7 +8,7 @@ A migração acontece progressivamente: quando uma página for refatorada,
 pode passar a importar diretamente de lib.theme, lib.components e lib.commerce.
 
 Ordem de chamada na sidebar (por convenção):
-  1. auth.sidebar_logo()          → logo Hipnus (TOPO)
+  1. auth.sidebar_logo()          → logo Tálya (TOPO)
   2. auth.sidebar_user_info()     → card do usuário (ACIMA do menu)
   3. [menu nativo Streamlit]      → renderizado automaticamente
   4. auth.sidebar_logout_button() → SAIR (logo abaixo do menu — order CSS)

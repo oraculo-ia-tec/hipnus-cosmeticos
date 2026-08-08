@@ -1,5 +1,5 @@
 """
-components.py — HIPNUS COSMÉTICOS
+components.py — TÁLYA COSMÉTICOS
 =====================================
 Wrappers de componentes de UI genéricos e reutilizáveis.
 

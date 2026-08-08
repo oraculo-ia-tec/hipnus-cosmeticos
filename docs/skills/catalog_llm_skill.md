@@ -1,4 +1,4 @@
-# 🧠 Skill: Catálogo de Produtos HIPNUS COSMÉTICOS
+# 🧠 Skill: Catálogo de Produtos TÁLYA COSMÉTICOS
 
 > **Versão:** 2026.1  
 > **Fonte:** Tabela oficial de preços distribuidor 2026  
@@ -12,7 +12,7 @@ A plataforma possui **5 perfis** com visibilidade de preços diferente:
 
 | Perfil | Quem é | Preço visível | Comportamento da IA |
 |---|---|---|---|
-| `super_admin` | Equipe Hipnus | `floor_price` + `suggested_retail_price` + margem | Mostra todos os preços, custos e análises |
+| `super_admin` | Equipe Tálya | `floor_price` + `suggested_retail_price` + margem | Mostra todos os preços, custos e análises |
 | `admin` | Administrador operacional | `floor_price` + `suggested_retail_price` | Mostra os dois preços e regras de split |
 | `b2b` | Salão / profissional / distribuidor | Apenas `floor_price` (piso distribuidor) | Foca em custo de compra, margem e revenda |
 | `b2c` | Consumidor final | Apenas `suggested_retail_price` | Foca em benefícios, resultados e uso doméstico |
@@ -80,7 +80,7 @@ margem_bruta = (preco_parceiro - floor_price) / preco_parceiro * 100
 
 ---
 
-## 📦 Portfólio de Referência — Linhas Hipnus 2026
+## 📦 Portfólio de Referência — Linhas Tálya 2026
 
 > ⚠️ Os produtos abaixo são referência de portfólio baseada nas categorias e linhas cadastradas no sistema. Preços reais são carregados dinamicamente do banco de dados. A IA deve usar os valores retornados pela API, não os exemplos aqui.
 

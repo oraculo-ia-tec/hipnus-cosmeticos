@@ -1,6 +1,6 @@
 
 """
-queries.py — HIPNUS COSMETICOS
+queries.py — TÁLYA COSMÉTICOS
 ================================
 Queries Python usando supabase-py para cada página do Streamlit,
 organizadas por perfil de usuário (admin, distribuidor/salao, cliente).
@@ -96,7 +96,7 @@ def get_admin_sales_orders(supabase: Client, status: str | None = None, limit: i
 
 
 def get_admin_supply_orders(supabase: Client, status: str | None = None, limit: int = 100) -> list[dict]:
-    """Lista pedidos de abastecimento B2B (parceiro -> Hipnus) para o dashboard admin."""
+    """Lista pedidos de abastecimento B2B (parceiro -> Tálya) para o dashboard admin."""
     query = supabase.table("v_admin_supply_orders").select("*").order("created_at", desc=True).limit(limit)
     if status:
         query = query.eq("status", status)
@@ -105,7 +105,7 @@ def get_admin_supply_orders(supabase: Client, status: str | None = None, limit: 
 
 
 def get_admin_central_inventory(supabase: Client) -> list[dict]:
-    """Estoque central Hipnus, para a aba Estoque do admin."""
+    """Estoque central Tálya, para a aba Estoque do admin."""
     res = supabase.table("v_admin_central_inventory").select("*").order("product_name").execute()
     return res.data
 
@@ -156,7 +156,7 @@ def approve_supply_order(supabase: Client, supply_order_id: str) -> dict:
 # ============================================================
 
 def get_partner_supply_catalog(supabase: Client, search: str | None = None) -> list[dict]:
-    """Catálogo Hipnus com preços diferenciados (view já filtra por price_type no RLS)."""
+    """Catálogo Tálya com preços diferenciados (view já filtra por price_type no RLS)."""
     query = supabase.table("v_partner_supply_catalog").select("*").order("product_name")
     if search:
         query = query.ilike("product_name", f"%{search}%")

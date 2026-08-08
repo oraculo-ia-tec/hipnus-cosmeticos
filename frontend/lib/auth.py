@@ -1,5 +1,5 @@
 """
-auth.py — HIPNUS COSMÉTICOS
+auth.py — TÁLYA COSMÉTICOS
 ==============================
 v13 — 2026-07-01:
   - fix: _gravar_sessao NÃO zera chiara_foto_b64/mime ao fazer login.
@@ -27,44 +27,52 @@ _HOME_PAGE  = HOME_PAGE
 DEBUG_SIDEBAR = False
 
 
-# ─── Usuários demo/seed ───────────────────────────────────────────────────────────
-USUARIOS_DEMO: dict[str, dict] = {
-    "william": {
-        "senha":        "hipnus@2026",
-        "role":         "super_admin",
-        "nome":         "William Eustáquio",
-        "display_name": "Desenvolvedor de IA",
-        "email":        "programador.descpro@gmail.com",
-    },
-    "williamllider": {
-        "senha":        "teste@123",
-        "role":         "b2b",
-        "nome":         "William Llider",
-        "display_name": "Parceiro B2B",
-        "email":        "williamllider@gmail.com",
-    },
-    "admin": {
-        "senha":        "hipnus@adm",
-        "role":         "admin",
-        "nome":         "Administrador",
-        "display_name": "Admin Hipnus",
-        "email":        "admin@hipnuscosmeticos.com.br",
-    },
-    "pro": {
-        "senha":        "hipnus@pro",
-        "role":         "b2b",
-        "nome":         "Profissional",
-        "display_name": "Profissional B2B",
-        "email":        "pro@hipnuscosmeticos.com.br",
-    },
-    "user": {
-        "senha":        "hipnus@user",
-        "role":         "b2c",
-        "nome":         "Cliente",
-        "display_name": "Cliente B2C",
-        "email":        "user@hipnuscosmeticos.com.br",
-    },
-}
+# ─── Usuários demo/seed ────────────────────────────────────────────────────────
+# Credenciais carregadas de st.secrets ou variáveis de ambiente.
+# NUNCA coloque senhas hardcoded neste arquivo.
+# Configure as variáveis no .env ou no painel Secrets do Streamlit Cloud.
+def _load_demo_users() -> dict[str, dict]:
+    """
+    Carrega usuários demo a partir de st.secrets ou variáveis de ambiente.
+
+    Formato esperado em .env:
+      DEMO_USER_WILLIAM=william:hipnus@2026:super_admin:William Eustáquio:programador.descpro@gmail.com
+
+    Cada variável DEMO_USER_* tem o formato: username:senha:role:nome:email
+    """
+    import os
+    users: dict[str, dict] = {}
+    try:
+        import streamlit as st
+        src = dict(st.secrets.get("demo_users", {}))
+    except Exception:
+        src = {}
+
+    # Fallback: ler variáveis DEMO_USER_* do ambiente
+    for key, value in os.environ.items():
+        if key.startswith("DEMO_USER_") and value:
+            parts = value.split(":", 4)
+            if len(parts) >= 2:
+                uname = parts[0]
+                if uname not in src:
+                    src[uname] = ":".join(parts[1:])
+
+    for uname, raw in src.items():
+        if isinstance(raw, dict):
+            users[uname] = raw
+        elif isinstance(raw, str):
+            parts = raw.split(":", 4)
+            users[uname] = {
+                "senha":        parts[0] if len(parts) > 0 else "",
+                "role":         parts[1] if len(parts) > 1 else "b2c",
+                "nome":         parts[2] if len(parts) > 2 else uname,
+                "display_name": parts[3] if len(parts) > 3 else uname,
+                "email":        parts[4] if len(parts) > 4 else f"{uname}@talyacosmeticos.com.br",
+            }
+    return users
+
+
+USUARIOS_DEMO: dict[str, dict] = _load_demo_users()
 
 
 def _normalize_role(role: str | None) -> str:
@@ -422,7 +430,7 @@ section[data-testid="stSidebar"]
     color:#fff !important;
     border:1px solid {sair_border} !important;
     border-radius:10px !important;
-    font-family:'Inter',sans-serif !important;
+    font-family:'Manrope',sans-serif !important;
     font-weight:600 !important;
     font-size:.86rem !important;
     letter-spacing:.3px !important;
@@ -458,7 +466,7 @@ section[data-testid="stSidebar"]
 
     st.sidebar.html(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Cormorant:ital,wght@0,400;0,600;0,700;1,500&display=swap');
     section[data-testid="stSidebar"] > div {{
       background:
         radial-gradient(ellipse at 10% 10%, {p_20} 0%, transparent 55%),
@@ -473,7 +481,7 @@ section[data-testid="stSidebar"]
       display:flex !important; align-items:center !important; gap:8px !important;
       padding:9px 14px !important; margin:1px 6px !important;
       border-radius:10px !important; border:1px solid transparent !important;
-      font-family:'Inter',sans-serif !important; font-size:.86rem !important;
+      font-family:'Manrope',sans-serif !important; font-size:.86rem !important;
       font-weight:500 !important; color:rgba(255,255,255,.78) !important;
       text-decoration:none !important; transition:all .18s ease !important;
       background:transparent !important;
@@ -548,7 +556,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
             f'border:2px solid {_hex_rgba(cor_accent, 0.55)};'
             f'display:flex;align-items:center;justify-content:center;'
             f'font-size:.8rem;font-weight:800;color:#fff;'
-            f'font-family:Inter,sans-serif;line-height:1;'
+            f'font-family:Manrope,sans-serif;line-height:1;'
             f'">C</div>'
         )
 
@@ -575,7 +583,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         white-space:nowrap;
         overflow:hidden;
         text-overflow:ellipsis;
-        font-family:Inter,sans-serif;
+        font-family:Manrope,sans-serif;
         font-size:.86rem;
         font-weight:600;
         color:#fff;
@@ -583,7 +591,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
       }}
       .chi-badge{{
         flex-shrink:0;
-        font-family:Inter,sans-serif;
+        font-family:Manrope,sans-serif;
         font-size:.54rem;
         font-weight:700;
         letter-spacing:.6px;
@@ -643,14 +651,14 @@ def build_sidebar(
       <div style="width:38px;height:38px;border-radius:11px;flex-shrink:0;
         background:linear-gradient(135deg,{cor_primary},#5b21b6);
         display:flex;align-items:center;justify-content:center;
-        font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:#fff;
+        font-family:'Cormorant',serif;font-weight:800;font-size:1.1rem;color:#fff;
         box-shadow:0 0 18px rgba(124,58,237,.6),0 0 40px rgba(185,131,255,.15);">H</div>
       <div>
-        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;
+        <div style="font-family:'Cormorant',serif;font-weight:800;font-size:.95rem;
           background:linear-gradient(90deg,#fff 20%,{cor_accent} 100%);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-          background-clip:text;letter-spacing:.4px;line-height:1.1;">HIPNUS</div>
-        <div style="font-family:'Inter',sans-serif;font-size:.53rem;
+          background-clip:text;letter-spacing:.4px;line-height:1.1;">TÁLYA</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:.53rem;
           color:rgba(185,131,255,.5);letter-spacing:3px;
           text-transform:uppercase;margin-top:2px;">Cosm&eacute;ticos</div>
       </div>
@@ -682,7 +690,7 @@ def build_sidebar(
       border:1px solid {cor_accent}28;border-radius:14px;">
       {avatar_html}
       <div style="min-width:0;">
-        <div style="font-family:'Inter',sans-serif;font-weight:700;font-size:.84rem;
+        <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:.84rem;
           color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           max-width:130px;line-height:1.3;" title="{display_nm}">{display_nm}</div>
         <div style="display:inline-block;margin-top:4px;

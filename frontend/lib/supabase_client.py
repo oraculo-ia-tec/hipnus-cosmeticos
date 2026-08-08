@@ -1,5 +1,5 @@
 """
-supabase_client.py — HIPNUS COSMÉTICOS
+supabase_client.py — TÁLYA COSMÉTICOS
 ========================================
 Cliente Supabase singleton para o frontend Streamlit.
 

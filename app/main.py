@@ -1,5 +1,5 @@
 """
-main.py — HIPNUS COSMÉTICOS
+main.py — TÁLYA COSMÉTICOS
 ==============================
 Entrypoint da API FastAPI.
 
@@ -70,20 +70,19 @@ except ImportError:
     pass
 
 try:
-    from app.domains.orders.router import router as orders_router
+    from app.domains.orders.routers import router as orders_router
     app.include_router(orders_router, prefix="/api/v1")
+except ImportError:
+    pass
+try:
+    from app.domains.payments.routers.webhooks import router as payments_router
+    app.include_router(payments_router, prefix="/api/v1")
 except ImportError:
     pass
 
 try:
     from app.domains.stores.router import router as stores_router
     app.include_router(stores_router, prefix="/api/v1")
-except ImportError:
-    pass
-
-try:
-    from app.domains.payments.router import router as payments_router
-    app.include_router(payments_router, prefix="/api/v1")
 except ImportError:
     pass
 

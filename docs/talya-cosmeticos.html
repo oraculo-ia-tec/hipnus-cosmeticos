@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="slides-format" content="viewport">
+<title>Tálya Cosméticos — Plano de Negócio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,600;0,700;1,500&family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style type="text/tailwindcss">
+@theme {
+  --color-bg: #fbf6f2;
+  --color-bg-deep: #f5ece4;
+  --color-surface: #f1e4da;
+  --color-text: #3a2620;
+  --color-text-secondary: #6b4f43;
+  --color-text-muted: #a08876;
+  --color-accent-1: #b76e79;
+  --color-accent-2: #c9a04e;
+  --color-accent-3: #7c5c4a;
+  --color-glass-bg: rgba(255,255,255,0.75);
+  --color-glass-border: rgba(183,110,121,0.18);
+  --color-vignette: rgba(60,30,20,0.06);
+  --font-display: 'Cormorant', serif;
+  --font-body: 'Manrope', sans-serif;
+}
+</style>
+<style>
+:root { --color-bg: #fbf6f2; --color-text: #3a2620; --glow-color-rgb: 183,110,121; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { background: var(--color-bg); margin: 0; }
+body { font-family: var(--font-body); color: var(--color-text); overflow: hidden; height: 100vh; width: 100vw; }
+.deck { width: 100vw; height: 100vh; position: relative; }
+.slide { position: absolute; top:0; left:0; width:100%; height:100%; background: var(--color-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; transform:scale(0.95); transition:opacity .7s ease, transform .7s ease; pointer-events:none; overflow:hidden; }
+.slide.active { opacity:1; transform:scale(1); pointer-events:all; }
+.slide > .content { position:relative; z-index:2; width:100%; max-width:1100px; padding: clamp(1.5rem,4vw,4rem); }
+.nav-controls { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:16px; z-index:100; background:var(--color-glass-bg); backdrop-filter:blur(10px); padding:10px 24px; border-radius:40px; border:1px solid var(--color-glass-border); }
+.nav-btn { width:40px; height:40px; border:none; background:var(--color-glass-bg); color:var(--color-accent-1); border-radius:50%; font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .3s; }
+.nav-btn:hover { background:var(--color-glass-border); }
+.slide-dots { display:flex; gap:8px; }
+.slide-dots .dot { width:10px; height:10px; border-radius:50%; background:var(--color-glass-border); cursor:pointer; transition:background .3s, transform .3s; }
+.slide-dots .dot.active { background:var(--color-accent-1); transform:scale(1.3); }
+.slide-counter { font-size:.8rem; color:var(--color-text-muted); min-width:40px; text-align:center; }
+.reveal { opacity:0; transform:translateY(20px); }
+.text-glow { text-shadow: 0 0 20px rgba(var(--glow-color-rgb),0.35); }
+@keyframes float-slow { 0%{transform:translate(0,0) scale(1);} 25%{transform:translate(60px,-50px) scale(1.12);} 50%{transform:translate(-40px,40px) scale(.9);} 75%{transform:translate(50px,20px) scale(1.08);} 100%{transform:translate(0,0) scale(1);} }
+@keyframes float-drift { 0%{transform:translate(0,0) scale(1) rotate(0deg);} 33%{transform:translate(-50px,-60px) scale(1.15) rotate(3deg);} 66%{transform:translate(40px,30px) scale(.88) rotate(-2deg);} 100%{transform:translate(0,0) scale(1) rotate(0deg);} }
+@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-15px);} }
+.gradient-mesh { position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+.blob { position:absolute; border-radius:50%; filter:blur(80px); animation:float-slow 10s ease-in-out infinite; }
+.blob:nth-child(2) { animation:float-drift 14s ease-in-out infinite; }
+.blob:nth-child(3) { animation:float-slow 18s ease-in-out infinite reverse; }
+.slide::before { content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); background-repeat:repeat; background-size:256px 256px; opacity:.015; mix-blend-mode:overlay; }
+.slide::after { content:''; position:absolute; inset:0; z-index:1; pointer-events:none; background:radial-gradient(ellipse at center, transparent 50%, var(--color-vignette) 100%); }
+.bar-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.bar-track { flex:1; height:26px; background:var(--color-glass-border); border-radius:8px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg, var(--color-accent-1), var(--color-accent-2)); width:0%; }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.2s !important; } }
+.deco-shape { position:absolute; border-radius:50%; pointer-events:none; }
+</style>
+</head>
+<body>
+<div class="mouse-spotlight" style="position:fixed;inset:0;z-index:99;pointer-events:none;"></div>
+<div class="deck">
+
+<!-- SLIDE 1: TITLE -->
+<div class="slide slide-1 active" data-slide="1">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:500px;height:500px;top:-100px;right:-100px;background:var(--color-accent-1);opacity:.14;"></div>
+    <div class="blob" style="width:320px;height:320px;bottom:-80px;left:-60px;background:var(--color-accent-2);opacity:.12;"></div>
+    <div class="blob" style="width:220px;height:220px;top:40%;left:10%;background:var(--color-accent-3);opacity:.08;"></div>
+  </div>
+  <canvas class="particle-canvas" style="position:absolute;inset:0;z-index:1;"></canvas>
+  <div class="content text-center">
+    <div class="text-[110px] mb-4 animate-[float_3s_ease-in-out_infinite]">💇‍♀️</div>
+    <p class="text-[clamp(0.75rem,1.2vw,1rem)] font-semibold text-accent-1 tracking-[6px] uppercase reveal mb-3">Rebranding &amp; Plano de Negócio</p>
+    <h1 class="font-display italic text-[clamp(3rem,8vw,6.5rem)] font-bold bg-linear-to-br from-accent-1 via-accent-2 to-accent-3 bg-clip-text text-transparent tracking-tight mb-4 reveal">Tálya Cosméticos</h1>
+    <p class="text-[clamp(0.9rem,1.5vw,1.3rem)] font-light text-text-muted tracking-[4px] uppercase reveal">A nova identidade da marca capilar de William Eustáquio &amp; Thalita Martins</p>
+  </div>
+</div>
+
+<!-- SLIDE 2: Agenda -->
+<div class="slide slide-2" data-slide="2">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:350px;height:350px;top:-80px;right:-80px;background:var(--color-accent-1);opacity:.08;"></div>
+    <div class="blob" style="width:250px;height:250px;bottom:-60px;left:-40px;background:var(--color-accent-2);opacity:.06;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-8">Agenda</h2>
+    <div class="grid grid-cols-2 gap-5">
+      <div class="reveal flex items-start gap-4 bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><div class="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-accent-1 to-accent-2 text-white flex items-center justify-center font-bold">1</div><div><p class="font-semibold">Por que mudar o nome</p><p class="text-sm text-text-secondary">Racional estratégico do rebranding</p></div></div>
+      <div class="reveal flex items-start gap-4 bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><div class="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-accent-1 to-accent-2 text-white flex items-center justify-center font-bold">2</div><div><p class="font-semibold">Identidade Tálya</p><p class="text-sm text-text-secondary">Nome, propósito e posicionamento</p></div></div>
+      <div class="reveal flex items-start gap-4 bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><div class="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-accent-1 to-accent-2 text-white flex items-center justify-center font-bold">3</div><div><p class="font-semibold">Modelo de negócio</p><p class="text-sm text-text-secondary">B2C, B2B e distribuidores</p></div></div>
+      <div class="reveal flex items-start gap-4 bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><div class="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-accent-1 to-accent-2 text-white flex items-center justify-center font-bold">4</div><div><p class="font-semibold">Portfólio de produtos</p><p class="text-sm text-text-secondary">Linhas e categorias capilares</p></div></div>
+      <div class="reveal flex items-start gap-4 bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><div class="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-accent-1 to-accent-2 text-white flex items-center justify-center font-bold">5</div><div><p class="font-semibold">Plataforma digital</p><p class="text-sm text-text-secondary">Módulos Tálya Store, Pro, Pay e Connect</p></div></div>
+      <div class="reveal flex items-start gap-4 bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><div class="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-accent-1 to-accent-2 text-white flex items-center justify-center font-bold">6</div><div><p class="font-semibold">Próximos passos</p><p class="text-sm text-text-secondary">Transição e roadmap de lançamento</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 3: Racional do rebranding -->
+<div class="slide slide-3" data-slide="3">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:350px;height:350px;top:-60px;left:-80px;background:var(--color-accent-2);opacity:.08;"></div>
+    <div class="blob" style="width:250px;height:250px;bottom:-60px;right:-40px;background:var(--color-accent-1);opacity:.06;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-4">Por que sair de "Hipnus"</h2>
+    <p class="text-text-secondary reveal mb-6">A pesquisa de naming identificou oportunidades claras de melhoria fonética e emocional para conversão e engajamento social.</p>
+    <div class="grid grid-cols-2 gap-6">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md border-l-4 border-l-accent-3">
+        <p class="font-semibold text-accent-3 mb-2">Hipnus Cosméticos</p>
+        <ul class="text-sm text-text-secondary space-y-1 list-disc pl-4">
+          <li>Sonoridade dura, associação a "hipnose"</li>
+          <li>Difícil pronúncia em vídeos curtos</li>
+          <li>Baixa conexão emocional com o público</li>
+        </ul>
+      </div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md border-l-4 border-l-accent-1">
+        <p class="font-semibold text-accent-1 mb-2">Tálya Cosméticos</p>
+        <ul class="text-sm text-text-secondary space-y-1 list-disc pl-4">
+          <li>Curto, suave e fácil de pronunciar</li>
+          <li>Vínculo direto com a cofundadora Thalita Martins</li>
+          <li>Padrão fonético de marcas líderes em engajamento (Skala, Salon Line)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 4: Identidade -->
+<div class="slide slide-4" data-slide="4">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:380px;height:380px;top:-100px;right:-60px;background:var(--color-accent-1);opacity:.09;"></div>
+    <div class="blob" style="width:260px;height:260px;bottom:-70px;left:-50px;background:var(--color-accent-2);opacity:.07;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-6">Identidade da Marca</h2>
+    <div class="grid grid-cols-3 gap-5">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md hover:-translate-y-1 transition"><p class="text-3xl mb-2">✨</p><p class="font-semibold mb-1">Nome oficial</p><p class="text-sm text-text-secondary">Tálya Cosméticos — marketplace proprietário da marca</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md hover:-translate-y-1 transition"><p class="text-3xl mb-2">💬</p><p class="font-semibold mb-1">Promessa central</p><p class="text-sm text-text-secondary">Vitrine, compra e relacionamento direto, para consumidor final e profissional</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md hover:-translate-y-1 transition"><p class="text-3xl mb-2">🎯</p><p class="font-semibold mb-1">Fundadores</p><p class="text-sm text-text-secondary">William Eustáquio &amp; Thalita Martins</p></div>
+    </div>
+    <div class="mt-6 reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md">
+      <p class="font-semibold mb-2">Arquitetura de marca (expansão modular)</p>
+      <div class="grid grid-cols-3 gap-3 text-sm text-text-secondary">
+        <p>• Tálya Store (B2C)</p><p>• Tálya Pro (B2B)</p><p>• Tálya Orders</p>
+        <p>• Tálya Customers</p><p>• Tálya Pay</p><p>• Tálya AI / Connect</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 5: Publico -->
+<div class="slide slide-5" data-slide="5">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:340px;height:340px;top:-70px;left:-70px;background:var(--color-accent-3);opacity:.07;"></div>
+    <div class="blob" style="width:260px;height:260px;bottom:-60px;right:-50px;background:var(--color-accent-1);opacity:.07;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-6">Modelo de Negócio: B2C + B2B</h2>
+    <div class="grid grid-cols-2 gap-6">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md">
+        <p class="font-semibold text-accent-1 mb-2">Tálya Store (B2C)</p>
+        <ul class="text-sm text-text-secondary space-y-1 list-disc pl-4">
+          <li>Consumidor final comprando para uso próprio</li>
+          <li>Tabela de preço cheio, kits e combos de linha completa</li>
+          <li>Exemplo: Kit Reconstrutor Capilar Ouro por R$299,90</li>
+        </ul>
+      </div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-6 shadow-md">
+        <p class="font-semibold text-accent-2 mb-2">Tálya Pro (B2B)</p>
+        <ul class="text-sm text-text-secondary space-y-1 list-disc pl-4">
+          <li>Cabeleireiros, barbeiros, salões e distribuidores</li>
+          <li>Preços diferenciados e lote mínimo acima de R$4.000,00</li>
+          <li>Exemplo: mesmo Kit Ouro por R$142,60 na tabela distribuidor</li>
+        </ul>
+      </div>
+    </div>
+    <p class="reveal text-xs text-text-muted mt-5">Fonte: tabelas de preços consumidor final e distribuidor 2026 [file:1][file:2]</p>
+  </div>
+</div>
+
+<!-- SLIDE 6: Portfolio -->
+<div class="slide slide-6" data-slide="6">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:360px;height:360px;top:-90px;right:-90px;background:var(--color-accent-2);opacity:.08;"></div>
+    <div class="blob" style="width:240px;height:240px;bottom:-50px;left:-50px;background:var(--color-accent-3);opacity:.06;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-6">Portfólio de Produtos</h2>
+    <div class="grid grid-cols-3 gap-5">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="text-2xl mb-1">💧</p><p class="font-semibold text-sm mb-1">Hidratação &amp; Reconstrução</p><p class="text-xs text-text-secondary">Turmalina, Manga Rosa, Ouro, Teia de Aranha, Carbono Smooth Pro</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="text-2xl mb-1">🏠</p><p class="font-semibold text-sm mb-1">Home Care</p><p class="text-xs text-text-secondary">Banana e Mel, Cronograma Capilar, Desmaia Cabelo, Café com Leite</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="text-2xl mb-1">🎨</p><p class="font-semibold text-sm mb-1">Matizadores &amp; Color</p><p class="text-xs text-text-secondary">Master Black, Red Collor, Marsala, Matizadora Blond</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="text-2xl mb-1">🧴</p><p class="font-semibold text-sm mb-1">Químicas &amp; Alinhamento</p><p class="text-xs text-text-secondary">Progressivas, botox, selagem, com e sem formol</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="text-2xl mb-1">🧔</p><p class="font-semibold text-sm mb-1">Linha Barber</p><p class="text-xs text-text-secondary">Shampoo 3 em 1, pomadas, balm, óleo para barba</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="text-2xl mb-1">💊</p><p class="font-semibold text-sm mb-1">Encapsulados &amp; Finish</p><p class="text-xs text-text-secondary">Biotina, Slim Power, ampolas, perfumes capilares, óleo finalizador</p></div>
+    </div>
+    <p class="reveal text-xs text-text-muted mt-4">Fonte: catálogo de produtos 2026 [file:4]</p>
+  </div>
+</div>
+
+<!-- SLIDE 7: Stats -->
+<div class="slide slide-7" data-slide="7">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:400px;height:400px;top:-80px;left:-100px;background:var(--color-accent-1);opacity:.1;"></div>
+    <div class="blob" style="width:280px;height:280px;bottom:-70px;right:-60px;background:var(--color-accent-2);opacity:.08;"></div>
+  </div>
+  <div class="content text-center">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-8">Portfólio em Números</h2>
+    <div class="grid grid-cols-3 gap-6">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-8 shadow-md"><p class="text-[2.4rem] font-extrabold text-accent-1 text-glow" data-count="12" data-suffix="+">0</p><p class="text-sm text-text-secondary uppercase tracking-wide mt-2">Linhas de tratamento</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-8 shadow-md"><p class="text-[2.4rem] font-extrabold text-accent-2 text-glow" data-count="9" data-suffix="+">0</p><p class="text-sm text-text-secondary uppercase tracking-wide mt-2">Categorias de produto</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-8 shadow-md"><p class="text-[2.4rem] font-extrabold text-accent-3 text-glow" data-count="2" data-suffix="">0</p><p class="text-sm text-text-secondary uppercase tracking-wide mt-2">Canais: B2C e B2B</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 8: Plataforma tecnica -->
+<div class="slide slide-8" data-slide="8">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:340px;height:340px;top:-70px;right:-80px;background:var(--color-accent-3);opacity:.07;"></div>
+    <div class="blob" style="width:230px;height:230px;bottom:-50px;left:-40px;background:var(--color-accent-1);opacity:.06;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-6">Plataforma Digital Tálya</h2>
+    <div class="grid grid-cols-2 gap-5">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="font-semibold mb-1">Backend &amp; API</p><p class="text-sm text-text-secondary">Python + FastAPI, integração via protocolo MCP</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="font-semibold mb-1">Frontend</p><p class="text-sm text-text-secondary">Streamlit com Bootstrap 5, adaptando templates existentes</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="font-semibold mb-1">Banco de dados</p><p class="text-sm text-text-secondary">SQLAlchemy — SQLite local, MySQL Hostinger em produção</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md"><p class="font-semibold mb-1">Infraestrutura</p><p class="text-sm text-text-secondary">VPS Hostinger, SMTP transacional, domínio e SSL</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 9: Integrações -->
+<div class="slide slide-9" data-slide="9">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:360px;height:360px;top:-80px;left:-90px;background:var(--color-accent-2);opacity:.08;"></div>
+    <div class="blob" style="width:240px;height:240px;bottom:-60px;right:-40px;background:var(--color-accent-1);opacity:.06;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-6">Integrações Estratégicas</h2>
+    <div class="grid grid-cols-2 gap-5">
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md border-l-4 border-l-accent-1"><p class="font-semibold mb-1">Tálya AI (Groq)</p><p class="text-sm text-text-secondary">Copilotos, agentes e recomendações inteligentes</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md border-l-4 border-l-accent-2"><p class="font-semibold mb-1">Tálya Connect (Meta)</p><p class="text-sm text-text-secondary">WhatsApp, Instagram e Facebook conectados ao histórico do cliente</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md border-l-4 border-l-accent-3"><p class="font-semibold mb-1">Tálya Pay</p><p class="text-sm text-text-secondary">Gateways como Stripe ou Asaas para módulos financeiros</p></div>
+      <div class="reveal bg-glass-bg border border-glass-border rounded-xl p-5 shadow-md border-l-4 border-l-accent-1"><p class="font-semibold mb-1">Governança de dados</p><p class="text-sm text-text-secondary">Histórico de pedidos, auditoria, permissões e logs centralizados</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 10: Roadmap -->
+<div class="slide slide-10" data-slide="10">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:340px;height:340px;top:-70px;right:-70px;background:var(--color-accent-1);opacity:.08;"></div>
+    <div class="blob" style="width:230px;height:230px;bottom:-50px;left:-40px;background:var(--color-accent-3);opacity:.06;"></div>
+  </div>
+  <div class="content">
+    <h2 class="font-display text-[clamp(2rem,4.5vw,3rem)] font-bold reveal mb-8">Roadmap de Transição</h2>
+    <div class="relative pl-8">
+      <div style="position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--color-accent-1),var(--color-accent-2));"></div>
+      <div class="reveal relative mb-6"><div style="position:absolute;left:-8px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--color-accent-1);box-shadow:0 0 8px rgba(183,110,121,.6);"></div><p class="font-semibold">Fase 1 — Validação do nome</p><p class="text-sm text-text-secondary">Registro de domínio e handles sociais para "Tálya Cosméticos"</p></div>
+      <div class="reveal relative mb-6"><div style="position:absolute;left:-8px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--color-accent-2);box-shadow:0 0 8px rgba(201,160,78,.6);"></div><p class="font-semibold">Fase 2 — Identidade visual</p><p class="text-sm text-text-secondary">Novo logotipo, embalagens e catálogo com a marca Tálya</p></div>
+      <div class="reveal relative mb-6"><div style="position:absolute;left:-8px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--color-accent-3);box-shadow:0 0 8px rgba(124,92,74,.6);"></div><p class="font-semibold">Fase 3 — Migração da plataforma</p><p class="text-sm text-text-secondary">Atualização de backend, frontend e templates com o novo naming</p></div>
+      <div class="reveal relative"><div style="position:absolute;left:-8px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--color-accent-1);box-shadow:0 0 8px rgba(183,110,121,.6);"></div><p class="font-semibold">Fase 4 — Lançamento e comunicação</p><p class="text-sm text-text-secondary">Campanha de anúncio para clientes B2C e parceiros B2B/distribuidores</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDE 11: Thank you -->
+<div class="slide slide-11" data-slide="11">
+  <div class="gradient-mesh">
+    <div class="blob" style="width:500px;height:500px;top:-100px;right:-100px;background:var(--color-accent-1);opacity:.15;"></div>
+    <div class="blob" style="width:320px;height:320px;bottom:-80px;left:-60px;background:var(--color-accent-2);opacity:.12;"></div>
+    <div class="blob" style="width:220px;height:220px;top:40%;left:10%;background:var(--color-accent-3);opacity:.1;"></div>
+  </div>
+  <canvas class="particle-canvas" style="position:absolute;inset:0;z-index:1;"></canvas>
+  <div class="content text-center">
+    <div class="text-[100px] mb-4 animate-[float_3s_ease-in-out_infinite]">🌸</div>
+    <h2 class="font-display italic text-[clamp(2.5rem,6vw,4.5rem)] font-bold bg-linear-to-br from-accent-1 via-accent-2 to-accent-3 bg-clip-text text-transparent reveal mb-3">Tálya Cosméticos</h2>
+    <p class="text-text-muted tracking-[4px] uppercase text-sm reveal">Uma nova era para a beleza capilar</p>
+  </div>
+</div>
+
+</div>
+
+<div class="nav-controls">
+  <button class="nav-btn" onclick="changeSlide(-1)">&#8249;</button>
+  <div class="slide-dots" id="dots"></div>
+  <button class="nav-btn" onclick="changeSlide(1)">&#8250;</button>
+  <span class="slide-counter" id="counter">1 / 11</span>
+</div>
+
+<script>
+let current = 1;
+const total = document.querySelectorAll('.slide').length;
+const dotsContainer = document.getElementById('dots');
+const counter = document.getElementById('counter');
+for (let i=1;i<=total;i++){const dot=document.createElement('div');dot.className='dot'+(i===1?' active':'');dot.onclick=()=>goToSlide(i);dotsContainer.appendChild(dot);}
+function goToSlide(n){const prev=document.querySelector('.slide.active');const next=document.querySelector(`.slide[data-slide="${n}"]`);if(prev)prev.classList.remove('active');if(next){next.classList.add('active');animateSlide(next);}current=n;updateNav();}
+function changeSlide(dir){let next=current+dir;if(next<1)next=total;if(next>total)next=1;goToSlide(next);}
+function updateNav(){document.querySelectorAll('.dot').forEach((d,i)=>{d.classList.toggle('active',i+1===current);});counter.textContent=current+' / '+total;}
+document.addEventListener('keydown',(e)=>{if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();changeSlide(1);}if(e.key==='ArrowLeft'){e.preventDefault();changeSlide(-1);}});
+let touchStartX=0;
+document.addEventListener('touchstart',(e)=>{touchStartX=e.touches[0].clientX;});
+document.addEventListener('touchend',(e)=>{const diff=touchStartX-e.changedTouches[0].clientX;if(Math.abs(diff)>50)changeSlide(diff>0?1:-1);});
+function animateSlide(slide){
+  slide.querySelectorAll('.reveal').forEach((el,i)=>{el.style.transition='none';el.style.opacity='0';el.style.transform='translateY(20px)';el.offsetHeight;const delay=i*0.08;el.style.transition=`opacity 0.35s ease ${delay}s, transform 0.35s ease ${delay}s`;el.style.opacity='1';el.style.transform='translateY(0px)';});
+  animateSlideEffects(slide);
+}
+function animateSlideEffects(slide){
+  slide.querySelectorAll('[data-count]:not(.counted)').forEach(el=>{
+    el.classList.add('counted');
+    const target=parseInt(el.dataset.count);const suffix=el.dataset.suffix||'',prefix=el.dataset.prefix||'';
+    let cur=0;const step=target/40;
+    const timer=setInterval(()=>{cur+=step;if(cur>=target){cur=target;clearInterval(timer);}el.textContent=prefix+Math.round(cur).toLocaleString()+suffix;},30);
+  });
+  slide.querySelectorAll('.bar-fill:not(.fill-init)').forEach((bar,i)=>{bar.classList.add('fill-init');bar.style.width='0%';bar.style.transition=`width 0.5s ease ${i*0.08}s`;bar.offsetHeight;bar.style.width=bar.dataset.width+'%';});
+}
+document.addEventListener('mousemove',(e)=>{const spotlight=document.querySelector('.mouse-spotlight');if(spotlight){const rgb=getComputedStyle(document.documentElement).getPropertyValue('--glow-color-rgb').trim()||'183,110,121';spotlight.style.background=`radial-gradient(600px circle at ${e.clientX}px ${e.clientY}px, rgba(${rgb}, 0.05), transparent 40%)`;}});
+window.initParticles=function(canvas,options){
+  if(!canvas)return;const ctx=canvas.getContext('2d');canvas.width=canvas.offsetWidth;canvas.height=canvas.offsetHeight;
+  const interactive=options.interactive!==false;const count=options.count||(interactive?55:18);
+  let mx=-1000,my=-1000;const rgb=getComputedStyle(document.documentElement).getPropertyValue('--glow-color-rgb').trim()||'183,110,121';const [r,g,b]=rgb.split(',').map(Number);
+  const particles=Array.from({length:count},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,vx:(Math.random()-0.5)*0.3,vy:(Math.random()-0.5)*0.3,size:Math.random()*2.5+0.8,alpha:Math.random()*0.3+0.1}));
+  if(interactive){canvas.addEventListener('mousemove',(e)=>{const rect=canvas.getBoundingClientRect();mx=e.clientX-rect.left;my=e.clientY-rect.top;});canvas.addEventListener('mouseleave',()=>{mx=-1000;my=-1000;});}
+  (function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{if(interactive){const dx=p.x-mx,dy=p.y-my,dist=Math.sqrt(dx*dx+dy*dy);if(dist<120){const force=(120-dist)/120*2;p.vx+=(dx/dist)*force*0.1;p.vy+=(dy/dist)*force*0.1;}}p.vx*=0.98;p.vy*=0.98;p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fillStyle=`rgba(${r},${g},${b},${p.alpha})`;ctx.fill();});requestAnimationFrame(animate);})();
+};
+document.querySelectorAll('.particle-canvas').forEach(c=>window.initParticles(c,{interactive:true,count:55}));
+document.querySelectorAll('.particle-canvas-ambient').forEach(c=>window.initParticles(c,{interactive:false,count:18}));
+try{animateSlide(document.querySelector('.slide.active'));}catch(e){console.warn('Initial animation error:',e);}
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 """
-12_🛍️_Loja_Publica.py — HIPNUS COSMÉTICOS
+12_🛍️_Loja_Publica.py — TÁLYA COSMÉTICOS
 Skill: Loja Personalizada — Módulo B
 Página pública da loja do parceiro. Não exige login.
 Acesso via: /?parceiro=slug
@@ -18,7 +18,7 @@ import streamlit as st
 from lib import ui
 
 st.set_page_config(
-    page_title="Loja HIPNUS",
+    page_title="Loja TÁLYA",
     page_icon="🛍️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -94,7 +94,7 @@ def _load_parceiro_config(slug: str) -> dict:
             "instagram": st.session_state.get("loja_instagram",""),
         }
     return {
-        "nome":      slug.replace("_"," ").title() + " · HIPNUS" if slug else "HIPNUS Cosméticos",
+        "nome":      slug.replace("_"," ").title() + " · TÁLYA" if slug else "TÁLYA Cosméticos",
         "bio":       "Bem-vinda(o)! Aqui você encontra os melhores produtos de beleza com condições exclusivas.",
         "cor":       "#7c3aed",
         "ativa":     True,
@@ -190,7 +190,7 @@ if cfg["instagram"]:
 st.html(f"""
 <div class="pub-hero">
   <div style="position:relative;z-index:1;">
-    <div class="pub-hero-badge">🏪 Loja Exclusiva HIPNUS</div>
+    <div class="pub-hero-badge">🏪 Loja Exclusiva TÁLYA</div>
     <div class="pub-hero-nome">{cfg['nome']}</div>
     <p class="pub-hero-bio">{cfg['bio']}</p>
     {"<div class='pub-hero-links'>" + links_html + "</div>" if links_html else ""}
@@ -311,7 +311,7 @@ else:
 st.html(f"""
 <div class="pub-footer">
   <div style="margin-bottom:6px;">
-    <span style="color:{cor};font-weight:700;">HIPNUS Cosméticos</span>
+    <span style="color:{cor};font-weight:700;">TÁLYA Cosméticos</span>
     · Produtos de beleza premium
   </div>
   {"<div style='margin-bottom:4px;'>Consultora: <strong style='color:#f5d0fe;'>" + cfg['nome'] + "</strong></div>" if slug else ""}

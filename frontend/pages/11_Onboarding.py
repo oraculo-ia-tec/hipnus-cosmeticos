@@ -1,6 +1,6 @@
 
 """
-pages/onboarding_and_store_config.py — HIPNUS COSMETICOS
+pages/onboarding_and_store_config.py — TÁLYA COSMÉTICOS
 ==========================================================
 Telas Streamlit:
 1. Cadastro de Parceiro (distribuidor/salao)
@@ -22,7 +22,7 @@ supabase = get_supabase()
 # PAGINA 1 — Cadastro de Parceiro
 # ============================================================
 def page_partner_signup():
-    st.title("Torne-se Parceiro Hipnus")
+    st.title("Torne-se Parceiro Tálya")
     st.caption("Cadastre-se como Distribuidor ou Salão e ganhe sua loja virtual personalizada.")
 
     status = get_my_partner_status(supabase, st.session_state.user_id)
@@ -89,7 +89,7 @@ def render_documents_form(partner_id: str):
                 "bank_name": bank_name,
                 "pix_key": pix_key,
             })
-            st.success("Documentos enviados! Aguarde a aprovação do time Hipnus.")
+            st.success("Documentos enviados! Aguarde a aprovação do time Tálya.")
             st.rerun()
 
 
@@ -235,7 +235,7 @@ def _render_store_preview(theme: dict, sections: list[dict]):
                   background:linear-gradient(135deg,{primary},{secondary});
                   display:flex;align-items:center;justify-content:center;
                   color:white;font-size:22px;font-weight:700;">
-        {theme.get('tagline') or 'Sua loja Hipnus'}
+        {theme.get('tagline') or 'Sua loja Tálya'}
       </div>
       <p style="margin-top:16px;">{theme.get('about_text') or 'Descrição da loja aparecerá aqui.'}</p>
     </div>

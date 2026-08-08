@@ -1,8 +1,8 @@
-# Arquitetura — HIPNUS COSMÉTICOS
+# Arquitetura — TÁLYA COSMÉTICOS
 
-Marketplace proprietário da marca Hipnus Cosméticos. Cada **parceiro**
+Marketplace proprietário da marca Tálya Cosméticos. Cada **parceiro**
 (profissional, salão, distribuidor, revendedor) abre uma **loja** com os
-produtos oficiais da Hipnus e os comercializa online e fisicamente. O
+produtos oficiais da Tálya e os comercializa online e fisicamente. O
 pagamento online usa a **API oficial do Asaas** com **split** automático.
 
 ## Decisões de produto (confirmadas)
@@ -19,7 +19,7 @@ pagamento online usa a **API oficial do Asaas** com **split** automático.
 - **Backend:** FastAPI (Python) — API modular por domínios
 - **ORM:** SQLAlchemy 2.0
 - **Banco:** SQLite (local) → MySQL Hostinger (produção)
-- **Integrações:** Asaas (pagamentos/split), SMTP Hostinger (e-mail), Groq (Hipnus AI)
+- **Integrações:** Asaas (pagamentos/split), SMTP Hostinger (e-mail), Groq (Tálya AI)
 - **Frontend:** Streamlit + Bootstrap 5 (próximo ciclo)
 - **Ferramentas LLM:** FastAPI MCP (módulo `app/mcp`, próximo ciclo)
 
@@ -30,7 +30,7 @@ app/
 ├── core/            Config, exceções de domínio
 ├── db/              Engine, Base, mixins, registry de models
 ├── domains/
-│   ├── catalog/     Produtos oficiais Hipnus (piso + preço sugerido)
+│   ├── catalog/     Produtos oficiais Tálya (piso + preço sugerido)
 │   ├── partners/    Onboarding de parceiros + provisionamento Asaas
 │   ├── stores/      Lojas e ofertas (StoreListing com preço de venda)
 │   ├── orders/      Pedidos, itens, comissões (split)
@@ -77,7 +77,7 @@ Para cada pedido pago (`AsaasService.compute_split`):
 total        = Σ (sale_price  × qty)
 floor_total  = Σ (floor_price × qty)
 margem       = total − floor_total
-taxa_plataforma = margem × HIPNUS_PLATFORM_FEE_PERCENT%
+taxa_plataforma = margem × TALYA_PLATFORM_FEE_PERCENT%
 partner_amount  = margem − taxa_plataforma      # repassado via split (walletId)
 hipnus_amount   = total − partner_amount         # retido na conta raiz
 ```
@@ -124,8 +124,8 @@ do catálogo PDF da marca. Carregado via `python -m scripts.seed_catalog`.
 ## Roadmap dos próximos ciclos
 
 1. **Orders/Checkout** — criação de pedido, cobrança Asaas com split, webhook → `PAID` + `Commission`.
-2. **Auth** — JWT para painel do parceiro e área administrativa Hipnus.
-3. **Frontend Streamlit** — vitrine B2C/B2B, painel do parceiro, checkout (templates `template-hipnus` + Bootstrap 5).
-4. **MCP** — ferramentas FastAPI MCP (catálogo, pedidos) para copilotos Hipnus AI (Groq).
+2. **Auth** — JWT para painel do parceiro e área administrativa Tálya.
+3. **Frontend Streamlit** — vitrine B2C/B2B, painel do parceiro, checkout (templates `template-talya` + Bootstrap 5).
+4. **MCP** — ferramentas FastAPI MCP (catálogo, pedidos) para copilotos Tálya AI (Groq).
 5. **Migrations** — Alembic para versionar o schema em produção (MySQL Hostinger).
-6. **E-mail** — notificações transacionais via SMTP Hostinger (Hipnus Customers/Orders).
+6. **E-mail** — notificações transacionais via SMTP Hostinger (Tálya Customers/Orders).

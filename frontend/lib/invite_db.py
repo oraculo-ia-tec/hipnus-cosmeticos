@@ -1,5 +1,5 @@
 """
-invite_db.py — HIPNUS COSMÉTICOS
+invite_db.py — TÁLYA COSMÉTICOS
 CRUD de tokens de convite em SQLite (tabela: invites)
 
 Funções públicas:
@@ -17,7 +17,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "hipnus.db"
+_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "talya.db"
 _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 

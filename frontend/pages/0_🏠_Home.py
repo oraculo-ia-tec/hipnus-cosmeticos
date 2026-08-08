@@ -1,5 +1,5 @@
 """
-0_Home.py — HIPNUS COSMÉTICOS
+0_Home.py — TÁLYA COSMÉTICOS
 """
 import sys
 from pathlib import Path
@@ -11,7 +11,7 @@ from lib.auth import require_auth, build_sidebar
 from lib.config import BRAND
 from lib import components, commerce
 
-st.set_page_config(page_title="HIPNUS COSMÉTICOS", page_icon="💜", layout="wide")
+st.set_page_config(page_title="TÁLYA COSMÉTICOS", page_icon="💜", layout="wide")
 ui.inject_theme()
 require_auth()
 build_sidebar()
@@ -51,4 +51,4 @@ for col, p in zip(cols, featured):
     with col:
         commerce.product_card(p, key_prefix="home", on_add=ui.add_to_cart)
 components.divider()
-st.caption("HIPNUS COSMÉTICOS · vitrine para consumidor final e profissional.")
+st.caption("TÁLYA COSMÉTICOS · vitrine para consumidor final e profissional.")

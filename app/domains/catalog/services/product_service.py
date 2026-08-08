@@ -1,4 +1,4 @@
-"""Serviço de catálogo — operações sobre produtos Hipnus."""
+"""Serviço de catálogo — operações sobre produtos Tálya."""
 from __future__ import annotations
 
 from sqlalchemy import select

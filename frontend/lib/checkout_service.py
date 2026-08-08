@@ -1,12 +1,12 @@
 """
-checkout_service.py — HIPNUS COSMÉTICOS
+checkout_service.py — TÁLYA COSMÉTICOS
 =========================================
 Camada de serviço de checkout para uso direto no Streamlit,
 100% autônomo — SEM dependência do app/ (FastAPI).
 
 Responsabilidades:
   1. Registrar ou recuperar o cliente no Asaas pelo CPF/CNPJ.
-  2. Calcular o split (Hipnus × parceiro) com base no floor_price.
+  2. Calcular o split (Tálya × parceiro) com base no floor_price.
   3. Criar a cobrança com split automático via AsaasClient local.
   4. Retornar os dados de pagamento (link, QR Code Pix, etc.).
   5. Registrar o pedido no st.session_state (histórico da sessão).
@@ -65,7 +65,7 @@ def _build_external_ref(cart) -> str:
         ids = "-".join(str(v["id"]) for v in cart.values())
     else:
         ids = "-".join(str(v["id"]) for v in cart)
-    return f"HIPNUS-{date.today().strftime('%Y%m%d')}-{ids}"
+    return f"TALYA-{date.today().strftime('%Y%m%d')}-{ids}"
 
 
 # ─── Função de módulo — importada por commerce.py ────────────────────────────────────────────────
@@ -158,7 +158,7 @@ class CheckoutService:
             "total":          total,
             "floor_total":    floor_total,
             "partner_amount": split["partner_amount"],
-            "hipnus_amount":  split["hipnus_amount"],
+            "talya_amount":  split["talya_amount"],
             "platform_fee":   split["platform_fee"],
         }
 
@@ -176,7 +176,7 @@ class CheckoutService:
         billing_type: str,
         cliente: dict,
         partner_wallet_id: str | None = None,
-        descricao: str = "Pedido HIPNUS COSMÉTICOS",
+        descricao: str = "Pedido TÁLYA COSMÉTICOS",
     ) -> dict:
         wallet_id = partner_wallet_id or _get_secret("PARTNER_WALLET_ID", "")
         totais    = self.calcular_totais(cart)

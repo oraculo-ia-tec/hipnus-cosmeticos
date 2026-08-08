@@ -1,5 +1,5 @@
 """
-Login.py — HIPNUS COSMÉTICOS
+Login.py — TÁLYA COSMÉTICOS
 ==============================
 Este arquivo existe para compatibilidade com navegação interna
 (st.switch_page de páginas antigas que ainda apontavam para Login.py).

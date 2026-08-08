@@ -1,11 +1,11 @@
-# HIPNUS COSMÉTICOS
+# TÁLYA COSMÉTICOS
 
-Marketplace proprietário da marca **Hipnus Cosméticos**. Cada parceiro
+Marketplace proprietário da marca **Tálya Cosméticos**. Cada parceiro
 (profissional, salão, distribuidor ou revendedor) abre sua **loja** com os
-produtos oficiais da Hipnus e os vende online e fisicamente. Pagamentos online
+produtos oficiais da Tálya e os vende online e fisicamente. Pagamentos online
 com **split automático** via **API oficial do Asaas**.
 
-> Vitrine, compra e relacionamento direto com a Hipnus Cosméticos, em uma única
+> Vitrine, compra e relacionamento direto com a Tálya Cosméticos, em uma única
 > plataforma para consumidor final e profissional.
 
 ---
@@ -24,12 +24,12 @@ com **split automático** via **API oficial do Asaas**.
 
 ## Principais conceitos
 
-- **Catálogo único Hipnus** — 127 produtos, 22 linhas (Turmalina, Ouro, Teia de
+- **Catálogo único Tálya** — 127 produtos, 22 linhas (Turmalina, Ouro, Teia de
   Aranha, Manga Rosa, Carbono Smooth Pro, Coffee Milk, Barber, etc.).
 - **Piso de preço** — cada produto tem um `floor_price` (tabela distribuidor).
   O parceiro define o preço de venda **acima do piso** e fica com a margem.
 - **Asaas Split** — cada parceiro é uma subconta (wallet) no Asaas; o pagamento
-  é dividido automaticamente entre Hipnus e parceiro.
+  é dividido automaticamente entre Tálya e parceiro.
 - **Venda física** — registrada manualmente (estoque + comissão), sem
   processar pagamento pelo sistema.
 
@@ -53,9 +53,9 @@ PARTNER_WALLET_ID    = ""          # walletId da subconta do parceiro
 # SMTP Hostinger
 SMTP_HOST            = "smtp.hostinger.com"
 SMTP_PORT            = "465"
-SMTP_USER            = "no-reply@hipnuscosmeticos.com.br"
+SMTP_USER            = "no-reply@talyacosmeticos.com.br"
 SMTP_PASSWORD        = "..."
-SMTP_FROM            = "no-reply@hipnuscosmeticos.com.br"
+SMTP_FROM            = "no-reply@talyacosmeticos.com.br"
 
 # IA Consultora
 GROQ_API_KEY         = "gsk_..."
@@ -73,7 +73,7 @@ pip install -r requirements.txt
 # 2. Configuração
 cp .env.example .env        # preencha ASAAS_API_KEY etc.
 
-# 3. Seed do catálogo Hipnus
+# 3. Seed do catálogo Tálya
 python -m scripts.seed_catalog
 
 # 4. Subir a API

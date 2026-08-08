@@ -1,5 +1,5 @@
 """
-11_🏪_Minha_Loja_Config.py — HIPNUS COSMÉTICOS
+11_🏪_Minha_Loja_Config.py — TÁLYA COSMÉTICOS
 Skill: Loja Personalizada — Módulo A
 Cada parceiro configura sua loja: slug, banner, bio, produtos em destaque, cor.
 """
@@ -18,7 +18,7 @@ from lib import ui, components
 from lib.auth import require_auth, build_sidebar
 
 st.set_page_config(
-    page_title="Minha Loja · HIPNUS",
+    page_title="Minha Loja · TÁLYA",
     page_icon="🏪",
     layout="wide",
 )
@@ -111,7 +111,7 @@ for _k, _v in {
     if _k not in st.session_state:
         st.session_state[_k] = _v
 
-BASE_URL = "https://hipnus-cosmeticos.streamlit.app"
+BASE_URL = "https://talya-cosmeticos.streamlit.app"
 
 CATALOG_IDS = [
     ("oro-01","Sérum Facial Ouro 24K"),
@@ -167,7 +167,7 @@ with tab_cfg:
         nova_bio = st.text_area(
             "Mensagem de boas-vindas / bio",
             value=st.session_state.loja_bio,
-            placeholder="Ex: Olá! Sou consultora HIPNUS há 3 anos. Aqui você encontra os melhores produtos com preço exclusivo.",
+            placeholder="Ex: Olá! Sou consultora TÁLYA há 3 anos. Aqui você encontra os melhores produtos com preço exclusivo.",
             max_chars=220,
             height=90,
         )
@@ -225,7 +225,7 @@ with tab_cfg:
                 f'</div>')
 
         st.markdown("**📤 Compartilhar via:**")
-        wa_msg = f"Oi! Acesse minha loja HIPNUS com condições especiais 👇%0A{link_publico}"
+        wa_msg = f"Oi! Acesse minha loja TÁLYA com condições especiais 👇%0A{link_publico}"
         col_a, col_b = st.columns(2)
         with col_a:
             st.link_button("💬 WhatsApp", f"https://wa.me/?text={wa_msg}", use_container_width=True)
@@ -252,8 +252,8 @@ with tab_preview:
     st.markdown("---")
 
     cor = st.session_state.loja_cor
-    nome_exib = st.session_state.loja_nome or "Minha Loja HIPNUS"
-    bio_exib  = st.session_state.loja_bio  or "Bem-vindo! Aqui você encontra os melhores produtos HIPNUS com preço exclusivo."
+    nome_exib = st.session_state.loja_nome or "Minha Loja TÁLYA"
+    bio_exib  = st.session_state.loja_bio  or "Bem-vindo! Aqui você encontra os melhores produtos TÁLYA com preço exclusivo."
     destaques = [n for i, n in CATALOG_IDS if i in st.session_state.loja_destaques]
 
     dest_tags = "".join(f'<span class="produto-destaque-tag">⭐ {n}</span>' for n in destaques)
@@ -269,7 +269,7 @@ with tab_preview:
     <div class="preview-loja" style="border-color:{cor}40;">
       <div style="position:relative;z-index:1;">
         <div class="preview-badge" style="background:{cor}30;border-color:{cor}66;color:{cor};">
-          🏪 Loja Exclusiva HIPNUS
+          🏪 Loja Exclusiva TÁLYA
         </div>
         <div class="preview-nome" style="color:{cor};margin-top:10px;">{nome_exib}</div>
         <p class="preview-bio">{bio_exib}</p>

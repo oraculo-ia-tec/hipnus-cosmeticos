@@ -1,5 +1,5 @@
 """
-start_servers.py — HIPNUS COSMÉTICOS
+start_servers.py — TÁLYA COSMÉTICOS
 =====================================
 Inicia todo o ambiente local com um único comando:
 
@@ -84,7 +84,7 @@ processes: list = []
 
 # ─── Helpers de output ────────────────────────────────────────────────────────
 def log(msg, color=GREEN):
-    print(color + BOLD + "[HIPNUS]" + RESET + " " + msg)
+    print(color + BOLD + "[TALYA]" + RESET + " " + msg)
 
 
 def prefix(name, color):
@@ -154,13 +154,13 @@ def load_dotenv():
 def run_seed():
     """
     Executa o seed do catálogo se o banco SQLite ainda não existir.
-    Usa o arquivo data/hipnus.db como flag de controle.
+    Usa o arquivo data/talya.db como flag de controle.
     """
-    db_path = ROOT / "data" / "hipnus.db"
+    db_path = ROOT / "data" / "talya.db"
     if db_path.exists():
         log("Banco já existente — seed ignorado.", GRAY)
         return
-    log("Executando seed do catálogo Hipnus...", YELLOW)
+    log("Executando seed do catálogo Tálya...", YELLOW)
     result = subprocess.run(
         [sys.executable, "-m", "scripts.seed_catalog"],
         cwd=str(ROOT),
@@ -177,7 +177,7 @@ def run_seed():
 # ─── Encerramento ─────────────────────────────────────────────────────────────
 def shutdown(signum=None, frame=None):
     """Encerra todos os processos filhos com segurança."""
-    print("\n" + YELLOW + BOLD + "[HIPNUS] Encerrando servidores..." + RESET)
+    print("\n" + YELLOW + BOLD + "[TALYA] Encerrando servidores..." + RESET)
     for proc in processes:
         try:
             if proc.poll() is None:
@@ -193,13 +193,13 @@ def shutdown(signum=None, frame=None):
                 proc.kill()
         except Exception:
             pass
-    print(RED + BOLD + "[HIPNUS] Todos os servidores encerrados." + RESET + "\n")
+    print(RED + BOLD + "[TALYA] Todos os servidores encerrados." + RESET + "\n")
     sys.exit(0)
 
 
 # ─── Lógica principal ─────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="HIPNUS COSMETICOS - Starter")
+    parser = argparse.ArgumentParser(description="TÁLYA COSMÉTICOS - Starter")
     parser.add_argument("--no-seed",    action="store_true", help="Pula o seed do catálogo")
     parser.add_argument("--no-backend", action="store_true", help="Sobe apenas o Streamlit")
     args = parser.parse_args()
@@ -208,7 +208,7 @@ def main():
     signal.signal(signal.SIGTERM, shutdown)
 
     print("\n" + GREEN + BOLD + LINE_DOUBLE)
-    print("  HIPNUS COSMÉTICOS — Iniciando ambiente local")
+    print("  TÁLYA COSMÉTICOS — Iniciando ambiente local")
     print(LINE_DOUBLE + RESET + "\n")
 
     # 1. Pré-checagens
@@ -269,7 +269,7 @@ def main():
                     name = servidores_ativos[i]["name"]
                     code = proc.returncode
                     print(
-                        RED + BOLD + "[HIPNUS] ATEN\u00c7\u00c3O: " + name +
+                        RED + BOLD + "[TALYA] ATEN\u00c7\u00c3O: " + name +
                         " encerrou inesperadamente (c\u00f3digo " + str(code) + ")." + RESET
                     )
                     print(GRAY + "  Reinicie com: python start_servers.py" + RESET)

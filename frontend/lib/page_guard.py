@@ -1,5 +1,5 @@
 """
-page_guard.py — HIPNUS COSMÉTICOS
+page_guard.py — TÁLYA COSMÉTICOS
 =====================================
 Controle de acesso por página baseado no perfil do usuário.
 

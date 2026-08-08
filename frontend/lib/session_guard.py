@@ -1,5 +1,5 @@
 """
-session_guard.py — HIPNUS COSMÉTICOS
+session_guard.py — TÁLYA COSMÉTICOS
 ========================================
 Skill: 🔐 JWT Auto-Refresh
 

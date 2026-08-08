@@ -1,8 +1,8 @@
 """
-Models de catálogo — produtos da marca Hipnus Cosméticos.
+Models de catálogo — produtos da marca Tálya Cosméticos.
 
 Entidades:
-- Product: produto oficial do portfólio Hipnus (fonte única de verdade).
+- Product: produto oficial do portfólio Tálya (fonte única de verdade).
   Possui `floor_price` (piso = tabela distribuidor 2026), abaixo do qual
   nenhum parceiro pode vender, e `suggested_retail_price` (sugestão de varejo).
 
@@ -49,10 +49,10 @@ class Product(TimestampMixin, Base):
 
     is_kit: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
-    # Preço PISO (tabela distribuidor) — custo mínimo que o parceiro paga à Hipnus
+    # Preço PISO (tabela distribuidor) — custo mínimo que o parceiro paga à Tálya
     # e abaixo do qual não pode revender.
     floor_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
-    # Preço sugerido ao consumidor final (referência da Hipnus).
+    # Preço sugerido ao consumidor final (referência da Tálya).
     suggested_retail_price: Mapped[float | None] = mapped_column(
         Numeric(10, 2), nullable=True
     )

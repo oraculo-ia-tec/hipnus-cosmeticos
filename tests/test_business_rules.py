@@ -61,5 +61,5 @@ def test_split_no_platform_fee():
     # total 69.90, piso 39.90 -> parceiro fica com a margem (30.00), Hipnus com 39.90
     result = AsaasService.compute_split(Decimal("69.90"), Decimal("39.90"))
     assert result["partner_amount"] == Decimal("30.00")
-    assert result["hipnus_amount"] == Decimal("39.90")
+    assert result["talya_amount"] == Decimal("39.90")
     assert result["platform_fee"] == Decimal("0.00")
