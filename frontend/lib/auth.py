@@ -582,7 +582,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     <style>
       *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
       body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-      .chi-card{
+      .chi-card{{
         display:flex;
         flex-direction:row;
         align-items:center;
@@ -594,8 +594,8 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         background:linear-gradient(135deg,rgba(183,110,121,.12),rgba(201,160,78,.06));
         min-height:44px;
         pointer-events:none;
-      }
-      .chi-nome{
+      }}
+      .chi-nome{{
         flex:1;
         min-width:0;
         white-space:nowrap;
@@ -606,8 +606,8 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         font-weight:600;
         color:#3a2620;
         line-height:1;
-      }
-      .chi-badge{
+      }}
+      .chi-badge{{
         flex-shrink:0;
         font-family:Manrope,sans-serif;
         font-size:.54rem;
@@ -620,7 +620,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         padding:2px 7px;
         border-radius:999px;
         line-height:1.4;
-      }
+      }}
     </style>
     <div class="chi-card">
       {avatar_html}
