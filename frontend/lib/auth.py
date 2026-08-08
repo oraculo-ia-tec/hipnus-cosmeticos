@@ -19,8 +19,8 @@ import streamlit as st
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-LOGIN_PAGE  = "streamlit_app.py"
-HOME_PAGE   = "pages/1_Home.py"
+LOGIN_PAGE  = "login.py"
+HOME_PAGE   = "frontend/pages/0_🏠_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
