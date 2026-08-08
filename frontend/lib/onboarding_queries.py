@@ -35,14 +35,17 @@ def submit_onboarding_documents(supabase: Client, partner_id: str, docs: dict) -
 
 def get_my_partner_status(supabase: Client, user_id: str) -> dict | None:
     """Consulta status atual do cadastro do parceiro logado."""
-    res = (
-        supabase.table("partners")
-        .select("*, partner_onboarding(*)")
-        .eq("user_id", user_id)
-        .maybe_single()
-        .execute()
-    )
-    return res.data
+    try:
+        res = (
+            supabase.table("partners")
+            .select("*, partner_onboarding(*)")
+            .eq("user_id", user_id)
+            .maybe_single()
+            .execute()
+        )
+        return res.data
+    except Exception:
+        return None
 
 
 # ---------- Aprovacao (admin) ----------

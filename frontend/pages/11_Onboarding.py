@@ -29,6 +29,7 @@ build_sidebar()
 try:
     from lib.supabase_client import get_supabase
     supabase = get_supabase()
+    supabase = _auth_supabase(supabase)
 except Exception as e:
     st.error(f"Erro ao conectar ao Supabase: {e}")
     st.stop()
@@ -42,6 +43,17 @@ try:
     _ONBOARDING_OK = True
 except ImportError:
     _ONBOARDING_OK = False
+
+
+def _auth_supabase(sb):
+    """Injeta o JWT do usuário no cliente postgrest para respeitar RLS."""
+    token = st.session_state.get("token", "")
+    if token:
+        try:
+            sb.postgrest = sb.postgrest.auth(token)
+        except Exception:
+            pass
+    return sb
 
 
 # ============================================================
