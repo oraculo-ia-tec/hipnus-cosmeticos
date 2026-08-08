@@ -81,7 +81,7 @@ def page_partner_signup():
             phone = st.text_input("Telefone / WhatsApp")
             legal_name = st.text_input("Nome fantasia (opcional)")
 
-        submitted = st.form_submit_button("Enviar cadastro", type="primary", use_container_width=True, key="btn_partner_signup")
+        submitted = st.form_submit_button("Enviar cadastro", type="primary", use_container_width=True)
 
         if submitted:
             if not (name and cpf_cnpj and email):
@@ -116,7 +116,7 @@ def render_documents_form(partner_id: str):
         bank_name = st.text_input("Banco")
         pix_key = st.text_input("Chave PIX")
 
-        submitted = st.form_submit_button("Enviar documentos", type="primary", key="btn_docs_submit")
+        submitted = st.form_submit_button("Enviar documentos", type="primary", use_container_width=True)
         if submitted:
             submit_onboarding_documents(supabase, partner_id, {
                 "document_front_url": doc_front,
@@ -188,7 +188,7 @@ def page_store_config(store_id: str):
             whatsapp = st.text_input("WhatsApp de contato", value=theme.get("whatsapp_number", ""))
             instagram = st.text_input("Instagram (@usuario)", value=theme.get("instagram_handle", ""))
 
-            if st.form_submit_button("Salvar identidade", type="primary", key="btn_save_identity"):
+            if st.form_submit_button("Salvar identidade", type="primary", use_container_width=True):
                 _upsert_theme(store_id, {
                     "logo_url": logo_url, "banner_url": banner_url, "tagline": tagline,
                     "about_text": about_text, "whatsapp_number": whatsapp, "instagram_handle": instagram,
@@ -206,7 +206,7 @@ def page_store_config(store_id: str):
                                          format_func=lambda x: "Claro" if x == "light" else "Escuro", horizontal=True)
             show_ratings = st.toggle("Exibir avaliações de produtos", value=theme.get("show_ratings", True))
 
-            if st.form_submit_button("Salvar tema", type="primary", key="btn_save_theme"):
+            if st.form_submit_button("Salvar tema", type="primary", use_container_width=True):
                 _upsert_theme(store_id, {
                     "primary_color": primary_color, "secondary_color": secondary_color,
                     "background_style": background_style, "show_ratings": show_ratings,
@@ -239,7 +239,7 @@ def page_store_config(store_id: str):
                 content = st.text_area("Conteúdo")
                 image_url = st.text_input("URL da imagem (opcional)")
 
-                if st.form_submit_button("Adicionar seção", type="primary", key="btn_add_section"):
+                if st.form_submit_button("Adicionar seção", type="primary", use_container_width=True):
                     supabase.table("store_sections").insert({
                         "store_id": store_id, "section_type": section_type,
                         "title": title, "content": content, "image_url": image_url,
