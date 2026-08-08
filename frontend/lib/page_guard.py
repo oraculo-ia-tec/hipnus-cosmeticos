@@ -73,7 +73,7 @@ def guard(page_key: str | None = None) -> dict:
     from pathlib import Path
 
     if not st.session_state.get("autenticado"):
-        st.switch_page("streamlit_app.py")
+        st.switch_page("login.py")
 
     usuario = {
         "login":        st.session_state.get("usuario", ""),
