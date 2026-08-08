@@ -454,12 +454,12 @@ def _inject_sidebar_css() -> None:
     a_45 = _hex_rgba(cor_accent,  0.45)
     a_65 = _hex_rgba(cor_accent,  0.65)
 
-    sair_bg       = f"linear-gradient(135deg,{p_22},{a_10})"
-    sair_border   = a_32
-    sair_shadow   = _hex_rgba(cor_primary, 0.18)
-    sair_hover_bg = f"linear-gradient(135deg,{p_32},{a_16})"
-    sair_hover_bd = a_65
-    sair_glow     = _hex_rgba(cor_primary, 0.32)
+    sair_bg       = f"linear-gradient(135deg,{p_50},{a_32})"
+    sair_border   = a_65
+    sair_shadow   = _hex_rgba(cor_primary, 0.30)
+    sair_hover_bg = f"linear-gradient(135deg,{_hex_rgba(cor_primary,0.72)},{a_45})"
+    sair_hover_bd = cor_accent
+    sair_glow     = _hex_rgba(cor_primary, 0.45)
 
     st.markdown(f"""
 <style>
