@@ -285,10 +285,48 @@ def _login_offline(identificador: str, password: str) -> bool:
     return False
 
 
+def _login_supabase(identificador: str, password: str) -> bool:
+    """Autentica contra Supabase Auth; suporta username ou e-mail."""
+    try:
+        from lib.supabase_client import get_supabase
+        sb = get_supabase()
+
+        # Resolve username → email
+        email = identificador
+        if "@" not in identificador:
+            res = sb.table("users").select("email").eq("username", identificador.lower()).execute()
+            if not res.data:
+                return False
+            email = res.data[0]["email"]
+
+        auth_resp = sb.auth.sign_in_with_password({"email": email, "password": password})
+        if not auth_resp.user:
+            return False
+
+        prof_res = sb.table("users").select("*").eq("auth_user_id", str(auth_resp.user.id)).execute()
+        u = prof_res.data[0] if prof_res.data else {}
+
+        _gravar_sessao(
+            nome=u.get("name") or email.split("@")[0].capitalize(),
+            username=u.get("username") or identificador,
+            role=u.get("role", "b2c"),
+            display_name=u.get("display_name") or u.get("name", ""),
+            email=email,
+            token=auth_resp.session.access_token if auth_resp.session else None,
+            via_api=False,
+        )
+        return True
+    except Exception:
+        return False
+
+
 def fazer_login(identificador: str, password: str) -> tuple[bool, str]:
     if _login_offline(identificador, password):
         encontrado = _buscar_demo(identificador)
         nome = encontrado[1]["nome"] if encontrado else identificador.split("@")[0].capitalize()
+        return True, f"Bem-vindo(a), {nome}!"
+    if _login_supabase(identificador, password):
+        nome = st.session_state.get("nome", identificador.split("@")[0].capitalize())
         return True, f"Bem-vindo(a), {nome}!"
     return False, "Usuário/e-mail ou senha incorretos."
 
