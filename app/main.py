@@ -87,12 +87,6 @@ except ImportError:
     pass
 
 try:
-    from app.domains.payments.routers.webhooks import router as payments_router
-    app.include_router(payments_router, prefix="/api/v1")
-except ImportError:
-    pass
-
-try:
     from app.domains.invites.router import router as invites_router
     app.include_router(invites_router, prefix="/api/v1")
 except ImportError:

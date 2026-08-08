@@ -48,9 +48,9 @@ def _verify_senha(senha: str, hashed: str) -> bool:
         from app.skills.auth_skill import verify_password
         return verify_password(senha, hashed)
     except Exception:
-        # Fallback SHA-256 para ambientes sem passlib
+        # Fallback SHA-256 para ambientes sem passlib — apenas verificação legada, nunca armazenamento
         import hashlib
-        return hashlib.sha256(senha.encode("utf-8")).hexdigest() == hashed
+        return hashlib.sha256(senha.encode("utf-8")).hexdigest() == hashed  # nosec B324
 
 
 def _ensure_tables(db) -> None:

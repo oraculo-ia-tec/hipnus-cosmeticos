@@ -61,13 +61,13 @@ def _load_demo_users() -> dict[str, dict]:
         if isinstance(raw, dict):
             users[uname] = raw
         elif isinstance(raw, str):
-            parts = raw.split(":", 3)
+            parts = raw.split(":", 4)
             users[uname] = {
                 "senha":        parts[0] if len(parts) > 0 else "",
                 "role":         parts[1] if len(parts) > 1 else "b2c",
                 "nome":         parts[2] if len(parts) > 2 else uname,
                 "display_name": parts[3] if len(parts) > 3 else uname,
-                "email":        f"{uname}@hipnuscosmeticos.com.br",
+                "email":        parts[4] if len(parts) > 4 else f"{uname}@hipnuscosmeticos.com.br",
             }
     return users
 

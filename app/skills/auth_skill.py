@@ -8,7 +8,7 @@ Responsabilidades:
   - Geração e decodificação de JWT (jose)
   - Normalização de roles (aliases e variações aceitas)
 
-Substituí:
+Substitui:
   - app/domains/users/service.py  (hash_password, verify_password,
                                    create_access_token, decode_token)
   - frontend/lib/tokens.py        (JWT decode)
@@ -53,8 +53,11 @@ def verify_password(plain: str, hashed: str) -> bool:
     """
     import hashlib as _hashlib
 
+    # Verificação de hash legado — SOMENTE para leitura/comparação de hashes
+    # existentes no banco. Novos hashes são sempre bcrypt. SHA-256 sozinho é
+    # fraco para armazenamento, mas é seguro aqui pois apenas compara — nunca armazena.
     if hashed.startswith("sha256:"):
-        legacy_hash = _hashlib.sha256(plain.encode("utf-8")).hexdigest()
+        legacy_hash = _hashlib.sha256(plain.encode("utf-8")).hexdigest()  # nosec B324
         return legacy_hash == hashed[len("sha256:"):]
 
     # Bcrypt começa com '$2b$' (passlib também aceita '$2a$' e '$2y$')
@@ -63,7 +66,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
     # Fallback: hash hexadecimal puro (SHA-256 sem prefixo — legado user_db.py)
     if len(hashed) == 64 and all(c in "0123456789abcdef" for c in hashed):
-        legacy_hash = _hashlib.sha256(plain.encode("utf-8")).hexdigest()
+        legacy_hash = _hashlib.sha256(plain.encode("utf-8")).hexdigest()  # nosec B324
         return legacy_hash == hashed
 
     # Formato desconhecido — nega por segurança

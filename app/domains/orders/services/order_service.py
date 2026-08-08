@@ -129,9 +129,13 @@ class OrderService:
         if order.status == OrderStatus.PAID:
             return order  # idempotente
 
-        split = AsaasService().compute_split(
-            Decimal(str(order.total_amount)),
-            Decimal(str(order.floor_total)),
+        from decimal import Decimal as _D
+        from app.core.config import settings as _s
+        fee_pct = _D(str(_s.hipnus_platform_fee_percent))
+        split = AsaasService.compute_split(
+            _D(str(order.total_amount)),
+            _D(str(order.floor_total)),
+            platform_fee=fee_pct,
         )
 
         if not order.commission:

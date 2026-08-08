@@ -38,6 +38,20 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+
+def _safe_url(url: str) -> str:
+    """Redact password from a database URL before logging."""
+    try:
+        from urllib.parse import urlparse, urlunparse
+        parsed = urlparse(url)
+        if parsed.password:
+            netloc = parsed.netloc.replace(parsed.password, "****")
+            return urlunparse(parsed._replace(netloc=netloc))
+    except Exception:
+        pass
+    # For SQLite or unparseable URLs just show first 40 chars
+    return url[:40] + ("..." if len(url) > 40 else "")
+
 # Âncora fixa: raiz do projeto (3 níveis acima de app/skills/)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -148,7 +162,7 @@ def get_db_session():
         from sqlalchemy.orm import sessionmaker
 
         db_url = resolve_db_url()
-        logger.debug("[db_skill] DATABASE_URL: %s", db_url[:50])
+        logger.debug("[db_skill] Abrindo sessão de banco (driver: %s)", "sqlite" if db_url.startswith("sqlite") else "postgres")
 
         if db_url.startswith("sqlite:///"):
             db_path = Path(db_url[len("sqlite:///"):])
@@ -207,7 +221,7 @@ def init_db() -> None:
         from sqlalchemy import create_engine
 
         db_url = resolve_db_url()
-        logger.info("[db_skill] Inicializando banco: %s", db_url[:50])
+        logger.info("[db_skill] Inicializando banco (driver: %s)", "sqlite" if db_url.startswith("sqlite") else "postgres")
 
         engine = create_engine(db_url, **_build_engine_kwargs(db_url))
         _ensure_tables(engine)
