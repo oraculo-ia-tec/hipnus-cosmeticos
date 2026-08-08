@@ -304,28 +304,13 @@ def _login_supabase(identificador: str, password: str) -> bool:
         if not auth_resp.user:
             return False
 
-        # Autentica o cliente com o JWT do usuário para respeitar RLS
-        if auth_resp.session:
-            sb.postgrest.auth(auth_resp.session.access_token)
-
-        prof_res = sb.table("users").select("*").eq("auth_user_id", str(auth_resp.user.id)).execute()
-        if prof_res.data:
-            u = prof_res.data[0]
-        else:
-            # Fallback: usa metadados do auth.users
-            meta = auth_resp.user.user_metadata or {}
-            u = {
-                "name":         meta.get("name", email.split("@")[0].capitalize()),
-                "username":     meta.get("username", identificador),
-                "role":         meta.get("role", "b2c"),
-                "display_name": meta.get("name", ""),
-            }
-
+        # Usa metadados do auth.users — evita query separada e incompatibilidade de API v2
+        meta = auth_resp.user.user_metadata or {}
         _gravar_sessao(
-            nome=u.get("name") or email.split("@")[0].capitalize(),
-            username=u.get("username") or identificador,
-            role=u.get("role", "b2c"),
-            display_name=u.get("display_name") or u.get("name", ""),
+            nome=meta.get("name") or email.split("@")[0].capitalize(),
+            username=meta.get("username") or identificador,
+            role=meta.get("role", "b2c"),
+            display_name=meta.get("name") or "",
             email=email,
             token=auth_resp.session.access_token if auth_resp.session else None,
             via_api=False,
