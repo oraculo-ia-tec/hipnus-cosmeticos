@@ -315,6 +315,13 @@ if not _ONBOARDING_OK:
 
 _user_id = _current_user_id
 
+def _get_store_id(partner_id: str) -> str | None:
+    try:
+        res = supabase.table("stores").select("id").eq("partner_id", partner_id).execute()
+        return res.data[0]["id"] if res.data else None
+    except Exception:
+        return None
+
 if perfil in ("super_admin", "admin"):
     tab_parceiro, tab_aprovacao, tab_loja = st.tabs([
         "➕ Cadastro Parceiro", "✅ Aprovação", "🏪 Config. Loja"
@@ -324,8 +331,7 @@ if perfil in ("super_admin", "admin"):
     with tab_aprovacao:
         page_admin_partner_approval()
     with tab_loja:
-        store_res = supabase.table("stores").select("id").eq("partner_id", _user_id).execute()
-        store_id = store_res.data[0]["id"] if store_res.data else None
+        store_id = _get_store_id(_user_id)
         if store_id:
             page_store_config(store_id)
         else:
@@ -335,8 +341,7 @@ elif perfil == "b2b":
     with tab_parceiro:
         page_partner_signup()
     with tab_loja:
-        store_res = supabase.table("stores").select("id").eq("partner_id", _user_id).execute()
-        store_id = store_res.data[0]["id"] if store_res.data else None
+        store_id = _get_store_id(_user_id)
         if store_id:
             page_store_config(store_id)
         else:
