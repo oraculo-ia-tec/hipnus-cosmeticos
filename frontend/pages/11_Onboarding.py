@@ -298,6 +298,8 @@ def _parse_user_uuid() -> str:
         return st.session_state.get("usuario", "")
 
 _current_user_id = _parse_user_uuid()
+
+if not _ONBOARDING_OK:
     st.error("❌ Módulo `onboarding_queries` não encontrado. Verifique a instalação.")
     st.stop()
 
