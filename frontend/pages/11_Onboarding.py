@@ -21,6 +21,16 @@ import streamlit as st
 from lib.auth import require_auth, build_sidebar
 from lib import ui
 
+def _auth_supabase(sb):
+    """Injeta o JWT do usuário no cliente postgrest para respeitar RLS."""
+    token = st.session_state.get("token", "")
+    if token:
+        try:
+            sb.postgrest = sb.postgrest.auth(token)
+        except Exception:
+            pass
+    return sb
+
 st.set_page_config(page_title="Onboarding · TÁLYA", page_icon="🔖", layout="wide")
 ui.inject_theme()
 usuario = require_auth()
@@ -28,8 +38,7 @@ build_sidebar()
 
 try:
     from lib.supabase_client import get_supabase
-    supabase = get_supabase()
-    supabase = _auth_supabase(supabase)
+    supabase = _auth_supabase(get_supabase())
 except Exception as e:
     st.error(f"Erro ao conectar ao Supabase: {e}")
     st.stop()
@@ -43,17 +52,6 @@ try:
     _ONBOARDING_OK = True
 except ImportError:
     _ONBOARDING_OK = False
-
-
-def _auth_supabase(sb):
-    """Injeta o JWT do usuário no cliente postgrest para respeitar RLS."""
-    token = st.session_state.get("token", "")
-    if token:
-        try:
-            sb.postgrest = sb.postgrest.auth(token)
-        except Exception:
-            pass
-    return sb
 
 
 # ============================================================
