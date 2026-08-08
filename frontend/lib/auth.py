@@ -27,44 +27,52 @@ _HOME_PAGE  = HOME_PAGE
 DEBUG_SIDEBAR = False
 
 
-# ─── Usuários demo/seed ───────────────────────────────────────────────────────────
-USUARIOS_DEMO: dict[str, dict] = {
-    "william": {
-        "senha":        "hipnus@2026",
-        "role":         "super_admin",
-        "nome":         "William Eustáquio",
-        "display_name": "Desenvolvedor de IA",
-        "email":        "programador.descpro@gmail.com",
-    },
-    "williamllider": {
-        "senha":        "teste@123",
-        "role":         "b2b",
-        "nome":         "William Llider",
-        "display_name": "Parceiro B2B",
-        "email":        "williamllider@gmail.com",
-    },
-    "admin": {
-        "senha":        "hipnus@adm",
-        "role":         "admin",
-        "nome":         "Administrador",
-        "display_name": "Admin Hipnus",
-        "email":        "admin@hipnuscosmeticos.com.br",
-    },
-    "pro": {
-        "senha":        "hipnus@pro",
-        "role":         "b2b",
-        "nome":         "Profissional",
-        "display_name": "Profissional B2B",
-        "email":        "pro@hipnuscosmeticos.com.br",
-    },
-    "user": {
-        "senha":        "hipnus@user",
-        "role":         "b2c",
-        "nome":         "Cliente",
-        "display_name": "Cliente B2C",
-        "email":        "user@hipnuscosmeticos.com.br",
-    },
-}
+# ─── Usuários demo/seed ────────────────────────────────────────────────────────
+# Credenciais carregadas de st.secrets ou variáveis de ambiente.
+# NUNCA coloque senhas hardcoded neste arquivo.
+# Configure as variáveis no .env ou no painel Secrets do Streamlit Cloud.
+def _load_demo_users() -> dict[str, dict]:
+    """
+    Carrega usuários demo a partir de st.secrets ou variáveis de ambiente.
+
+    Formato esperado em .env:
+      DEMO_USER_WILLIAM=william:hipnus@2026:super_admin:William Eustáquio:programador.descpro@gmail.com
+
+    Cada variável DEMO_USER_* tem o formato: username:senha:role:nome:email
+    """
+    import os
+    users: dict[str, dict] = {}
+    try:
+        import streamlit as st
+        src = dict(st.secrets.get("demo_users", {}))
+    except Exception:
+        src = {}
+
+    # Fallback: ler variáveis DEMO_USER_* do ambiente
+    for key, value in os.environ.items():
+        if key.startswith("DEMO_USER_") and value:
+            parts = value.split(":", 4)
+            if len(parts) >= 2:
+                uname = parts[0]
+                if uname not in src:
+                    src[uname] = ":".join(parts[1:])
+
+    for uname, raw in src.items():
+        if isinstance(raw, dict):
+            users[uname] = raw
+        elif isinstance(raw, str):
+            parts = raw.split(":", 3)
+            users[uname] = {
+                "senha":        parts[0] if len(parts) > 0 else "",
+                "role":         parts[1] if len(parts) > 1 else "b2c",
+                "nome":         parts[2] if len(parts) > 2 else uname,
+                "display_name": parts[3] if len(parts) > 3 else uname,
+                "email":        f"{uname}@hipnuscosmeticos.com.br",
+            }
+    return users
+
+
+USUARIOS_DEMO: dict[str, dict] = _load_demo_users()
 
 
 def _normalize_role(role: str | None) -> str:

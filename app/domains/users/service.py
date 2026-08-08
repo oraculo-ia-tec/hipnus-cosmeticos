@@ -3,44 +3,53 @@ service.py — Domínio Users
 ============================
 Lógica de negócio: criação de usuários, autenticação e JWT.
 
+As funções de hash e JWT foram movidas para app/skills/auth_skill.py.
+Este módulo mantém os aliases para retrocompatibilidade e concentra
+as operações de banco (CRUD).
+
 Fluxo de login:
   1. Busca usuário por username.
-  2. Verifica senha com bcrypt.
+  2. Verifica senha com bcrypt (via auth_skill.verify_password).
   3. Gera JWT contendo os campos do payload abaixo.
 
-Payload JWT (espelhado nos dados retornados pela API):
+Payload JWT:
   id, name, username, email, display_name, role, is_active, is_verified
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.domains.users.models import User, UserRole
 from app.domains.users.schemas import UserCreate
+from app.skills.auth_skill import (
+    create_token,
+    decode_token,
+    hash_password,
+    verify_password,
+)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
-
-
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+__all__ = [
+    "hash_password",
+    "verify_password",
+    "create_access_token",
+    "decode_token",
+    "get_by_username",
+    "get_by_email",
+    "get_by_id",
+    "create_user",
+    "authenticate",
+    "seed_super_admin",
+]
 
 
 def create_access_token(user: User, expires_minutes: int = 60 * 8) -> str:
     """
     Gera um JWT com o payload completo do usuário.
-    TTL padrão: 8 horas.
+    Delega para auth_skill.create_token.
     """
-    expire = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
     payload = {
         "sub":          str(user.id),
         "id":           user.id,
@@ -51,14 +60,8 @@ def create_access_token(user: User, expires_minutes: int = 60 * 8) -> str:
         "role":         user.role.value,
         "is_active":    user.is_active,
         "is_verified":  user.is_verified,
-        "exp":          expire,
     }
-    return jwt.encode(payload, settings.secret_key, algorithm="HS256")
-
-
-def decode_token(token: str) -> dict:
-    """Decodifica e valida um JWT. Lança JWTError se inválido."""
-    return jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+    return create_token(payload, expires_minutes=expires_minutes)
 
 
 # ─── CRUD ─────────────────────────────────────────────────────────────────

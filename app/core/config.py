@@ -35,9 +35,13 @@ class Settings(BaseSettings):
     admin_password: str = "hipnus@2026"
 
     # Asaas
-    asaas_api_key:     str = ""
-    asaas_base_url:    str = "https://api-sandbox.asaas.com/v3"
-    partner_wallet_id: str = ""
+    asaas_api_key:        str = ""
+    asaas_base_url:       str = "https://api-sandbox.asaas.com/v3"
+    asaas_webhook_token:  str = ""
+    partner_wallet_id:    str = ""
+
+    # Financeiro — taxa da plataforma Hipnus sobre a margem do parceiro (%)
+    hipnus_platform_fee_percent: float = 10.0
 
     # SMTP Hostinger
     smtp_host:     str = ""
@@ -49,11 +53,26 @@ class Settings(BaseSettings):
     # Frontend
     hipnus_api_url: str = "http://localhost:8000"
 
-    # ─── Retrocompatibilidade: permite settings.DATABASE_URL (maiúsculo) ───
+    # ─── Retrocompatibilidade: aliases maiúsculos para código legado ──────────
     @property
     def DATABASE_URL(self) -> str:  # noqa: N802
-        """Alias maiúsculo para database_url — evita AttributeError em código legado."""
+        """Alias maiúsculo para database_url."""
         return self.database_url
+
+    @property
+    def ASAAS_API_KEY(self) -> str:  # noqa: N802
+        """Alias maiúsculo para asaas_api_key."""
+        return self.asaas_api_key
+
+    @property
+    def ASAAS_BASE_URL(self) -> str:  # noqa: N802
+        """Alias maiúsculo para asaas_base_url."""
+        return self.asaas_base_url
+
+    @property
+    def HIPNUS_PLATFORM_FEE_PERCENT(self) -> float:  # noqa: N802
+        """Alias maiúsculo para hipnus_platform_fee_percent."""
+        return self.hipnus_platform_fee_percent
 
 
 settings = Settings()

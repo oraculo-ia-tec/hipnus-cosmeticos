@@ -2,7 +2,7 @@
 registry.py — Registro de modelos SQLAlchemy
 =============================================
 Importa todos os modelos para que o Base.metadata os conheça
-before do create_all(). Adicione novos domínios aqui.
+antes do create_all(). Adicione novos domínios aqui.
 """
 
 
@@ -14,10 +14,22 @@ def import_all_models() -> None:
     except ImportError:
         pass
     try:
-        from app.domains.orders.models import Order    # noqa: F401
+        from app.domains.partners.models.parceiros import Parceiro, AppConfig  # noqa: F401
     except ImportError:
         pass
     try:
-        from app.domains.stores.models import Store    # noqa: F401
+        from app.domains.partners.models.partner import Partner  # noqa: F401
+    except ImportError:
+        pass
+    try:
+        from app.domains.orders.models.order import Order, OrderItem, Commission  # noqa: F401
+    except ImportError:
+        pass
+    try:
+        from app.domains.payments.models.payment import Payment  # noqa: F401
+    except ImportError:
+        pass
+    try:
+        from app.domains.stores.models.store import Store, StoreListing  # noqa: F401
     except ImportError:
         pass
