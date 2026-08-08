@@ -291,17 +291,17 @@ class AsaasService:
             platform_fee: % de taxa da plataforma (padrão: settings.talya_platform_fee_percent)
 
         Retorna:
-          {partner_amount, hipnus_amount, platform_fee}
+          {partner_amount, talya_amount, platform_fee}
         """
         if platform_fee is None:
             platform_fee = Decimal("0")
         margin         = max(Decimal("0"), total - floor_total)
         fee            = (margin * platform_fee / Decimal("100")).quantize(Decimal("0.01"))
         partner_amount = (margin - fee).quantize(Decimal("0.01"))
-        hipnus_amount  = (total - partner_amount).quantize(Decimal("0.01"))
+        talya_amount  = (total - partner_amount).quantize(Decimal("0.01"))
         return {
             "partner_amount": partner_amount,
-            "hipnus_amount":  hipnus_amount,
+            "talya_amount":  talya_amount,
             "platform_fee":   fee,
         }
 

@@ -41,7 +41,7 @@ class OrderItemOut(BaseModel):
 class CommissionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id:             int
-    hipnus_amount:  Decimal
+    talya_amount:  Decimal
     partner_amount: Decimal
     platform_fee:   Decimal
 

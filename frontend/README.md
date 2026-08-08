@@ -192,7 +192,7 @@ GROQ_API_KEY         gsk_...
 
 ## Notas de design
 
-- Paleta: roxo Tálya (`#7C3AED`) + dourado (linha Ouro) sobre fundo claro.
+- Paleta: rosa Tálya (`#b76e79`) + dourado (`#c9a04e`, linha Ouro) sobre fundo quente (`#fbf6f2`).
 - Preço exibido prioriza o **preço de varejo sugerido**; o **piso** do parceiro
   é mostrado como referência.
 - Na **Loja do Parceiro**, o card usa o **preço de venda** definido pelo parceiro

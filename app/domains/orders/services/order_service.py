@@ -141,7 +141,7 @@ class OrderService:
         if not order.commission:
             commission = Commission(
                 order_id=order.id,
-                hipnus_amount=split["hipnus_amount"],
+                talya_amount=split["talya_amount"],
                 partner_amount=split["partner_amount"],
                 platform_fee=split["platform_fee"],
             )

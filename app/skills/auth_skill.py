@@ -75,7 +75,12 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 def rehash_needed(hashed: str) -> bool:
     """Retorna True se o hash legado (SHA-256) precisa ser migrado para bcrypt."""
-    return hashed.startswith("sha256:")
+    if hashed.startswith("sha256:"):
+        return True
+    # Raw 64-char hex SHA-256 (formato legado sem prefixo)
+    if len(hashed) == 64 and all(c in "0123456789abcdef" for c in hashed.lower()):
+        return True
+    return False
 
 
 # ─── JWT ─────────────────────────────────────────────────────────────────────

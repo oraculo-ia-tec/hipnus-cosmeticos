@@ -93,7 +93,7 @@ class Commission(TimestampMixin, Base):
     order_id: Mapped[int] = mapped_column(
         ForeignKey("orders.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
     )
-    hipnus_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    talya_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     partner_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     platform_fee: Mapped[float] = mapped_column(Numeric(10, 2), default=0, nullable=False)
 

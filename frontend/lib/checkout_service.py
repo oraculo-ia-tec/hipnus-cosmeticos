@@ -158,7 +158,7 @@ class CheckoutService:
             "total":          total,
             "floor_total":    floor_total,
             "partner_amount": split["partner_amount"],
-            "hipnus_amount":  split["hipnus_amount"],
+            "talya_amount":  split["talya_amount"],
             "platform_fee":   split["platform_fee"],
         }
 
