@@ -117,7 +117,7 @@ _BUBBLE_CSS = """
 </style>
 """
 
-# ── Dados da Chiara e do usuário — fallback robusto com `or` ─────────
+# ── Dados da Tálya e do usuário — fallback robusto com `or` ─────────
 _chiara_b64   = st.session_state.get("chiara_foto_b64") or ""
 _chiara_mime  = st.session_state.get("chiara_foto_mime") or "image/jpeg"
 _chiara_nome  = st.session_state.get("chiara_nome") or "Tálya"
@@ -204,7 +204,7 @@ def _render_bubble(role: str, content: str) -> None:
         """)
 
 
-# ── Avatar da Chiara no topo ──────────────────────────────────────────
+# ── Avatar da Tálya no topo ──────────────────────────────────────────
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
     initial = (_chiara_nome or "T")[0].upper()

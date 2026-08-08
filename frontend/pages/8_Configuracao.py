@@ -160,7 +160,7 @@ def _tab_minha_conta():
 # ABA: IA CONSULTORA (Chiara)
 # ─────────────────────────────────────────────────────────────────────────────────
 def _tab_ia_consultora():
-    st.markdown("### 🤖 Configurar IA Consultora (Chiara)")
+    st.markdown("### 🤖 Configurar IA Consultora (Tálya)")
 
     if not st.session_state.get("_chiara_loaded"):
         try:
@@ -176,7 +176,7 @@ def _tab_ia_consultora():
 
     _chiara_b64   = st.session_state.get("chiara_foto_b64", "")
     _chiara_mime  = st.session_state.get("chiara_foto_mime", "image/jpeg")
-    _chiara_nome  = st.session_state.get("chiara_nome", "Chiara")
+    _chiara_nome  = st.session_state.get("chiara_nome", "Tálya")
     _chiara_cargo = st.session_state.get("chiara_cargo", "Terapeuta Capilar Digital · Embaixadora TÁLYA")
 
     col_prev, col_up = st.columns([1, 2])
@@ -205,7 +205,7 @@ def _tab_ia_consultora():
             </div>""")
 
     with col_up:
-        st.markdown("**📷 Upload da foto da Chiara**")
+        st.markdown("**📷 Upload da foto da Tálya**")
         foto_upload = st.file_uploader(
             "Escolha uma imagem (JPG/PNG, máx 2 MB)",
             type=["jpg", "jpeg", "png", "webp"],
@@ -230,7 +230,7 @@ def _tab_ia_consultora():
 
     st.divider()
     with st.form("form_chiara_nome"):
-        novo_nome  = st.text_input("Nome da IA",      value=_chiara_nome,  placeholder="Chiara")
+        novo_nome  = st.text_input("Nome da IA",      value=_chiara_nome,  placeholder="Tálya")
         novo_cargo = st.text_input("Cargo / descrição", value=_chiara_cargo,
                                    placeholder="Terapeuta Capilar Digital · Embaixadora TÁLYA")
         if st.form_submit_button("💾 Salvar nome e cargo", use_container_width=True):
@@ -245,10 +245,10 @@ def _tab_ia_consultora():
     st.markdown("**💬 Saudação inicial personalizada**")
     saudacao_atual = st.session_state.get("chiara_saudacao", "")
     nova_saudacao  = st.text_area(
-        "Mensagem de boas-vindas da Chiara",
+        "Mensagem de boas-vindas da Tálya",
         value=saudacao_atual,
         height=120,
-        placeholder="Olá! Sou a Chiara, consultora da Tálya...",
+        placeholder="Olá! Sou a Tálya, consultora da Tálya Cosméticos...",
         key="chiara_saudacao_input",
     )
     if st.button("💾 Salvar saudação", key="btn_save_saudacao"):
