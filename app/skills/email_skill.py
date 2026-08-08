@@ -33,7 +33,7 @@ from decimal import Decimal
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formataddr, formatdate
+from email.utils import formataddr, formatdate, make_msgid
 from typing import Iterable
 
 INVITE_EXPIRY_DAYS = 7
@@ -121,8 +121,9 @@ def _get_smtp_config() -> dict:
 # ─── Diagnóstico ──────────────────────────────────────────────────────────────
 
 def smtp_status() -> dict:
-    """Retorna estado da configuração SMTP sem expor credenciais."""
+    """Retorna estado da configuração de e-mail sem expor credenciais."""
     cfg = _get_smtp_config()
+    resend_key = _secret("RESEND_API_KEY", "")
     return {
         "host":                cfg["host"],
         "port":                cfg["port"],
@@ -131,22 +132,59 @@ def smtp_status() -> dict:
         "from_email":          cfg["from"],
         "use_tls":             cfg["use_tls"],
         "use_ssl":             cfg["use_ssl"],
-        "ready": bool(cfg["host"] and cfg["port"] and cfg["user"] and cfg["password"]),
+        "provider":            "resend" if resend_key else "smtp",
+        "ready": bool(resend_key) or bool(cfg["host"] and cfg["port"] and cfg["user"] and cfg["password"]),
     }
+
+
+# ─── Engine Resend (HTTP API — mais confiável em cloud) ───────────────────────
+
+def _send_via_resend(
+    to_email: str, subject: str, html_body: str, text_body: str, from_addr: str
+) -> tuple[bool, str]:
+    """Envia via Resend HTTP API quando RESEND_API_KEY estiver configurado."""
+    try:
+        import resend  # type: ignore
+    except ImportError:
+        return False, "Pacote 'resend' não instalado (pip install resend)."
+
+    resend.api_key = _secret("RESEND_API_KEY", "")
+    try:
+        r = resend.Emails.send({
+            "from":    from_addr,
+            "to":      [to_email],
+            "subject": subject,
+            "html":    html_body,
+            "text":    text_body,
+        })
+        email_id = r.get("id") if isinstance(r, dict) else getattr(r, "id", None)
+        if email_id:
+            return True, f"E-mail enviado via Resend. ID: {email_id}"
+        return False, f"Resend respondeu sem ID: {r}"
+    except Exception as exc:
+        return False, f"Falha Resend: {type(exc).__name__}: {exc}"
 
 
 # ─── Engine de envio ──────────────────────────────────────────────────────────
 
 def _send(to_email: str, subject: str, html_body: str, text_body: str) -> tuple[bool, str]:
-    """Envia e-mail via SMTP_SSL (porta 465) ou STARTTLS (porta 587)."""
+    """Envia e-mail via Resend (se RESEND_API_KEY configurado) ou SMTP."""
     cfg = _get_smtp_config()
+
+    # Prefere Resend quando API key estiver configurada
+    if _secret("RESEND_API_KEY", ""):
+        return _send_via_resend(to_email, subject, html_body, text_body, cfg["from"])
+
+    # Fallback SMTP
     try:
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = Header(subject, "utf-8").encode()
-        msg["From"]    = formataddr(("TÁLYA COSMÉTICOS", cfg["from"]))
-        msg["To"]      = to_email
-        msg["Date"]    = formatdate(localtime=False)
-        msg["X-Mailer"] = "TALYA-Service/2.0"
+        msg["Subject"]    = Header(subject, "utf-8").encode()
+        # From com nome RFC 2047 para evitar rejeição por caracteres especiais
+        msg["From"]       = formataddr((Header("TÁLYA COSMÉTICOS", "utf-8").encode(), cfg["from"]))
+        msg["To"]         = to_email
+        msg["Date"]       = formatdate(localtime=False)
+        msg["Message-ID"] = make_msgid(domain=cfg["from"].split("@")[-1])
+        msg["X-Mailer"]   = "TALYA-Service/2.0"
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html",  "utf-8"))
 
@@ -155,7 +193,7 @@ def _send(to_email: str, subject: str, html_body: str, text_body: str) -> tuple[
         if cfg["use_ssl"]:
             with smtplib.SMTP_SSL(cfg["host"], cfg["port"], context=context, timeout=20) as s:
                 s.login(cfg["user"], cfg["password"])
-                s.sendmail(cfg["from"], to_email, msg.as_string())
+                refused = s.sendmail(cfg["from"], [to_email], msg.as_bytes())
         else:
             with smtplib.SMTP(cfg["host"], cfg["port"], timeout=20) as s:
                 s.ehlo()
@@ -163,13 +201,21 @@ def _send(to_email: str, subject: str, html_body: str, text_body: str) -> tuple[
                     s.starttls(context=context)
                     s.ehlo()
                 s.login(cfg["user"], cfg["password"])
-                s.sendmail(cfg["from"], to_email, msg.as_string())
+                refused = s.sendmail(cfg["from"], [to_email], msg.as_bytes())
 
+        if refused:
+            return False, f"Servidor recusou destinatário: {refused}"
         return True, "E-mail enviado com sucesso."
     except smtplib.SMTPAuthenticationError:
         return False, "Falha de autenticação SMTP. Verifique EMAIL_USERNAME e EMAIL_PASSWORD."
+    except smtplib.SMTPRecipientsRefused as exc:
+        return False, f"Destinatário recusado pelo servidor: {exc.recipients}"
+    except smtplib.SMTPSenderRefused as exc:
+        return False, f"Remetente recusado: {exc.sender} — {exc.smtp_error}"
+    except smtplib.SMTPDataError as exc:
+        return False, f"Servidor recusou o conteúdo do e-mail: {exc.smtp_code} {exc.smtp_error}"
     except Exception as exc:
-        return False, f"Falha ao enviar e-mail: {exc}"
+        return False, f"Falha ao enviar e-mail: {type(exc).__name__}: {exc}"
 
 
 # ─── API pública ──────────────────────────────────────────────────────────────

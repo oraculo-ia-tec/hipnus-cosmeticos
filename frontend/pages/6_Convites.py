@@ -137,18 +137,28 @@ def _testar_conexao_smtp() -> tuple[bool, str]:
 
 def _painel_diagnostico():
     """Expander com diagnóstico completo dos Secrets e teste de conexão."""
-    with st.expander("🔧 Diagnóstico SMTP — clique para ver detalhes", expanded=False):
+    with st.expander("🔧 Diagnóstico de E-mail — clique para ver detalhes", expanded=False):
         smtp = smtp_status()
+        provider = smtp.get("provider", "smtp")
+
+        if provider == "resend":
+            st.info("📡 **Provider ativo: Resend** (HTTP API) — mais confiável em cloud.")
+        else:
+            st.warning(
+                "📡 **Provider ativo: SMTP direto** — se e-mails não chegarem, "
+                "configure `RESEND_API_KEY` nos Secrets para usar Resend."
+            )
 
         # Tabela de Secrets
         col_a, col_b = st.columns(2)
         chaves = [
+            ("Provider",       "Resend (API)" if provider == "resend" else "SMTP Hostinger"),
             ("EMAIL_HOST",     smtp["host"]),
             ("EMAIL_PORT",     str(smtp["port"])),
             ("EMAIL_USERNAME", "✅ configurado" if smtp["user_configured"]     else "❌ ausente"),
             ("EMAIL_PASSWORD", "✅ configurado" if smtp["password_configured"] else "❌ ausente"),
+            ("RESEND_API_KEY", "✅ configurado" if provider == "resend"        else "❌ ausente (opcional)"),
             ("EMAIL_USE_TLS",  str(smtp["use_tls"])),
-            ("EMAIL_USE_SSL",  str(smtp["use_ssl"])),
             ("EMAIL_REMETENTE", smtp["from_email"]),
         ]
         with col_a:
@@ -159,6 +169,13 @@ def _painel_diagnostico():
             st.markdown("**Valor / Status**")
             for _, v in chaves:
                 st.markdown(v)
+
+        if provider == "smtp":
+            st.info(
+                "⚠️ **DKIM não detectado** para `oraculosia.site`. "
+                "Sem DKIM o Gmail pode rejeitar ou enviar para spam. "
+                "Ative o DKIM no painel Hostinger → E-mail → Configurações → DKIM."
+            )
 
         st.markdown("---")
 
