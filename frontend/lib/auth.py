@@ -703,11 +703,11 @@ def build_sidebar(
 
     st.sidebar.html(f"""
     <div style="display:flex;align-items:center;gap:10px;
-      padding:10px 12px;margin:0 8px 8px;
+      padding:10px 12px 14px;margin:0 8px 8px;overflow:visible;
       background:linear-gradient(135deg,rgba(183,110,121,.12),rgba(201,160,78,.06));
       border:1px solid rgba(183,110,121,.22);border-radius:14px;">
       {avatar_html}
-      <div style="min-width:0;">
+      <div style="min-width:0;padding-bottom:2px;">
         <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:.84rem;
           color:#3a2620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           max-width:130px;line-height:1.3;" title="{display_nm}">{display_nm}</div>
