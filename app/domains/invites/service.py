@@ -42,12 +42,13 @@ def _build_signup_url(token: str) -> str:
 def _send_invite_email(email: str, role: str, signup_url: str, created_by: str) -> bool:
     """Delega para app.skills.email_skill.send_invite_email."""
     try:
-        return _skill_send_invite_email(
+        ok, _ = _skill_send_invite_email(
             email=email,
             role=role,
             signup_url=signup_url,
             created_by=created_by,
         )
+        return ok
     except Exception as exc:
         logger.error("Falha ao enviar e-mail de convite para %s: %s", email, exc)
         return False

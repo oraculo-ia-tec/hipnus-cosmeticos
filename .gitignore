@@ -23,3 +23,6 @@ data/*.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Credenciais locais
+.streamlit/secrets.toml

@@ -278,7 +278,7 @@ with tab_email:
                 signup_url = f"{signup_base.rstrip('/')}?token={token}"
                 with st.spinner("📤 Enviando e-mail..."):
                     ok, msg = send_invite_email(
-                        destinatario=email_dest,
+                        email=email_dest,
                         signup_url=signup_url,
                         role=role_dest,
                     )

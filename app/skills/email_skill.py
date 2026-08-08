@@ -260,7 +260,7 @@ def send_invite_email(
     role: str,
     signup_url: str,
     created_by: str = "system",
-) -> bool:
+) -> tuple[bool, str]:
     """
     Envia convite de parceiro com template visual.
 
@@ -270,10 +270,13 @@ def send_invite_email(
         signup_url: URL de cadastro com token (?token=...)
         created_by: nome/username de quem gerou o convite
 
-    Retorna True se enviado com sucesso, False caso contrário.
+    Retorna (True, msg) em sucesso, (False, msg_erro) em falha.
     """
     if not smtp_status()["ready"]:
-        return False
+        return False, (
+            "SMTP incompleto. Configure EMAIL_HOST, EMAIL_PORT, "
+            "EMAIL_USERNAME, EMAIL_PASSWORD nos Secrets ou .env."
+        )
 
     role_label = {
         "b2b":   "Profissional / Salão",
@@ -360,13 +363,12 @@ def send_invite_email(
         "Se não esperava este convite, ignore esta mensagem."
     )
 
-    ok, _ = _send(
+    return _send(
         email,
         "Seu convite para a plataforma TÁLYA COSMÉTICOS",
         html_body,
         text_body,
     )
-    return ok
 
 
 def _brl(v) -> str:
