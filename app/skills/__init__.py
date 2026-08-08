@@ -1,5 +1,5 @@
 """
-skills/ — Módulos reutilizáveis do HIPNUS COSMÉTICOS
+skills/ — Módulos reutilizáveis do TÁLYA COSMÉTICOS
 =====================================================
 Cada skill encapsula uma capacidade transversal que pode ser usada
 tanto pelo backend (FastAPI) quanto pelo frontend (Streamlit).

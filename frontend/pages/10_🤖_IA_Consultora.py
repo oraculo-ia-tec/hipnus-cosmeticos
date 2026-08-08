@@ -1,5 +1,5 @@
 """
-10_IA_Consultora.py — HIPNUS COSMÉTICOS
+10_IA_Consultora.py — TÁLYA COSMÉTICOS
 Chat com IA (Chiara) usando Groq (llama-3.3-70b) via streaming.
 
 Fix 2026-06-29 v7:
@@ -23,7 +23,7 @@ from lib import ui
 from lib.auth import require_auth, build_sidebar
 from lib.ia_consultora import groq_status
 
-st.set_page_config(page_title="IA Consultora · HIPNUS", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="IA Consultora · TÁLYA", page_icon="🤖", layout="wide")
 ui.inject_theme()
 usuario = require_auth()
 build_sidebar()
@@ -120,10 +120,10 @@ _BUBBLE_CSS = """
 # ── Dados da Chiara e do usuário — fallback robusto com `or` ─────────
 _chiara_b64   = st.session_state.get("chiara_foto_b64") or ""
 _chiara_mime  = st.session_state.get("chiara_foto_mime") or "image/jpeg"
-_chiara_nome  = st.session_state.get("chiara_nome") or "Chiara"
+_chiara_nome  = st.session_state.get("chiara_nome") or "Tálya"
 _chiara_cargo = (
     st.session_state.get("chiara_cargo")
-    or "Terapeuta Capilar Digital · Embaixadora HIPNUS"
+    or "Terapeuta Capilar Digital · Embaixadora TÁLYA"
 )
 _user_b64    = st.session_state.get("avatar_b64") or ""
 _user_nome   = (
@@ -144,7 +144,7 @@ def _chiara_avatar_html() -> str:
     if _chiara_b64:
         src = _chiara_b64 if _chiara_b64.startswith("data:") else f"data:{_chiara_mime};base64,{_chiara_b64}"
         return f'<img class="hip-chat-avatar" src="{src}" alt="{_chiara_nome}" />'
-    initial = (_chiara_nome or "C")[0].upper()
+    initial = (_chiara_nome or "T")[0].upper()
     return (
         f'<div class="hip-chat-avatar-initial" '
         f'style="background:linear-gradient(135deg,#7c3aed,#ec4899);">'
@@ -199,7 +199,7 @@ def _render_bubble(role: str, content: str) -> None:
 # ── Avatar da Chiara no topo ──────────────────────────────────────────
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
-    initial = (_chiara_nome or "C")[0].upper()
+    initial = (_chiara_nome or "T")[0].upper()
     if _chiara_b64:
         src_topo = _chiara_b64 if _chiara_b64.startswith("data:") else f"data:{_chiara_mime};base64,{_chiara_b64}"
         st.markdown(f"""
@@ -233,7 +233,7 @@ if not status["configured"]:
 
 # ── Saudação inicial ──────────────────────────────────────────────────
 _saudacao_padrao = (
-    f"Olá! Sou a **{_chiara_nome}**, consultora virtual da Hipnus Cosméticos. 💜\n\n"
+    f"Olá! Sou a **{_chiara_nome}**, consultora virtual da Tálya Cosméticos. 💜\n\n"
     "Posso te ajudar com:\n"
     "- Dúvidas sobre **produtos e linhas**\n"
     "- Informações sobre seu **carrinho e pedidos**\n"

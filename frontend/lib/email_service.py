@@ -1,5 +1,5 @@
 """
-email_service.py — HIPNUS COSMÉTICOS
+email_service.py — TÁLYA COSMÉTICOS
 =====================================
 Re-exporta de app.skills.email_skill para retrocompatibilidade.
 A implementação completa está em app/skills/email_skill.py.

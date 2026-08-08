@@ -1,5 +1,5 @@
 """
-db_utils.py — HIPNUS COSMÉTICOS
+db_utils.py — TÁLYA COSMÉTICOS
 =================================
 Re-exporta de app.skills.db_skill para retrocompatibilidade.
 A implementação completa está em app/skills/db_skill.py.

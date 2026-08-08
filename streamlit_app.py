@@ -1,5 +1,5 @@
 """
-streamlit_app.py — HIPNUS COSMÉTICOS  ·  Premium Neon Edition
+streamlit_app.py — TÁLYA COSMÉTICOS  ·  Premium Neon Edition
 ==============================================================
 Entrypoint do Streamlit Cloud — página de Login Premium.
 Aceita login por USERNAME ou E-MAIL.
@@ -33,7 +33,7 @@ from lib.auth import fazer_login
 from lib.theme import inject_theme, inject_login_style
 
 st.set_page_config(
-    page_title="Login — HIPNUS COSMÉTICOS",
+    page_title="Login — TÁLYA COSMÉTICOS",
     page_icon="💜",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -378,7 +378,7 @@ with col_left:
       <div class="hip-logo-row">
         <div class="hip-logo-icon">H</div>
         <div class="hip-logo-text">
-          <div class="brand-name">HIPNUS</div>
+          <div class="brand-name">TÁLYA</div>
           <div class="brand-sub">Cosméticos</div>
         </div>
       </div>
@@ -387,7 +387,7 @@ with col_left:
       <div class="hip-hero-block">
         <div class="kicker-pill">Plataforma Exclusiva B2B</div>
         <h1>Sua vitrine capilar<br><span>profissional</span></h1>
-        <p>Acesse o catálogo completo, gerencie pedidos e explore condições exclusivas para parceiros e distribuidores Hipnus.</p>
+        <p>Acesse o catálogo completo, gerencie pedidos e explore condições exclusivas para parceiros e distribuidores Tálya.</p>
         <div class="claims">
           <div class="claim">
             <div class="claim-icon">📦</div>
@@ -423,7 +423,7 @@ with col_left:
         </div>
       </div>
 
-      <div class="hip-panel-footer">&copy; 2026 HIPNUS COSMÉTICOS &mdash; Todos os direitos reservados</div>
+      <div class="hip-panel-footer">&copy; 2026 TÁLYA COSMÉTICOS &mdash; Todos os direitos reservados</div>
     </div>
     """)
 
@@ -498,7 +498,7 @@ with col_right:
     st.html("""
     <div style="text-align:center;margin-top:32px;">
       <div style="font-family:'Inter',sans-serif;font-size:.68rem;color:#c4bfd8;line-height:1.8;">
-        HIPNUS COSMÉTICOS &copy; 2026<br>
+        TÁLYA COSMÉTICOS &copy; 2026<br>
         <span style="color:#d8b4fe;">Plataforma exclusiva da marca</span> &mdash; Acesso restrito
       </div>
       <div style="margin-top:12px;display:flex;justify-content:center;gap:6px;">

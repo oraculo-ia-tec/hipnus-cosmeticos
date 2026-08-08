@@ -1,5 +1,5 @@
 """
-6_Convites.py — HIPNUS COSMÉTICOS
+6_Convites.py — TÁLYA COSMÉTICOS
 """
 from __future__ import annotations
 import os
@@ -24,7 +24,7 @@ from lib.invite_db import (
 )
 from lib.email_service import send_invite_email, send_test_email, smtp_status
 
-st.set_page_config(page_title="Convites · HIPNUS", page_icon="✉️", layout="wide")
+st.set_page_config(page_title="Convites · TÁLYA", page_icon="✉️", layout="wide")
 ui.inject_theme()
 usuario = require_auth(perfis_permitidos=["super_admin", "admin"])
 build_sidebar()
@@ -53,13 +53,13 @@ def _get_base_url() -> str:
             return str(val).rstrip("/")
     except Exception:
         pass
-    val = os.getenv("_HIPNUS_SIGNUP_BASE", "")
+    val = os.getenv("_TALYA_SIGNUP_BASE", "")
     if val:
         return val.rstrip("/")
     val = os.getenv("APP_BASE_URL", "")
     if val:
         return val.rstrip("/")
-    return "https://hipnus-cosmeticos.streamlit.app"
+    return "https://talya-cosmeticos.streamlit.app"
 
 _base = _get_base_url()
 _DEFAULT_SIGNUP_URL = (
@@ -415,11 +415,11 @@ No painel **Streamlit Cloud → Manage app → Secrets**, adicione:
 [email]
 EMAIL_HOST      = "smtp.hostinger.com"
 EMAIL_PORT      = 587
-EMAIL_USERNAME  = "noreply@hipnuscosmeticos.com.br"
+EMAIL_USERNAME  = "noreply@talyacosmeticos.com.br"
 EMAIL_PASSWORD  = "sua_senha_aqui"
 EMAIL_USE_TLS   = true
 EMAIL_USE_SSL   = false
-EMAIL_REMETENTE = "HIPNUS COSM\u00c9TICOS <noreply@hipnuscosmeticos.com.br>"
+EMAIL_REMETENTE = "TÁLYA COSMÉTICOS <noreply@talyacosmeticos.com.br>"
 ```
 
 Se a porta 587 estiver bloqueada (erro de timeout), use:

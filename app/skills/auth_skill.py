@@ -1,5 +1,5 @@
 """
-auth_skill.py — HIPNUS COSMÉTICOS
+auth_skill.py — TÁLYA COSMÉTICOS
 ====================================
 Skill de Autenticação: módulo compartilhado entre backend e frontend.
 

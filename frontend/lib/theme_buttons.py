@@ -1,6 +1,6 @@
 
 """
-Guia de botões e estilos para Streamlit - HIPNUS COSMETICOS
+Guia de botões e estilos para Streamlit - TÁLYA COSMÉTICOS
 ===========================================================
 
 Principios aplicados:
@@ -12,7 +12,7 @@ Principios aplicados:
 
 import streamlit as st
 
-HIPNUS_BUTTON_CSS = """
+TALYA_BUTTON_CSS = """
 <style>
 button[kind="primary"] {
     background: linear-gradient(135deg, #111827, #7c3aed);
@@ -68,7 +68,7 @@ div[class*="st-key-btn_filter"] .stButton button {
 
 
 def inject_button_theme():
-    st.markdown(HIPNUS_BUTTON_CSS, unsafe_allow_html=True)
+    st.markdown(TALYA_BUTTON_CSS, unsafe_allow_html=True)
 
 
 def sidebar_logout_button(on_logout):

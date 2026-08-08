@@ -1,5 +1,5 @@
 """
-5_Checkout.py — HIPNUS COSMÉTICOS
+5_Checkout.py — TÁLYA COSMÉTICOS
 """
 from __future__ import annotations
 import sys
@@ -16,7 +16,7 @@ from lib import ui, components
 from lib.auth import require_auth, build_sidebar
 from lib import commerce
 
-st.set_page_config(page_title="Checkout · HIPNUS", page_icon="💳", layout="wide")
+st.set_page_config(page_title="Checkout · TÁLYA", page_icon="💳", layout="wide")
 ui.inject_theme()
 usuario = require_auth()
 build_sidebar()

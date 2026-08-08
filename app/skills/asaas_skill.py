@@ -1,5 +1,5 @@
 """
-asaas_skill.py — HIPNUS COSMÉTICOS
+asaas_skill.py — TÁLYA COSMÉTICOS
 =====================================
 Skill de Integração Asaas: módulo compartilhado entre backend e frontend.
 
@@ -11,7 +11,7 @@ Encapsula TODAS as chamadas REST ao Asaas e a lógica de split:
   GET  /payments/{id}/pixQrCode → obter QR Code Pix
   GET  /payments          → listar cobranças com filtros
 
-Autenticação: Header `access_token: <chave>` (conta raiz Hipnus).
+Autenticação: Header `access_token: <chave>` (conta raiz Tálya).
 
 Resolução de credenciais (em ordem de prioridade):
   1. Argumento explícito no construtor
@@ -121,7 +121,7 @@ class AsaasClient:
         return {
             "access_token": self.api_key,
             "Content-Type": "application/json",
-            "User-Agent": "HipnusCosmeticos/2.0",
+            "User-Agent": "TalyaCosmeticos/2.0",
         }
 
     def _request(self, method: str, path: str, **kwargs) -> dict:
@@ -206,7 +206,7 @@ class AsaasService:
 
     Responsabilidades:
     - Provisionar subconta de um parceiro (onboarding)
-    - Calcular split (Hipnus × parceiro) com base no piso e na taxa de plataforma
+    - Calcular split (Tálya × parceiro) com base no piso e na taxa de plataforma
     - Criar cobranças com split automático
     """
 
@@ -221,18 +221,18 @@ class AsaasService:
 
         # Resolução da taxa de plataforma:
         # 1. argumento explícito
-        # 2. settings.hipnus_platform_fee_percent / HIPNUS_PLATFORM_FEE_PERCENT env
+        # 2. settings.talya_platform_fee_percent / TALYA_PLATFORM_FEE_PERCENT env
         # 3. DEFAULT_PLATFORM_FEE (10%)
         if platform_fee_percent is not None:
             self.platform_fee = platform_fee_percent
         else:
-            raw = _resolve_secret("HIPNUS_PLATFORM_FEE_PERCENT", "")
+            raw = _resolve_secret("TALYA_PLATFORM_FEE_PERCENT", "")
             if raw:
                 self.platform_fee = Decimal(raw)
             else:
                 try:
                     from app.core.config import settings
-                    self.platform_fee = Decimal(str(settings.hipnus_platform_fee_percent))
+                    self.platform_fee = Decimal(str(settings.talya_platform_fee_percent))
                 except Exception:
                     self.platform_fee = self.DEFAULT_PLATFORM_FEE
 
@@ -277,18 +277,18 @@ class AsaasService:
         platform_fee: Decimal | None = None,
     ) -> dict:
         """
-        Calcula a divisão do pagamento entre parceiro e Hipnus.
+        Calcula a divisão do pagamento entre parceiro e Tálya.
 
         Modelo:
           margem = total - floor_total
           taxa   = margem * platform_fee / 100
           parceiro recebe: margem - taxa
-          hipnus retém:    floor_total + taxa
+          tálya retém:    floor_total + taxa
 
         Args:
             total:        valor total pago pelo cliente
             floor_total:  soma dos preços de piso dos itens
-            platform_fee: % de taxa da plataforma (padrão: settings.hipnus_platform_fee_percent)
+            platform_fee: % de taxa da plataforma (padrão: settings.talya_platform_fee_percent)
 
         Retorna:
           {partner_amount, hipnus_amount, platform_fee}
@@ -328,7 +328,7 @@ class AsaasService:
             partner_wallet_id: walletId da subconta do parceiro
             partner_amount:    fixedValue repassado ao parceiro
             due_date:          'YYYY-MM-DD'
-            external_reference: referência interna (ex: 'HIPNUS-20260101-123')
+            external_reference: referência interna (ex: 'TALYA-20260101-123')
             description:       descrição visível ao cliente
         """
         payload = {

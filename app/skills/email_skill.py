@@ -1,5 +1,5 @@
 """
-email_skill.py — HIPNUS COSMÉTICOS
+email_skill.py — TÁLYA COSMÉTICOS
 =====================================
 Skill de E-mail: módulo compartilhado entre backend e frontend.
 
@@ -105,7 +105,7 @@ def _get_smtp_config() -> dict:
         _secret("EMAIL_REMETENTE", "")
         or _secret("SMTP_FROM", "")
         or user
-        or "noreply@hipnuscosmeticos.com.br"
+        or "noreply@talyacosmeticos.com.br"
     )
     return {
         "host":    host,
@@ -143,10 +143,10 @@ def _send(to_email: str, subject: str, html_body: str, text_body: str) -> tuple[
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = Header(subject, "utf-8").encode()
-        msg["From"]    = formataddr(("HIPNUS COSMÉTICOS", cfg["from"]))
+        msg["From"]    = formataddr(("TÁLYA COSMÉTICOS", cfg["from"]))
         msg["To"]      = to_email
         msg["Date"]    = formatdate(localtime=False)
-        msg["X-Mailer"] = "HIPNUS-Service/2.0"
+        msg["X-Mailer"] = "TALYA-Service/2.0"
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html",  "utf-8"))
 
@@ -207,7 +207,7 @@ def send_email(
 
 
 def send_test_email(to_email: str) -> tuple[bool, str]:
-    """Envia e-mail de teste com layout padrão Hipnus."""
+    """Envia e-mail de teste com layout padrão Tálya."""
     html = """
 <div style="font-family:Inter,Segoe UI,sans-serif;background:#f8f7fc;padding:32px;">
   <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e0f5;
@@ -215,7 +215,7 @@ def send_test_email(to_email: str) -> tuple[bool, str]:
     <div style="background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);
                 padding:28px 32px;color:#fff;">
       <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
-                  opacity:.85;font-weight:700;">HIPNUS COSMÉTICOS</div>
+                  opacity:.85;font-weight:700;">TÁLYA COSMÉTICOS</div>
       <h1 style="margin:10px 0 0;font-size:24px;line-height:1.2;">Teste de SMTP ✅</h1>
     </div>
     <div style="padding:28px 32px;color:#1a1430;">
@@ -225,8 +225,8 @@ def send_test_email(to_email: str) -> tuple[bool, str]:
     </div>
   </div>
 </div>"""
-    text = "Teste de SMTP da plataforma HIPNUS COSMÉTICOS. Configuração OK."
-    return send_email(to_email, "HIPNUS — Teste de SMTP", html, text)
+    text = "Teste de SMTP da plataforma TÁLYA COSMÉTICOS. Configuração OK."
+    return send_email(to_email, "TÁLYA — Teste de SMTP", html, text)
 
 
 def send_invite_email(
@@ -271,7 +271,7 @@ def send_invite_email(
       <tr><td style="background:#7C3AED;padding:32px 40px;text-align:center;
                      border-radius:16px 16px 0 0;">
         <div style="font-size:1.3rem;font-weight:800;color:#fff;">
-          HIPNUS COSM&#201;TICOS
+          TÁLYA COSMÉTICOS
         </div>
         <div style="font-size:.72rem;color:rgba(255,255,255,.75);
                     letter-spacing:2px;text-transform:uppercase;margin-top:4px;">
@@ -283,7 +283,7 @@ def send_invite_email(
       <tr><td style="padding:36px 40px 28px;">
         <p style="font-size:1rem;color:#1A1430;margin:0 0 20px;line-height:1.6;">
           Voc&#234; foi convidado(a) por <strong>{created_by}</strong> para a plataforma
-          <strong>HIPNUS COSM&#201;TICOS</strong> como <strong>{role_label}</strong>.
+          <strong>TÁLYA COSMÉTICOS</strong> como <strong>{role_label}</strong>.
         </p>
         <p style="font-size:.9rem;color:#6B6580;margin:0 0 28px;">
           Este link expira em <strong>{expira}</strong>.
@@ -311,7 +311,7 @@ def send_invite_email(
       <tr><td style="padding:16px 40px 24px;border-top:1px solid #E7E3F2;
                      text-align:center;border-radius:0 0 16px 16px;">
         <p style="font-size:.72rem;color:#9CA3AF;margin:0;line-height:1.6;">
-          HIPNUS COSM&#201;TICOS &copy; 2026 — Se voc&#234; n&#227;o esperava este convite,
+          TÁLYA COSMÉTICOS &copy; 2026 — Se voc&#234; n&#227;o esperava este convite,
           ignore esta mensagem.
         </p>
       </td></tr>
@@ -323,7 +323,7 @@ def send_invite_email(
 </html>"""
 
     text_body = (
-        f"Você foi convidado(a) por {created_by} para a HIPNUS COSMÉTICOS!\n\n"
+        f"Você foi convidado(a) por {created_by} para a TÁLYA COSMÉTICOS!\n\n"
         f"Perfil: {role_label}\nVálido até: {expira}\n\n"
         f"Acesse o link:\n{signup_url}\n\n"
         "Se não esperava este convite, ignore esta mensagem."
@@ -331,7 +331,7 @@ def send_invite_email(
 
     ok, _ = _send(
         email,
-        "Seu convite para a plataforma HIPNUS COSMÉTICOS",
+        "Seu convite para a plataforma TÁLYA COSMÉTICOS",
         html_body,
         text_body,
     )
@@ -400,7 +400,7 @@ def send_order_confirmation_email(
     <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);
                 padding:28px 32px;color:#fff;">
       <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
-                  opacity:.85;font-weight:700;">HIPNUS COSMÉTICOS</div>
+                  opacity:.85;font-weight:700;">TÁLYA COSMÉTICOS</div>
       <h1 style="margin:10px 0 0;font-size:24px;">Pedido confirmado ✅</h1>
     </div>
     <div style="padding:28px 32px;color:#1a1430;">
@@ -429,11 +429,11 @@ def send_order_confirmation_email(
 </div>"""
 
     text_body = (
-        f"HIPNUS COSMÉTICOS — Pedido confirmado\n\n"
+        f"TÁLYA COSMÉTICOS — Pedido confirmado\n\n"
         f"Referência: {external_ref} | ID: {payment_id}\n"
         f"Método: {metodo_label} | Status: {status_pagamento}\n"
         f"Total: {_brl(total)}\n"
         + (f"Link: {invoice_url}\n" if invoice_url else "")
     )
 
-    return send_email(to_email, "HIPNUS — Confirmação do seu pedido", html_body, text_body)
+    return send_email(to_email, "TÁLYA — Confirmação do seu pedido", html_body, text_body)

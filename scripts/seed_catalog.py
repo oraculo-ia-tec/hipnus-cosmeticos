@@ -1,5 +1,5 @@
 """
-Seed do catálogo Hipnus no banco a partir de data/catalog_seed.json.
+Seed do catálogo Tálya no banco a partir de data/catalog_seed.json.
 
 Idempotente: produtos são criados/atualizados pelo SKU (upsert simples).
 As categorias do JSON são mapeadas para o enum ProductCategory.

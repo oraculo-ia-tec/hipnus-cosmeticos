@@ -1,5 +1,5 @@
 """
-4_Carrinho.py — HIPNUS COSMÉTICOS
+4_Carrinho.py — TÁLYA COSMÉTICOS
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ from lib import ui
 from lib.auth import require_auth, build_sidebar
 from lib import components, commerce
 
-st.set_page_config(page_title="Carrinho · HIPNUS", page_icon="🛒", layout="wide")
+st.set_page_config(page_title="Carrinho · TÁLYA", page_icon="🛒", layout="wide")
 ui.inject_theme()
 require_auth()
 

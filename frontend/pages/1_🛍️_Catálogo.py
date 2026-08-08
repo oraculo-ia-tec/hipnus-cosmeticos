@@ -1,5 +1,5 @@
 """
-1_Catálogo.py — HIPNUS COSMÉTICOS
+1_Catálogo.py — TÁLYA COSMÉTICOS
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ from lib import api, ui
 from lib.auth import require_auth, build_sidebar
 from lib import components, commerce
 
-st.set_page_config(page_title="Catálogo · HIPNUS", page_icon="🛍️", layout="wide")
+st.set_page_config(page_title="Catálogo · TÁLYA", page_icon="🛍️", layout="wide")
 ui.inject_theme()
 require_auth()
 build_sidebar()
@@ -19,7 +19,7 @@ all_products = api.get_products()
 lines        = api.list_lines()
 cats         = api.list_categories()
 
-components.page_header(title="Catálogo", subtitle="Todos os produtos Hipnus Cosméticos.")
+components.page_header(title="Catálogo", subtitle="Todos os produtos Tálya Cosméticos.")
 
 col_f1, col_f2 = st.columns([2, 1])
 with col_f1:

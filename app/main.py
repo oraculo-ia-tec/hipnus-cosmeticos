@@ -1,5 +1,5 @@
 """
-main.py — HIPNUS COSMÉTICOS
+main.py — TÁLYA COSMÉTICOS
 ==============================
 Entrypoint da API FastAPI.
 

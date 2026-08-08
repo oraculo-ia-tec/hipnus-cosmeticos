@@ -3,7 +3,7 @@ Serviço de lojas — gestão de ofertas (listings) das lojas dos parceiros.
 
 Regra de negócio central:
     O preço de venda (sale_price) definido pelo parceiro NUNCA pode ser menor
-    que o piso (floor_price) do produto Hipnus. Validado aqui antes de
+    que o piso (floor_price) do produto Tálya. Validado aqui antes de
     qualquer persistência.
 """
 from __future__ import annotations

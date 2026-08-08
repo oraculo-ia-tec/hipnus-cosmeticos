@@ -1,5 +1,5 @@
 """
-7_Cadastro_Parceiro.py — HIPNUS COSMÉTICOS
+7_Cadastro_Parceiro.py — TÁLYA COSMÉTICOS
 
 Página PÚBLICA de cadastro — NEM EXIGE LOGIN.
 Acessada pelo convidado via link do e-mail: ?token=<uuid>
@@ -34,7 +34,7 @@ except ImportError:
     _INVITE_DB_OK = False
 
 st.set_page_config(
-    page_title="Cadastro · HIPNUS",
+    page_title="Cadastro · TÁLYA",
     page_icon="➕",
     layout="centered",
 )
@@ -96,7 +96,7 @@ st.html("""
 # ── Header ────────────────────────────────────────────────────────
 st.html("""
 <div class="cad-header">
-  <div class="cad-logo">💫 HIPNUS COSMÉTICOS</div>
+  <div class="cad-logo">💫 TÁLYA COSMÉTICOS</div>
   <div class="cad-title">Criar minha conta</div>
   <div class="cad-sub">Preencha os dados abaixo para ativar seu acesso.</div>
 </div>
@@ -215,7 +215,7 @@ if submit:
 
             st.success("🎉 Conta criada com sucesso!")
             st.balloons()
-            st.info("🔐 Agora faça login para acessar a plataforma HIPNUS.")
+            st.info("🔐 Agora faça login para acessar a plataforma TÁLYA.")
             st.page_link("app.py", label="→ Ir para o Login", icon="🔐")
         except Exception as exc:
             msg = str(exc)
@@ -226,6 +226,6 @@ if submit:
 
 st.markdown("---")
 st.markdown(
-    "<div style='text-align:center;color:#6b7280;font-size:.78rem;'>HIPNUS COSMÉTICOS &copy; 2026</div>",
+    "<div style='text-align:center;color:#6b7280;font-size:.78rem;'>TÁLYA COSMÉTICOS &copy; 2026</div>",
     unsafe_allow_html=True,
 )

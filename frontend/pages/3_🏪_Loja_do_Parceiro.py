@@ -1,5 +1,5 @@
 """
-🏪 Loja do Parceiro — HIPNUS Cosméticos
+🏪 Loja do Parceiro — TÁLYA Cosméticos
 Estrutura moderna: hero banner · filtros · busca · grid de produtos · carrinho · checkout
 """
 
@@ -12,8 +12,8 @@ def _resolve_lib_root() -> Path:
         Path(__file__).resolve().parent.parent,
         Path(os.getcwd()),
         Path(os.getcwd()) / "frontend",
-        Path("/mount/src/hipnus-cosmeticos/frontend"),
-        Path("/mount/src/hipnus-cosmeticos") / "frontend",
+        Path("/mount/src/talya-cosmeticos/frontend"),
+        Path("/mount/src/talya-cosmeticos") / "frontend",
     ]
     for c in candidates:
         if (c / "lib" / "session_guard.py").exists():
@@ -36,7 +36,7 @@ from lib.session_guard import check_session_expiry
 from lib.theme import inject_theme as apply_theme
 
 st.set_page_config(
-    page_title="Loja do Parceiro · HIPNUS",
+    page_title="Loja do Parceiro · TÁLYA",
     page_icon="🏪",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -247,7 +247,7 @@ st.markdown(
     f"""
     <div class="loja-hero">
       <div class="loja-hero-badge">🏪 Área Exclusiva Parceiro</div>
-      <div class="loja-hero-title">Loja HIPNUS</div>
+      <div class="loja-hero-title">Loja TÁLYA</div>
       <p class="loja-hero-sub">Preços especiais para revendedores · Compre com condições exclusivas</p>
       <div class="loja-hero-stats">
         <div class="loja-hero-stat"><div class="loja-hero-stat-val">{n_prods}</div><div class="loja-hero-stat-lbl">Produtos</div></div>

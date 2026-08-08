@@ -1,14 +1,14 @@
 """
-Models de parceiros — revendedores/profissionais que abrem loja Hipnus.
+Models de parceiros — revendedores/profissionais que abrem loja Tálya.
 
 Entidades:
-- Partner: pessoa física ou jurídica habilitada a vender produtos Hipnus.
+- Partner: pessoa física ou jurídica habilitada a vender produtos Tálya.
   Cada parceiro é provisionado como uma SUBCONTA (wallet) no Asaas, permitindo
   split de pagamento automático no checkout.
 
 Fluxo financeiro (Asaas Split):
     Cliente paga na loja do parceiro -> Asaas divide:
-      - parte para a Hipnus (piso/custo + taxa de plataforma)
+      - parte para a Tálya (piso/custo + taxa de plataforma)
       - parte para o parceiro (margem acima do piso)
 """
 import enum

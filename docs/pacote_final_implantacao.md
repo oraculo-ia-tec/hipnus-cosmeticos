@@ -1,5 +1,5 @@
 
-# HIPNUS COSMETICOS — Pacote Final de Implantação
+# TÁLYA COSMÉTICOS — Pacote Final de Implantação
 
 Este pacote organiza tudo que foi produzido para aplicação no repositório `oraculo-ia-tec/hipnus-cosmeticos` e no projeto Supabase.
 

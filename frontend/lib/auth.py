@@ -1,5 +1,5 @@
 """
-auth.py — HIPNUS COSMÉTICOS
+auth.py — TÁLYA COSMÉTICOS
 ==============================
 v13 — 2026-07-01:
   - fix: _gravar_sessao NÃO zera chiara_foto_b64/mime ao fazer login.
@@ -67,7 +67,7 @@ def _load_demo_users() -> dict[str, dict]:
                 "role":         parts[1] if len(parts) > 1 else "b2c",
                 "nome":         parts[2] if len(parts) > 2 else uname,
                 "display_name": parts[3] if len(parts) > 3 else uname,
-                "email":        parts[4] if len(parts) > 4 else f"{uname}@hipnuscosmeticos.com.br",
+                "email":        parts[4] if len(parts) > 4 else f"{uname}@talyacosmeticos.com.br",
             }
     return users
 
@@ -657,7 +657,7 @@ def build_sidebar(
         <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:.95rem;
           background:linear-gradient(90deg,#fff 20%,{cor_accent} 100%);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-          background-clip:text;letter-spacing:.4px;line-height:1.1;">HIPNUS</div>
+          background-clip:text;letter-spacing:.4px;line-height:1.1;">TÁLYA</div>
         <div style="font-family:'Inter',sans-serif;font-size:.53rem;
           color:rgba(185,131,255,.5);letter-spacing:3px;
           text-transform:uppercase;margin-top:2px;">Cosm&eacute;ticos</div>

@@ -1,5 +1,5 @@
 """
-ia_consultora.py — HIPNUS COSMÉTICOS
+ia_consultora.py — TÁLYA COSMÉTICOS
 ========================================
 Fix 2026-06-29 v3:
   - load_catalog_skill() reescrito sem regex com emoji (falhava silenciosamente
@@ -81,7 +81,7 @@ def _brl(v) -> str:
 # mesmo no Streamlit Cloud onde o SQLite é efêmero entre deploys.
 
 _PORTFOLIO_FALLBACK = """
---- PORTFÓLIO HIPNUS 2026 (referência estática — use quando o banco estiver vazio) ---
+--- PORTFÓLIO TÁLYA 2026 (referência estática — use quando o banco estiver vazio) ---
 
 LINHAS E PRODUTOS DISPONÍVEIS:
 
@@ -142,7 +142,7 @@ Kits disponíveis (is_kit=True):
 
 OBSERVAÇÃO: Preços reais são definidos por cada parceiro acima do piso.
 Se o usuário pedir preço específico e não houver dados do banco, diga:
-"Os preços variam por parceiro. Consulte seu parceiro Hipnus local ou
+"Os preços variam por parceiro. Consulte seu parceiro Tálya local ou
 cadastre-se para ver as condições."
 --- FIM DO PORTFÓLIO ---
 """
@@ -283,15 +283,15 @@ def build_context(
 
 # ── Knowledge Base da Empresa ────────────────────────────────────────────────
 
-_HIPNUS_KB = """
---- KNOWLEDGE BASE: HIPNUS COSMÉTICOS ---
+_TALYA_KB = """
+--- KNOWLEDGE BASE: TÁLYA COSMÉTICOS ---
 
 SOBRE A EMPRESA:
-- Hipnus Cosméticos é uma marca profissional brasileira de cosméticos capilares.
+- Tálya Cosméticos é uma marca profissional brasileira de cosméticos capilares.
 - Distribui via rede de parceiros: profissionais, salões, distribuidores e revendedores.
-- A Hipnus recebe 10% de cada venda online como taxa da plataforma (split Asaas).
+- A Tálya recebe 10% de cada venda online como taxa da plataforma (split Asaas).
 - O parceiro fica com: preço_venda - floor_price - (preço_venda * 0.10).
-- Não existem lojas físicas próprias da Hipnus — tudo via parceiros.
+- Não existem lojas físicas próprias da Tálya — tudo via parceiros.
 
 FORMAS DE PAGAMENTO:
 - PIX (confirmação instantânea), Boleto bancário, Cartão de crédito — todos via Asaas.
@@ -311,13 +311,13 @@ def _build_system_prompt(context_block: str, catalog_skill: str = "") -> str:
     if catalog_skill:
         skill_section = f"""
 
---- SKILL: CATÁLOGO DE PRODUTOS HIPNUS ---
+--- SKILL: CATÁLOGO DE PRODUTOS TÁLYA ---
 {catalog_skill}
 --- FIM DA SKILL ---
 """
 
     return f"""\
-Você é a **Chiara**, IA Consultora da **HIPNUS COSMÉTICOS**.
+Você é a **Tálya**, IA Consultora da **TÁLYA COSMÉTICOS**.
 Conhece profundamente as linhas, produtos, modelo de negócio e como ajudar
 parceiros e consumidores. Seja direta, objetiva, calorosa e concisa.
 
@@ -325,7 +325,7 @@ REGRAS DE RESPOSTA (obrigatórias):
 1. Máximo 3 parágrafos curtos. Use listas bullet ao listar itens.
 2. NUNCA invente preços. Só cite valores presentes no contexto da sessão.
    Se não tiver preço real: "Os preços variam por parceiro. Cadastre-se para
-   ver condições exclusivas ou consulte seu parceiro Hipnus."
+   ver condições exclusivas ou consulte seu parceiro Tálya."
 3. NUNCA mostre floor_price para b2c ou demo.
 4. Sobre MÁSCARAS e PRODUTOS: use sempre o portfólio abaixo — NUNCA diga
    "não encontrei" quando há produtos listados no portfólio ou no catálogo.
@@ -343,7 +343,7 @@ CAPACIDADES:
 - Carrinho e pedidos da sessão atual
 - Recomendar produtos por tipo de cabelo ou necessidade
 - Convites, cadastro de parceiros, modelo de negócio
-{_HIPNUS_KB}
+{_TALYA_KB}
 {skill_section}
 --- CONTEXTO ATUAL DA SESSÃO ---
 {context_block}

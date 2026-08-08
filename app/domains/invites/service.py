@@ -35,7 +35,7 @@ def _build_signup_url(token: str) -> str:
     Monta a URL de cadastro personalizada para o convidado.
     Parâmetro: ?token= (alinhado com 7_Cadastro_Parceiro.py).
     """
-    base = getattr(settings, "app_url", "https://hipnus-cosmeticos.streamlit.app")
+    base = getattr(settings, "app_url", "https://talya-cosmeticos.streamlit.app")
     return f"{base}/Cadastro_Parceiro?token={token}"
 
 

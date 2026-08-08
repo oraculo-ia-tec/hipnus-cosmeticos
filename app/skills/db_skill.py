@@ -1,5 +1,5 @@
 """
-db_skill.py — HIPNUS COSMÉTICOS
+db_skill.py — TÁLYA COSMÉTICOS
 ==================================
 Skill de Banco de Dados: módulo compartilhado entre backend e frontend.
 
@@ -11,7 +11,7 @@ Resolução de DATABASE_URL (em ordem de prioridade):
   2. st.secrets["default"]["DATABASE_URL"]
   3. os.environ["DATABASE_URL"]
   4. settings.database_url           (Pydantic Settings / .env)
-  5. fallback: sqlite:///./data/hipnus.db
+  5. fallback: sqlite:///./data/talya.db
 
 Garantias adicionais:
   - Paths SQLite relativos são convertidos para absolutos usando PROJECT_ROOT
@@ -103,13 +103,13 @@ def _read_raw_url() -> str:
     except Exception:
         pass
 
-    return f"sqlite:///{PROJECT_ROOT / 'data' / 'hipnus.db'}"
+    return f"sqlite:///{PROJECT_ROOT / 'data' / 'talya.db'}"
 
 
 def _make_absolute(db_url: str) -> str:
     """
     Converte path SQLite relativo para absoluto usando PROJECT_ROOT.
-    Ex: sqlite:///./data/hipnus.db → sqlite:////home/user/app/data/hipnus.db
+    Ex: sqlite:///./data/talya.db → sqlite:////home/user/app/data/talya.db
     Outros dialetos (PostgreSQL, MySQL) não são modificados.
     """
     if not db_url.startswith("sqlite:///"):

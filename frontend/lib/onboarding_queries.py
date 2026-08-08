@@ -1,6 +1,6 @@
 
 """
-onboarding_queries.py — HIPNUS COSMETICOS
+onboarding_queries.py — TÁLYA COSMÉTICOS
 ==========================================
 Queries para o modulo de Onboarding de Parceiros.
 """

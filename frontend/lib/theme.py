@@ -1,5 +1,5 @@
 """
-theme.py — HIPNUS COSMÉTICOS  ·  Premium Neon Edition 2026
+theme.py — TÁLYA COSMÉTICOS  ·  Premium Neon Edition 2026
 ============================================================
 Injeta o CSS global do design system.
 Chamar inject_theme() no topo de cada página, logo após st.set_page_config().
@@ -48,7 +48,7 @@ def _google_fonts_url(corpo: str, titulo: str) -> str:
 
 
 def inject_theme() -> None:
-    """Injeta o CSS global do design system HIPNUS Premium Neon.
+    """Injeta o CSS global do design system TÁLYA Premium Neon.
     Lê dinâmicamente do session_state para refletir mudanças de tema.
     """
     theme = _get_theme()

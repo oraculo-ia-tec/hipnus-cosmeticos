@@ -1,5 +1,5 @@
 """
-8_Configuracao.py — HIPNUS COSMÉTICOS
+8_Configuracao.py — TÁLYA COSMÉTICOS
 Painel de configurações para admin/super_admin.
 v4 — 2026-07-01:
   - fix: avatar do usuário salvo com data-URI completo (data:mime;base64,...)
@@ -20,7 +20,7 @@ import streamlit as st
 from lib import ui
 from lib.auth import require_auth, build_sidebar
 
-st.set_page_config(page_title="Configurações · HIPNUS", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="Configurações · TÁLYA", page_icon="⚙️", layout="wide")
 ui.inject_theme()
 usuario = require_auth(perfis_permitidos=["super_admin", "admin"])
 build_sidebar()
@@ -177,7 +177,7 @@ def _tab_ia_consultora():
     _chiara_b64   = st.session_state.get("chiara_foto_b64", "")
     _chiara_mime  = st.session_state.get("chiara_foto_mime", "image/jpeg")
     _chiara_nome  = st.session_state.get("chiara_nome", "Chiara")
-    _chiara_cargo = st.session_state.get("chiara_cargo", "Terapeuta Capilar Digital · Embaixadora HIPNUS")
+    _chiara_cargo = st.session_state.get("chiara_cargo", "Terapeuta Capilar Digital · Embaixadora TÁLYA")
 
     col_prev, col_up = st.columns([1, 2])
     with col_prev:
@@ -232,7 +232,7 @@ def _tab_ia_consultora():
     with st.form("form_chiara_nome"):
         novo_nome  = st.text_input("Nome da IA",      value=_chiara_nome,  placeholder="Chiara")
         novo_cargo = st.text_input("Cargo / descrição", value=_chiara_cargo,
-                                   placeholder="Terapeuta Capilar Digital · Embaixadora HIPNUS")
+                                   placeholder="Terapeuta Capilar Digital · Embaixadora TÁLYA")
         if st.form_submit_button("💾 Salvar nome e cargo", use_container_width=True):
             if DB_OK:
                 salvar_nome_chiara(novo_nome, novo_cargo)
@@ -248,7 +248,7 @@ def _tab_ia_consultora():
         "Mensagem de boas-vindas da Chiara",
         value=saudacao_atual,
         height=120,
-        placeholder="Olá! Sou a Chiara, consultora da Hipnus...",
+        placeholder="Olá! Sou a Chiara, consultora da Tálya...",
         key="chiara_saudacao_input",
     )
     if st.button("💾 Salvar saudação", key="btn_save_saudacao"):
@@ -397,7 +397,7 @@ def _tab_tema():
             color:#fff;letter-spacing:-.5px;margin-bottom:6px;">Titulo em {fonte_titulo_escolhida}</div>
           <div style="font-family:'{fonte_corpo_escolhida}',sans-serif;font-size:.88rem;
             color:rgba(255,255,255,.65);line-height:1.5;">Texto do corpo em {fonte_corpo_escolhida} —
-          Hipnus Cosméticos, produtos premium para cabelos.</div>
+          Tálya Cosméticos, produtos premium para cabelos.</div>
         </div>
         """)
 
@@ -425,7 +425,7 @@ def _tab_tema():
           <div style="font-family:'{fonte_titulo_escolhida}',serif;font-weight:800;font-size:.9rem;
             background:linear-gradient(90deg,#fff 20%,{cores['accent_light']} 100%);
             -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-            background-clip:text;">HIPNUS</div>
+            background-clip:text;">TÁLYA</div>
           <div style="font-size:.5rem;color:{cores['accent_light']}66;
             letter-spacing:3px;text-transform:uppercase;">Cosméticos</div>
         </div>

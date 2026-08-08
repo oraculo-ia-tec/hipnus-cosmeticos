@@ -6,7 +6,7 @@ Entidades:
   (com pagamento/split via Asaas) ou PHYSICAL (registro manual de venda
   presencial, apenas para controle de estoque e comissão).
 - OrderItem: itens do pedido (snapshot de preços no momento da compra).
-- Commission: registro do split — quanto vai p/ Hipnus e quanto p/ o parceiro.
+- Commission: registro do split — quanto vai p/ Tálya e quanto p/ o parceiro.
 
 Snapshot de preços:
     Os valores de piso e venda são copiados para o item no momento da compra,

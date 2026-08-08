@@ -1,5 +1,5 @@
 """
-2_Linhas.py — HIPNUS COSMÉTICOS
+2_Linhas.py — TÁLYA COSMÉTICOS
 """
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ from lib import api, ui
 from lib.auth import require_auth, build_sidebar
 from lib import components, commerce
 
-st.set_page_config(page_title="Linhas · HIPNUS", page_icon="✨", layout="wide")
+st.set_page_config(page_title="Linhas · TÁLYA", page_icon="✨", layout="wide")
 ui.inject_theme()
 require_auth()
 build_sidebar()
@@ -18,7 +18,7 @@ build_sidebar()
 all_products = api.get_products()
 lines        = api.list_lines()
 
-components.page_header(title="Linhas da Marca", subtitle="Explore cada coleção desenvolvida pela Hipnus Cosméticos.")
+components.page_header(title="Linhas da Marca", subtitle="Explore cada coleção desenvolvida pela Tálya Cosméticos.")
 
 if not lines:
     components.empty_state(icon="✨", title="Nenhuma linha encontrada", message="O catálogo ainda não possui linhas cadastradas.")

@@ -1,5 +1,5 @@
 """
-user_db.py — HIPNUS COSMÉTICOS
+user_db.py — TÁLYA COSMÉTICOS
 ================================
 Camada de acesso ao banco para o domínio de Usuários / Parceiros.
 
@@ -127,7 +127,7 @@ def salvar_nome_chiara(nome: str, cargo: str = "") -> bool:
 def carregar_config_chiara() -> dict:
     return {
         "nome":      get_app_config("chiara_nome")      or "Chiara",
-        "cargo":     get_app_config("chiara_cargo")     or "Terapeuta Capilar Digital · Embaixadora HIPNUS",
+        "cargo":     get_app_config("chiara_cargo")     or "Terapeuta Capilar Digital · Embaixadora TÁLYA",
         "foto_b64":  get_app_config("chiara_foto_b64")  or "",
         "foto_mime": get_app_config("chiara_foto_mime") or "image/jpeg",
         "saudacao":  get_app_config("chiara_saudacao")  or "",

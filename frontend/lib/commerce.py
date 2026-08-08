@@ -1,5 +1,5 @@
 """
-commerce.py - HIPNUS COSMETICOS
+commerce.py - TÁLYA COSMÉTICOS
 =====================================
 Componentes de vitrine: catalogo, produto, carrinho, preco e checkout.
 

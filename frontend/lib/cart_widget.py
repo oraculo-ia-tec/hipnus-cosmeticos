@@ -1,5 +1,5 @@
 """
-cart_widget.py — HIPNUS COSMÉTICOS
+cart_widget.py — TÁLYA COSMÉTICOS
 ======================================
 Carrinho flutuante global: botão fixo no canto superior direito
 que mostra a quantidade de itens e redireciona para a página Carrinho.

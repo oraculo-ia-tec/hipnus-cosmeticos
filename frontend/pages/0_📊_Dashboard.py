@@ -1,5 +1,5 @@
 """
-0_📊_Dashboard.py — HIPNUS COSMÉTICOS
+0_📊_Dashboard.py — TÁLYA COSMÉTICOS
 =======================================
 Skill #4 — Dashboard Admin: gráficos Seaborn + bordas CSS via st.markdown.
 CORREÇÃO: st.html() não acumula tags abertas; bordas aplicadas via CSS em
@@ -36,12 +36,12 @@ from lib.user_db import listar_parceiros
 
 # ── Tema Seaborn ──────────────────────────────────────────────────────────────
 sns.set_theme(style="whitegrid", font="DejaVu Sans")
-PALETTE_HIPNUS = ["#7c3aed", "#a78bfa", "#10b981", "#f59e0b", "#ef4444", "#3b82f6"]
+PALETTE_TALYA = ["#7c3aed", "#a78bfa", "#10b981", "#f59e0b", "#ef4444", "#3b82f6"]
 BORDER_COLOR   = "#e5e0f5"
 CARD_BG        = "#faf9ff"
 
 # ── Streamlit config ───────────────────────────────────────────────────────────
-st.set_page_config(page_title="Dashboard · HIPNUS", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Dashboard · TÁLYA", page_icon="📊", layout="wide")
 ui.inject_theme()
 usuario = require_auth(perfis_permitidos=["super_admin", "admin"])
 build_sidebar()
@@ -523,7 +523,7 @@ with g6:
         n_cores = max(len(df_perf), 1)
         bars6 = ax6.bar(
             df_perf["Perfil"], df_perf["Qtd"],
-            color=sns.color_palette(PALETTE_HIPNUS, n_colors=n_cores),
+            color=sns.color_palette(PALETTE_TALYA, n_colors=n_cores),
             edgecolor=BORDER_COLOR, linewidth=1.8, width=0.52,
         )
         ax6.bar_label(bars6, fmt="%d", padding=4, fontsize=11,

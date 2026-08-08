@@ -1,5 +1,5 @@
 """
-ia_client.py — HIPNUS COSMÉTICOS
+ia_client.py — TÁLYA COSMÉTICOS
 ====================================
 Adaptador entre a página IA Consultora e o motor ia_consultora.py.
 Expõe stream_ia() (gerador para st.write_stream) e consultar_ia() (string completa).

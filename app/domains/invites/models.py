@@ -1,7 +1,7 @@
 """
 models.py — Domínio Invites
 ============================
-Modelo ORM para convites de cadastro da plataforma HIPNUS COSMÉTICOS.
+Modelo ORM para convites de cadastro da plataforma TÁLYA COSMÉTICOS.
 
 Fluxo:
   1. Admin/super_admin cria um convite para um e-mail com um role.

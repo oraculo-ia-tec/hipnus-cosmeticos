@@ -1,5 +1,5 @@
 """
-config.py — HIPNUS COSMÉTICOS
+config.py — TÁLYA COSMÉTICOS
 ================================
 Configuração do frontend Streamlit.
 
@@ -7,16 +7,16 @@ Lê variáveis de ambiente / Streamlit Secrets com defaults seguros.
 Não depende do app/ (FastAPI) — o frontend é 100% autônomo.
 
 Variáveis suportadas (Secrets ou ENV):
-  ASAAS_API_KEY            → chave da conta raiz Hipnus no Asaas
+  ASAAS_API_KEY            → chave da conta raiz Tálya no Asaas
   ASAAS_BASE_URL           → URL da API Asaas (padrão: sandbox)
   PARTNER_WALLET_ID        → walletId do parceiro para split automático
-  HIPNUS_PLATFORM_FEE_PERCENT → taxa de plataforma em % (padrão: 10)
-  HIPNUS_APP_URL           → URL pública do app Streamlit
+  TALYA_PLATFORM_FEE_PERCENT → taxa de plataforma em % (padrão: 10)
+  TALYA_APP_URL           → URL pública do app Streamlit
   DATABASE_URL             → URL do banco (SQLite local ou MySQL Hostinger)
   EMAIL_HOST / PORT / USERNAME / PASSWORD / USE_TLS / USE_SSL / REMETENTE
 
 Variáveis legadas (mantidas para compatibilidade; não usadas pelo checkout):
-  HIPNUS_API_URL           → URL do backend FastAPI (futuro)
+  TALYA_API_URL           → URL do backend FastAPI (futuro)
 """
 from __future__ import annotations
 
@@ -48,12 +48,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SEED_PATH    = PROJECT_ROOT / "data" / "catalog_seed.json"
 
 # ─── App URL ──────────────────────────────────────────────────────────────────
-APP_URL = os.getenv("HIPNUS_APP_URL", "https://hipnus-cosmeticos.streamlit.app")
+APP_URL = os.getenv("TALYA_APP_URL", "https://talya-cosmeticos.streamlit.app")
 
 # ─── Backend FastAPI (legado — mantido para compatibilidade futura) ───────────
 # Usado apenas por api.py (catálogo com fallback) e 6_Convites.py.
 # O checkout NÃO depende desta URL.
-API_BASE_URL = os.getenv("HIPNUS_API_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("TALYA_API_URL", "http://localhost:8000")
 API_V1       = f"{API_BASE_URL}/api/v1"
 
 # ─── SMTP ─────────────────────────────────────────────────────────────────────
@@ -67,9 +67,9 @@ SMTP_REMETENTE = _secret("EMAIL_REMETENTE",  SMTP_USER)
 
 # ─── Identidade da marca ──────────────────────────────────────────────────────
 BRAND = {
-    "name":    "HIPNUS COSMÉTICOS",
+    "name":    "TÁLYA COSMÉTICOS",
     "tagline": "Tratamento capilar profissional, direto da fonte.",
-    "promise": "Vitrine, compra e relacionamento direto com a Hipnus — "
+    "promise": "Vitrine, compra e relacionamento direto com a Tálya — "
                "para o consumidor final e para o profissional.",
 }
 

@@ -1,7 +1,7 @@
-# Tema base do Streamlit — paleta institucional Hipnus (clean / premium).
+# Tema base do Streamlit — paleta institucional Tálya (clean / premium).
 [theme]
 base = "light"
-primaryColor = "#7C3AED"          # roxo Hipnus (destaque/CTA)
+primaryColor = "#7C3AED"          # roxo Tálya (destaque/CTA)
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F6F4FB"
 textColor = "#1A1430"

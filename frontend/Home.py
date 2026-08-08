@@ -1,5 +1,5 @@
 """
-Home.py — HIPNUS COSMÉTICOS
+Home.py — TÁLYA COSMÉTICOS
 ==============================
 Este arquivo existe para compatibilidade com navegação interna.
 

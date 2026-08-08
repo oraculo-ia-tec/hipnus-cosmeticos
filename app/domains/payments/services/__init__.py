@@ -67,7 +67,7 @@ class PaymentService:
 
         Fluxo:
           1. Cria ou recupera o cliente no Asaas pelo CPF/CNPJ.
-          2. Calcula o split (parceiro × Hipnus) via AsaasService.
+          2. Calcula o split (parceiro × Tálya) via AsaasService.
           3. Cria a cobrança com split configurado.
           4. Persiste o Payment no banco.
 
@@ -101,7 +101,7 @@ class PaymentService:
         total       = Decimal(str(order.total_amount))
         floor_total = Decimal(str(order.floor_total))
         from app.core.config import settings as _settings
-        fee_pct = Decimal(str(_settings.hipnus_platform_fee_percent))
+        fee_pct = Decimal(str(_settings.talya_platform_fee_percent))
         split   = self.asaas.compute_split(total, floor_total, platform_fee=fee_pct)
 
         # Cria cobrança com split
@@ -113,8 +113,8 @@ class PaymentService:
             partner_wallet_id=partner_wallet_id,
             partner_amount=split["partner_amount"],
             due_date=due_date,
-            external_reference=f"HIPNUS-{date.today().strftime('%Y%m%d')}-{order.id}",
-            description=f"Pedido Hipnus #{order.id}",
+            external_reference=f"TALYA-{date.today().strftime('%Y%m%d')}-{order.id}",
+            description=f"Pedido Tálya #{order.id}",
         )
 
         payment = Payment(

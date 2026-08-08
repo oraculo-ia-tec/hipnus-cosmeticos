@@ -122,7 +122,7 @@ class OrderService:
 
         Efeitos colaterais:
           - Atualiza Order.status para PAID.
-          - Cria Commission com a divisão Hipnus × parceiro.
+          - Cria Commission com a divisão Tálya × parceiro.
         """
         order = self.get(order_id)
 
@@ -131,7 +131,7 @@ class OrderService:
 
         from decimal import Decimal as _D
         from app.core.config import settings as _s
-        fee_pct = _D(str(_s.hipnus_platform_fee_percent))
+        fee_pct = _D(str(_s.talya_platform_fee_percent))
         split = AsaasService.compute_split(
             _D(str(order.total_amount)),
             _D(str(order.floor_total)),

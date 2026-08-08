@@ -1,5 +1,5 @@
 """
-config.py — HIPNUS COSMÉTICOS
+config.py — TÁLYA COSMÉTICOS
 ================================
 Configurações globais da aplicação via Pydantic Settings.
 Todas as variáveis são lidas do ambiente (.env) com valores padrão para dev.
@@ -17,22 +17,22 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # App
-    app_name:    str = "HIPNUS COSMÉTICOS"
+    app_name:    str = "TÁLYA COSMÉTICOS"
     app_version: str = "0.1.0"
     debug:       bool = True
 
     # JWT
-    secret_key:           str = "hipnus-dev-secret-change-in-production"
+    secret_key:           str = "talya-dev-secret-change-in-production"
     access_token_minutes: int = 480  # 8 horas
 
     # Banco de dados (Pydantic v2: lowercase)
-    database_url: str = "sqlite:///./data/hipnus.db"
+    database_url: str = "sqlite:///./data/talya.db"
 
     # Admin padrão (criado no startup se não existir)
     admin_username: str = "william"
     admin_name:     str = "William Eustáquio"
     admin_email:    str = "programador.descpro@gmail.com"
-    admin_password: str = "hipnus@2026"
+    admin_password: str = "talya@2026"
 
     # Asaas
     asaas_api_key:        str = ""
@@ -40,18 +40,18 @@ class Settings(BaseSettings):
     asaas_webhook_token:  str = ""
     partner_wallet_id:    str = ""
 
-    # Financeiro — taxa da plataforma Hipnus sobre a margem do parceiro (%)
-    hipnus_platform_fee_percent: float = 10.0
+    # Financeiro — taxa da plataforma Tálya sobre a margem do parceiro (%)
+    talya_platform_fee_percent: float = 10.0
 
     # SMTP Hostinger
     smtp_host:     str = ""
     smtp_port:     int = 587
     smtp_user:     str = ""
     smtp_password: str = ""
-    smtp_from:     str = "noreply@hipnuscosmeticos.com.br"
+    smtp_from:     str = "noreply@talyacosmeticos.com.br"
 
     # Frontend
-    hipnus_api_url: str = "http://localhost:8000"
+    talya_api_url: str = "http://localhost:8000"
 
     # ─── Retrocompatibilidade: aliases maiúsculos para código legado ──────────
     @property
@@ -70,9 +70,9 @@ class Settings(BaseSettings):
         return self.asaas_base_url
 
     @property
-    def HIPNUS_PLATFORM_FEE_PERCENT(self) -> float:  # noqa: N802
-        """Alias maiúsculo para hipnus_platform_fee_percent."""
-        return self.hipnus_platform_fee_percent
+    def TALYA_PLATFORM_FEE_PERCENT(self) -> float:  # noqa: N802
+        """Alias maiúsculo para talya_platform_fee_percent."""
+        return self.talya_platform_fee_percent
 
 
 settings = Settings()

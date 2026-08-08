@@ -1,5 +1,5 @@
 """
-asaas_client.py — HIPNUS COSMÉTICOS
+asaas_client.py — TÁLYA COSMÉTICOS
 =====================================
 Re-exporta de app.skills.asaas_skill para retrocompatibilidade.
 A implementação completa está em app/skills/asaas_skill.py.

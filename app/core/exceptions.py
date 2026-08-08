@@ -1,4 +1,4 @@
-"""Exceções de domínio do HIPNUS COSMÉTICOS.
+"""Exceções de domínio do TÁLYA COSMÉTICOS.
 
 Mapeadas para respostas HTTP coerentes em app/main.py.
 """

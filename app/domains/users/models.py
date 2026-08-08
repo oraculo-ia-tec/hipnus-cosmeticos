@@ -1,10 +1,10 @@
 """
 models.py — Domínio Users
 ===========================
-Modelo ORM do usuário da plataforma HIPNUS COSMÉTICOS.
+Modelo ORM do usuário da plataforma TÁLYA COSMÉTICOS.
 
 Roles disponíveis (mapeados do JWT):
-  super_admin  — acesso irrestrito (equipe Hipnus)
+  super_admin  — acesso irrestrito (equipe Tálya)
   admin        — administrador operacional
   b2b          — profissional / salão / distribuidor
   b2c          — consumidor final

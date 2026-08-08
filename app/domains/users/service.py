@@ -131,7 +131,7 @@ def seed_super_admin(db: Session) -> None:
         name=settings.admin_name,
         username=settings.admin_username.lower(),
         email=settings.admin_email,
-        display_name="Administrador Hipnus",
+        display_name="Administrador Tálya",
         hashed_password=hash_password(settings.admin_password),
         role=UserRole.super_admin,
         is_active=True,

@@ -1,5 +1,5 @@
 """
-9_Usuarios.py — HIPNUS COSMÉTICOS
+9_Usuarios.py — TÁLYA COSMÉTICOS
 """
 from __future__ import annotations
 import sys
@@ -16,7 +16,7 @@ from lib import ui, components
 from lib.auth import require_auth, build_sidebar
 from lib.user_db import listar_parceiros, deletar_parceiro
 
-st.set_page_config(page_title="Usuários · HIPNUS", page_icon="👥", layout="wide")
+st.set_page_config(page_title="Usuários · TÁLYA", page_icon="👥", layout="wide")
 ui.inject_theme()
 usuario = require_auth(perfis_permitidos=["super_admin"])
 build_sidebar()

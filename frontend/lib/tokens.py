@@ -1,5 +1,5 @@
 """
-tokens.py — HIPNUS COSMÉTICOS
+tokens.py — TÁLYA COSMÉTICOS
 =================================
 Tokens semânticos do design system.
 Centraliza todas as referências visuais em um único lugar.
