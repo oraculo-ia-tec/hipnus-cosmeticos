@@ -208,23 +208,49 @@ def send_email(
 
 def send_test_email(to_email: str) -> tuple[bool, str]:
     """Envia e-mail de teste com layout padrão Tálya."""
-    html = """
-<div style="font-family:Inter,Segoe UI,sans-serif;background:#f8f7fc;padding:32px;">
-  <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e0f5;
-              border-radius:18px;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);
-                padding:28px 32px;color:#fff;">
-      <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
-                  opacity:.85;font-weight:700;">TÁLYA COSMÉTICOS</div>
-      <h1 style="margin:10px 0 0;font-size:24px;line-height:1.2;">Teste de SMTP ✅</h1>
-    </div>
-    <div style="padding:28px 32px;color:#1a1430;">
-      <p style="font-size:15px;line-height:1.7;margin:0 0 16px;">
-        Se você recebeu esta mensagem, o SMTP está ativo e configurado corretamente.
-      </p>
-    </div>
-  </div>
-</div>"""
+    html = """\
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,600;1,500&family=Manrope:wght@400;600;700&display=swap');
+</style>
+</head>
+<body style="margin:0;padding:0;background:#fbf6f2;font-family:'Manrope','Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fbf6f2;padding:40px 0;">
+  <tr><td align="center">
+    <table width="560" cellpadding="0" cellspacing="0"
+           style="background:#fff;border-radius:16px;border:1px solid #e8d5c0;overflow:hidden;">
+      <tr><td style="background:linear-gradient(135deg,#b76e79 0%,#c9a04e 100%);
+                     padding:32px 40px;text-align:center;">
+        <div style="font-family:'Cormorant',Georgia,serif;font-size:26px;font-weight:600;
+                    font-style:italic;color:#fff;letter-spacing:1px;">Tálya Cosméticos</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.85);letter-spacing:2.5px;
+                    text-transform:uppercase;margin-top:6px;font-weight:600;">
+          Diagnóstico de E-mail
+        </div>
+      </td></tr>
+      <tr><td style="padding:32px 40px;color:#3a2620;">
+        <p style="font-size:15px;line-height:1.7;margin:0 0 16px;">
+          Se você recebeu esta mensagem, o <strong>SMTP está ativo</strong>
+          e configurado corretamente.
+        </p>
+        <div style="background:#fdf5ef;border:1px solid #f1ddd0;border-radius:10px;
+                    padding:14px 18px;font-size:13px;color:#6b4f43;margin-top:8px;">
+          ✅ Servidor SMTP respondendo — Tálya Cosméticos
+        </div>
+      </td></tr>
+      <tr><td style="padding:16px 40px 24px;border-top:1px solid #f1ddd0;text-align:center;">
+        <p style="font-size:11px;color:#a08876;margin:0;line-height:1.6;">
+          TÁLYA COSMÉTICOS &copy; 2026 — Este é um e-mail automático de diagnóstico.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
     text = "Teste de SMTP da plataforma TÁLYA COSMÉTICOS. Configuração OK."
     return send_email(to_email, "TÁLYA — Teste de SMTP", html, text)
 
@@ -259,58 +285,63 @@ def send_invite_email(
     html_body = f"""\
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#F6F4FB;font-family:Arial,sans-serif;">
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,600;1,500&family=Manrope:wght@400;600;700&display=swap');
+</style>
+</head>
+<body style="margin:0;padding:0;background:#fbf6f2;font-family:'Manrope','Segoe UI',Arial,sans-serif;">
 <table width="100%" cellpadding="0" cellspacing="0"
-       style="background:#F6F4FB;padding:40px 0;">
+       style="background:#fbf6f2;padding:40px 0;">
   <tr><td align="center">
     <table width="560" cellpadding="0" cellspacing="0"
-           style="background:#fff;border-radius:16px;border:1px solid #E7E3F2;">
+           style="background:#fff;border-radius:16px;border:1px solid #e8d5c0;overflow:hidden;">
 
       <!-- HEADER -->
-      <tr><td style="background:#7C3AED;padding:32px 40px;text-align:center;
-                     border-radius:16px 16px 0 0;">
-        <div style="font-size:1.3rem;font-weight:800;color:#fff;">
-          TÁLYA COSMÉTICOS
+      <tr><td style="background:linear-gradient(135deg,#b76e79 0%,#c9a04e 100%);
+                     padding:32px 40px;text-align:center;">
+        <div style="font-family:'Cormorant',Georgia,serif;font-size:26px;font-weight:600;
+                    font-style:italic;color:#fff;letter-spacing:1px;">
+          Tálya Cosméticos
         </div>
-        <div style="font-size:.72rem;color:rgba(255,255,255,.75);
-                    letter-spacing:2px;text-transform:uppercase;margin-top:4px;">
+        <div style="font-size:11px;color:rgba(255,255,255,.85);letter-spacing:2.5px;
+                    text-transform:uppercase;margin-top:6px;font-weight:600;">
           Convite de Acesso
         </div>
       </td></tr>
 
       <!-- BODY -->
       <tr><td style="padding:36px 40px 28px;">
-        <p style="font-size:1rem;color:#1A1430;margin:0 0 20px;line-height:1.6;">
+        <p style="font-size:15px;color:#3a2620;margin:0 0 20px;line-height:1.7;">
           Voc&#234; foi convidado(a) por <strong>{created_by}</strong> para a plataforma
-          <strong>TÁLYA COSMÉTICOS</strong> como <strong>{role_label}</strong>.
+          <strong>Tálya Cosméticos</strong> como <strong>{role_label}</strong>.
         </p>
-        <p style="font-size:.9rem;color:#6B6580;margin:0 0 28px;">
+        <p style="font-size:13px;color:#6b4f43;margin:0 0 28px;line-height:1.6;">
           Este link expira em <strong>{expira}</strong>.
         </p>
         <!-- CTA -->
         <table cellpadding="0" cellspacing="0" width="100%">
           <tr><td align="center" style="padding:0 0 24px;">
             <a href="{signup_url}"
-               style="display:inline-block;background:#7C3AED;color:#fff;
-                      text-decoration:none;font-size:15px;font-weight:bold;
-                      padding:14px 40px;border-radius:10px;">
+               style="display:inline-block;background:#b76e79;color:#fff;
+                      text-decoration:none;font-size:15px;font-weight:700;
+                      padding:14px 40px;border-radius:10px;letter-spacing:.3px;">
               Concluir meu cadastro
             </a>
           </td></tr>
         </table>
         <!-- Link alternativo -->
-        <div style="background:#F6F4FB;border:1px solid #E7E3F2;border-radius:8px;
+        <div style="background:#fdf5ef;border:1px solid #f1ddd0;border-radius:8px;
                     padding:10px 16px;">
-          <span style="font-family:Courier New,monospace;font-size:12px;
-                       color:#7C3AED;word-break:break-all;">{signup_url}</span>
+          <span style="font-family:'Courier New',monospace;font-size:12px;
+                       color:#7c5c4a;word-break:break-all;">{signup_url}</span>
         </div>
       </td></tr>
 
       <!-- FOOTER -->
-      <tr><td style="padding:16px 40px 24px;border-top:1px solid #E7E3F2;
-                     text-align:center;border-radius:0 0 16px 16px;">
-        <p style="font-size:.72rem;color:#9CA3AF;margin:0;line-height:1.6;">
+      <tr><td style="padding:16px 40px 24px;border-top:1px solid #f1ddd0;text-align:center;">
+        <p style="font-size:11px;color:#a08876;margin:0;line-height:1.6;">
           TÁLYA COSMÉTICOS &copy; 2026 — Se voc&#234; n&#227;o esperava este convite,
           ignore esta mensagem.
         </p>
@@ -378,55 +409,98 @@ def send_order_confirmation_email(
 
     linhas_html = "".join(
         f"<tr>"
-        f"<td style='padding:10px 12px;border-bottom:1px solid #eee;'>{item['name']}</td>"
-        f"<td style='padding:10px 12px;border-bottom:1px solid #eee;text-align:center;'>"
+        f"<td style='padding:10px 14px;border-bottom:1px solid #f1ddd0;color:#3a2620;'>{item['name']}</td>"
+        f"<td style='padding:10px 14px;border-bottom:1px solid #f1ddd0;text-align:center;color:#6b4f43;'>"
         f"{item['qty']}</td>"
-        f"<td style='padding:10px 12px;border-bottom:1px solid #eee;text-align:right;'>"
+        f"<td style='padding:10px 14px;border-bottom:1px solid #f1ddd0;text-align:right;color:#3a2620;'>"
         f"{_brl(Decimal(str(item['price'])) * Decimal(str(item['qty'])))}</td>"
         f"</tr>"
         for item in itens
     )
     cta = (
-        f"<a href='{invoice_url}' style='display:inline-block;background:#7C3AED;color:#fff;"
-        f"text-decoration:none;font-size:15px;font-weight:bold;padding:14px 28px;"
-        f"border-radius:10px;'>Abrir pagamento</a>"
+        f"<a href='{invoice_url}' style='display:inline-block;background:#b76e79;color:#fff;"
+        f"text-decoration:none;font-size:15px;font-weight:700;padding:14px 28px;"
+        f"border-radius:10px;letter-spacing:.3px;'>Abrir pagamento</a>"
         if invoice_url else ""
     )
 
     html_body = f"""
-<div style="font-family:Inter,sans-serif;background:#f8f7fc;padding:32px;">
-  <div style="max-width:680px;margin:0 auto;background:#fff;
-              border:1px solid #e5e0f5;border-radius:18px;overflow:hidden;">
-    <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);
-                padding:28px 32px;color:#fff;">
-      <div style="font-size:12px;letter-spacing:1.4px;text-transform:uppercase;
-                  opacity:.85;font-weight:700;">TÁLYA COSMÉTICOS</div>
-      <h1 style="margin:10px 0 0;font-size:24px;">Pedido confirmado ✅</h1>
-    </div>
-    <div style="padding:28px 32px;color:#1a1430;">
-      <p>Olá, <strong>{customer_name}</strong>. Recebemos seu pedido.</p>
-      <div style="background:#f3f0ff;border:1px solid #e9d5ff;border-radius:14px;
-                  padding:14px;font-size:14px;color:#5b21b6;margin-bottom:18px;">
-        Referência: <strong>{external_ref}</strong><br>
-        ID: <strong>{payment_id}</strong> &nbsp;|&nbsp;
-        Método: <strong>{metodo_label}</strong> &nbsp;|&nbsp;
-        Status: <strong>{status_pagamento}</strong>
-      </div>
-      <table width="100%" style="border-collapse:collapse;border:1px solid #eee;">
-        <thead><tr style="background:#faf7ff;">
-          <th style="padding:10px;text-align:left;color:#5b21b6;">Item</th>
-          <th style="padding:10px;text-align:center;color:#5b21b6;">Qtd</th>
-          <th style="padding:10px;text-align:right;color:#5b21b6;">Subtotal</th>
-        </tr></thead>
-        <tbody>{linhas_html}</tbody>
-      </table>
-      <p style="font-size:18px;font-weight:800;text-align:right;margin:18px 0 22px;">
-        Total: {_brl(total)}
-      </p>
-      {cta}
-    </div>
-  </div>
-</div>"""
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,600;1,500&family=Manrope:wght@400;600;700&display=swap');
+</style>
+</head>
+<body style="margin:0;padding:0;background:#fbf6f2;font-family:'Manrope','Segoe UI',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#fbf6f2;padding:40px 0;">
+  <tr><td align="center">
+    <table width="620" cellpadding="0" cellspacing="0"
+           style="background:#fff;border-radius:16px;border:1px solid #e8d5c0;overflow:hidden;">
+
+      <!-- HEADER -->
+      <tr><td style="background:linear-gradient(135deg,#b76e79 0%,#c9a04e 100%);
+                     padding:28px 36px;text-align:center;">
+        <div style="font-family:'Cormorant',Georgia,serif;font-size:26px;font-weight:600;
+                    font-style:italic;color:#fff;letter-spacing:1px;">
+          Tálya Cosméticos
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,.85);letter-spacing:2.5px;
+                    text-transform:uppercase;margin-top:6px;font-weight:600;">
+          Confirmação de Pedido ✓
+        </div>
+      </td></tr>
+
+      <!-- BODY -->
+      <tr><td style="padding:28px 36px;color:#3a2620;">
+        <p style="font-size:15px;margin:0 0 18px;line-height:1.7;">
+          Olá, <strong>{customer_name}</strong>. Recebemos seu pedido com sucesso!
+        </p>
+        <div style="background:#fdf5ef;border:1px solid #f1ddd0;border-radius:12px;
+                    padding:14px 18px;font-size:13px;color:#6b4f43;margin-bottom:20px;
+                    line-height:1.8;">
+          <strong>Referência:</strong> {external_ref}<br>
+          <strong>ID do Pagamento:</strong> {payment_id}<br>
+          <strong>Método:</strong> {metodo_label} &nbsp;|&nbsp;
+          <strong>Status:</strong> {status_pagamento}
+        </div>
+
+        <!-- Tabela de itens -->
+        <table width="100%" style="border-collapse:collapse;border:1px solid #e8d5c0;
+                                    border-radius:10px;overflow:hidden;font-size:14px;">
+          <thead>
+            <tr style="background:#fbf6f2;">
+              <th style="padding:10px 14px;text-align:left;color:#3a2620;
+                         border-bottom:1px solid #e8d5c0;font-weight:700;">Item</th>
+              <th style="padding:10px 14px;text-align:center;color:#3a2620;
+                         border-bottom:1px solid #e8d5c0;font-weight:700;">Qtd</th>
+              <th style="padding:10px 14px;text-align:right;color:#3a2620;
+                         border-bottom:1px solid #e8d5c0;font-weight:700;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>{linhas_html}</tbody>
+        </table>
+
+        <p style="font-size:17px;font-weight:800;text-align:right;
+                  margin:18px 0 22px;color:#3a2620;">
+          Total: {_brl(total)}
+        </p>
+        {cta}
+      </td></tr>
+
+      <!-- FOOTER -->
+      <tr><td style="padding:16px 36px 24px;border-top:1px solid #f1ddd0;text-align:center;">
+        <p style="font-size:11px;color:#a08876;margin:0;line-height:1.6;">
+          TÁLYA COSMÉTICOS &copy; 2026 — Este é um e-mail automático, não responda.
+        </p>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>"""
 
     text_body = (
         f"TÁLYA COSMÉTICOS — Pedido confirmado\n\n"
