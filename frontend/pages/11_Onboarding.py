@@ -7,15 +7,41 @@ Telas Streamlit:
 2. Aprovacao de Parceiros (admin)
 3. Configuracao da Loja (tema, banner, secoes)
 """
-import streamlit as st
-from lib.supabase_client import get_supabase
-from lib.onboarding_queries import (
-    create_partner_application, submit_onboarding_documents,
-    get_my_partner_status, get_pending_partners,
-    approve_partner, reject_partner,
-)
+from __future__ import annotations
+import sys
+from pathlib import Path
 
-supabase = get_supabase()
+_ROOT     = Path(__file__).resolve().parents[2]
+_FRONTEND = Path(__file__).resolve().parents[1]
+for _p in [str(_ROOT), str(_FRONTEND)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+import streamlit as st
+from lib.auth import require_auth, build_sidebar
+from lib import ui
+
+st.set_page_config(page_title="Onboarding · TÁLYA", page_icon="🔖", layout="wide")
+ui.inject_theme()
+usuario = require_auth()
+build_sidebar()
+
+try:
+    from lib.supabase_client import get_supabase
+    supabase = get_supabase()
+except Exception as e:
+    st.error(f"Erro ao conectar ao Supabase: {e}")
+    st.stop()
+
+try:
+    from lib.onboarding_queries import (
+        create_partner_application, submit_onboarding_documents,
+        get_my_partner_status, get_pending_partners,
+        approve_partner, reject_partner,
+    )
+    _ONBOARDING_OK = True
+except ImportError:
+    _ONBOARDING_OK = False
 
 
 # ============================================================
@@ -251,3 +277,44 @@ def _render_store_preview(theme: dict, sections: list[dict]):
           <span style="color:#9ca3af;">{sec.get('content','')}</span>
         </div>
         """, unsafe_allow_html=True)
+
+
+# ============================================================
+# ROTEAMENTO PRINCIPAL
+# ============================================================
+perfil = usuario.get("perfil", "demo")
+
+if not _ONBOARDING_OK:
+    st.error("❌ Módulo `onboarding_queries` não encontrado. Verifique a instalação.")
+    st.stop()
+
+_user_id = st.session_state.get("usuario", "")
+
+if perfil in ("super_admin", "admin"):
+    tab_parceiro, tab_aprovacao, tab_loja = st.tabs([
+        "➕ Cadastro Parceiro", "✅ Aprovação", "🏪 Config. Loja"
+    ])
+    with tab_parceiro:
+        page_partner_signup()
+    with tab_aprovacao:
+        page_admin_partner_approval()
+    with tab_loja:
+        store_res = supabase.table("stores").select("id").eq("partner_id", _user_id).execute()
+        store_id = store_res.data[0]["id"] if store_res.data else None
+        if store_id:
+            page_store_config(store_id)
+        else:
+            st.info("Nenhuma loja vinculada a este usuário.")
+elif perfil == "b2b":
+    tab_parceiro, tab_loja = st.tabs(["➕ Meu Cadastro", "🏪 Minha Loja"])
+    with tab_parceiro:
+        page_partner_signup()
+    with tab_loja:
+        store_res = supabase.table("stores").select("id").eq("partner_id", _user_id).execute()
+        store_id = store_res.data[0]["id"] if store_res.data else None
+        if store_id:
+            page_store_config(store_id)
+        else:
+            st.info("Loja ainda não criada. Complete o cadastro para ativá-la.")
+else:
+    page_partner_signup()
