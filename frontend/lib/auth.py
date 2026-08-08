@@ -19,8 +19,10 @@ import streamlit as st
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-LOGIN_PAGE  = "login.py"
-HOME_PAGE   = "frontend/pages/0_🏠_Home.py"
+# Caminhos absolutos evitam falha de resolução no Streamlit Cloud
+_APP_ROOT   = Path(__file__).resolve().parents[2]
+LOGIN_PAGE  = str(_APP_ROOT / "login.py")
+HOME_PAGE   = str(_APP_ROOT / "frontend" / "pages" / "0_🏠_Home.py")
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 

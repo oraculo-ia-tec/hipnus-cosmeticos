@@ -24,7 +24,7 @@ import streamlit as st
 
 _pages_dir = _FRONTEND / "pages"
 _pg = st.navigation(
-    [st.Page("login.py", title="Login", default=True)] +
+    [st.Page(str(_ROOT / "login.py"), title="Login", default=True)] +
     [st.Page(str(p)) for p in sorted(_pages_dir.glob("[0-9]*.py"))],
     position="hidden",
 )
