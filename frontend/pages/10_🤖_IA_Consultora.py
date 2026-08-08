@@ -205,30 +205,32 @@ def _render_bubble(role: str, content: str) -> None:
 
 
 # ── Avatar da Tálya no topo ──────────────────────────────────────────
-col_l, col_center, col_r = st.columns([1, 2, 1])
-with col_center:
-    initial = (_chiara_nome or "T")[0].upper()
-    if _chiara_b64:
-        src_topo = _chiara_b64 if _chiara_b64.startswith("data:") else f"data:{_chiara_mime};base64,{_chiara_b64}"
-        st.markdown(f"""
-        <div class="chiara-top-avatar">
-            <img src="{src_topo}" alt="{_chiara_nome}" />
-            <p class="chiara-top-name">{_chiara_nome}</p>
-            <p class="chiara-top-title">{_chiara_cargo}</p>
-            <div class="chiara-status">Online agora</div>
-        </div>
-        <hr class="chiara-divider" />
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div class="chiara-top-avatar">
-            <div class="chiara-initial">{initial}</div>
-            <p class="chiara-top-name">{_chiara_nome}</p>
-            <p class="chiara-top-title">{_chiara_cargo}</p>
-            <div class="chiara-status">Online agora</div>
-        </div>
-        <hr class="chiara-divider" />
-        """, unsafe_allow_html=True)
+initial = (_chiara_nome or "T")[0].upper()
+if _chiara_b64:
+    src_topo = _chiara_b64 if _chiara_b64.startswith("data:") else f"data:{_chiara_mime};base64,{_chiara_b64}"
+    st.markdown(f"""
+    <div style="display:flex;justify-content:center;">
+      <div class="chiara-top-avatar">
+          <img src="{src_topo}" alt="{_chiara_nome}" />
+          <p class="chiara-top-name">{_chiara_nome}</p>
+          <p class="chiara-top-title">{_chiara_cargo}</p>
+          <div class="chiara-status">Online agora</div>
+      </div>
+    </div>
+    <hr class="chiara-divider" />
+    """, unsafe_allow_html=True)
+else:
+    st.markdown(f"""
+    <div style="display:flex;justify-content:center;">
+      <div class="chiara-top-avatar">
+          <div class="chiara-initial">{initial}</div>
+          <p class="chiara-top-name">{_chiara_nome}</p>
+          <p class="chiara-top-title">{_chiara_cargo}</p>
+          <div class="chiara-status">Online agora</div>
+      </div>
+    </div>
+    <hr class="chiara-divider" />
+    """, unsafe_allow_html=True)
 
 # ── Validação da IA ───────────────────────────────────────────────────
 status = groq_status()
