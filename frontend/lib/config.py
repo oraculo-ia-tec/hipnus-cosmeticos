@@ -75,14 +75,14 @@ BRAND = {
 
 # ─── Paleta da marca ──────────────────────────────────────────────────────────
 COLORS = {
-    "primary":      "#7C3AED",
-    "primary_dark": "#5B21B6",
-    "accent":       "#C4A35A",
-    "ink":          "#1A1430",
-    "muted":        "#6B6580",
-    "bg":           "#FFFFFF",
-    "surface":      "#F6F4FB",
-    "border":       "#E7E3F2",
+    "primary":      "#b76e79",   # rosa Tálya
+    "primary_dark": "#8f4f58",   # rosa escuro
+    "accent":       "#c9a04e",   # dourado
+    "ink":          "#3a2620",   # marrom escuro
+    "muted":        "#a08876",   # marrom muted
+    "bg":           "#fbf6f2",   # off-white quente
+    "surface":      "#f1e4da",   # superfície quente
+    "border":       "rgba(183,110,121,0.18)",
     "success":      "#16A34A",
 }
 

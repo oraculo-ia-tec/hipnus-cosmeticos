@@ -1,5 +1,5 @@
 """
-theme.py — TÁLYA COSMÉTICOS  ·  Premium Neon Edition 2026
+theme.py — TÁLYA COSMÉTICOS  ·  Warm Rose / Gold Premium
 ============================================================
 Injeta o CSS global do design system.
 Chamar inject_theme() no topo de cada página, logo após st.set_page_config().
@@ -21,8 +21,8 @@ def _get_theme() -> dict:
         "primary":      st.session_state.get("tema_primary",  T.PRIMARY),
         "primary_dark": _darken(st.session_state.get("tema_primary", T.PRIMARY)),
         "accent":       st.session_state.get("tema_accent",   T.ACCENT),
-        "fonte_corpo":  st.session_state.get("fonte_corpo",   "Inter"),
-        "fonte_titulo": st.session_state.get("fonte_titulo",  "Syne"),
+        "fonte_corpo":  st.session_state.get("fonte_corpo",   "Manrope"),
+        "fonte_titulo": st.session_state.get("fonte_titulo",  "Cormorant"),
     }
 
 
@@ -39,16 +39,20 @@ def _darken(hex_color: str) -> str:
 
 def _google_fonts_url(corpo: str, titulo: str) -> str:
     """Monta URL do Google Fonts para as fontes escolhidas."""
-    families = set([corpo, titulo, "Inter", "Syne"])  # Inter e Syne sempre como fallback
-    params   = "&".join(
-        f"family={f.replace(' ', '+')}:wght@300;400;500;600;700;800;900"
-        for f in families
-    )
+    families = set([corpo, titulo, "Manrope", "Cormorant"])  # Manrope e Cormorant sempre como fallback
+    # Cormorant tem variações de peso específicas
+    parts = []
+    for f in families:
+        if "Cormorant" in f:
+            parts.append("family=Cormorant:ital,wght@0,400;0,600;0,700;1,500")
+        else:
+            parts.append(f"family={f.replace(' ', '+')}:wght@300;400;500;600;700;800")
+    params = "&".join(parts)
     return f"https://fonts.googleapis.com/css2?{params}&display=swap"
 
 
 def inject_theme() -> None:
-    """Injeta o CSS global do design system TÁLYA Premium Neon.
+    """Injeta o CSS global do design system TÁLYA — warm rose/gold premium.
     Lê dinâmicamente do session_state para refletir mudanças de tema.
     """
     theme = _get_theme()
@@ -74,19 +78,20 @@ def inject_theme() -> None:
       --hip-primary:      {P};
       --hip-primary-dark: {PD};
       --hip-accent:       {A};
-      --hip-font-body:    '{FC}', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --hip-font-display: '{FT}', 'Syne', 'Playfair Display', serif;
+      --hip-font-body:    '{FC}', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+      --hip-font-display: '{FT}', 'Cormorant', 'Playfair Display', serif;
 
-      --neon-purple:  {P};
-      --neon-violet:  {PD};
-      --neon-cyan:    #00f5ff;
-      --neon-pink:    #ff6ef7;
-      --neon-gold:    #ffd700;
-      --glass-bg:     rgba(26, 7, 51, 0.6);
-      --glass-border: {_hex_with_opacity(P, 0.25)};
-      --glow-purple:  0 0 20px {_hex_with_opacity(P, 0.4)}, 0 0 60px {_hex_with_opacity(PD, 0.2)};
-      --glow-cyan:    0 0 20px rgba(0,245,255,0.4), 0 0 60px rgba(0,245,255,0.15);
-      --glow-pink:    0 0 20px rgba(255,110,247,0.4), 0 0 60px rgba(255,110,247,0.15);
+      --color-bg:          {T.BG};
+      --color-bg-deep:     {T.BG_DEEP};
+      --color-surface:     {T.SURFACE};
+      --color-text:        {T.TEXT_PRIMARY};
+      --color-text-muted:  {T.TEXT_MUTED};
+      --color-accent-1:    {T.PRIMARY};
+      --color-accent-2:    {T.ACCENT};
+      --color-accent-3:    {T.ACCENT_WARM};
+      --glass-bg:     rgba(251, 246, 242, 0.75);
+      --glass-border: rgba(183, 110, 121, 0.18);
+      --glow-rose:    0 0 20px {_hex_with_opacity(P, 0.35)}, 0 0 60px {_hex_with_opacity(PD, 0.15)};
       --transition-smooth: cubic-bezier(0.16, 1, 0.3, 1);
       --font-display: var(--hip-font-display);
       --font-body:    var(--hip-font-body);
@@ -152,8 +157,8 @@ def inject_theme() -> None:
         flex-direction: column !important;
         background:
           radial-gradient(ellipse at 10% 10%, {_hex_with_opacity(PD, 0.18)} 0%, transparent 55%),
-          radial-gradient(ellipse at 90% 85%, rgba(0,245,255,.06) 0%, transparent 50%),
-          linear-gradient(180deg, #0a0015 0%, #110028 50%, #0a0015 100%) !important;
+          radial-gradient(ellipse at 90% 85%, {_hex_with_opacity(A, 0.08)} 0%, transparent 50%),
+          linear-gradient(180deg, {T.BG_DEEP} 0%, {T.SURFACE} 50%, {T.BG_DEEP} 100%) !important;
     }}
 
     /* ── SIDEBAR reordenão ─────────────────────────────────────────────────── */
@@ -213,7 +218,7 @@ def inject_theme() -> None:
         animation: gradient-flow 8s ease infinite;
         color: {T.TEXT_INVERSE}; border-radius: {T.RADIUS_XL};
         padding: 40px 40px 36px;
-        box-shadow: {T.SHADOW_LG}, var(--glow-purple);
+        box-shadow: {T.SHADOW_LG}, var(--glow-rose);
         margin-bottom: 8px;
         border: 1px solid {_hex_with_opacity(P, 0.2)};
         position: relative; overflow: hidden;
@@ -308,15 +313,15 @@ def inject_theme() -> None:
     }}
     .hip-stat::after {{
         content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-        background: linear-gradient(90deg, {PD}, {P}, #00f5ff);
+        background: linear-gradient(90deg, {PD}, {P}, {A});
     }}
     .hip-stat:hover {{
         border-color: {_hex_with_opacity(P, 0.4)};
-        box-shadow: var(--glow-purple); transform: translateY(-2px);
+        box-shadow: var(--glow-rose); transform: translateY(-2px);
     }}
     .hip-stat .v {{
         font-family: var(--hip-font-display); font-weight: 800; font-size: 1.6rem;
-        background: linear-gradient(135deg, {P}, #00f5ff);
+        background: linear-gradient(135deg, {P}, {A});
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }}
     .hip-stat .l {{
@@ -413,7 +418,7 @@ def _lighten(hex_color: str) -> str:
 
 
 def inject_login_style() -> None:
-    """Injeta estilos específicos da tela de login premium neon."""
+    """Injeta estilos específicos da tela de login warm rose/gold premium."""
     st.html("""
     <style>
     [data-testid="stSidebar"]        { display: none !important; }

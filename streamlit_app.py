@@ -1,9 +1,9 @@
 """
-streamlit_app.py — TÁLYA COSMÉTICOS  ·  Premium Neon Edition
+streamlit_app.py — TÁLYA COSMÉTICOS  ·  Warm Rose / Gold Premium
 ==============================================================
 Entrypoint do Streamlit Cloud — página de Login Premium.
 Aceita login por USERNAME ou E-MAIL.
-UI/UX Pro Max: fontes premium, neon glow, glassmorphism, animações, FAB.
+UI/UX Pro Max: fontes premium, glassmorphism, warm premium, animações, FAB.
 """
 import sys
 from pathlib import Path
@@ -65,13 +65,13 @@ header[data-testid="stHeader"] { display: none !important; }
   padding: 0 !important; min-height: 100vh;
 }
 
-/* ── Painel Esquerdo — Neon Mesh ─────────────────────────────── */
+/* ── Painel Esquerdo — Warm Rose Mesh ───────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:first-child {
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(185,131,255,0.18) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(0,245,255,0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 60% 10%, rgba(255,110,247,0.08) 0%, transparent 40%),
-    linear-gradient(145deg, #0d0019 0%, #1a0733 35%, #2d1060 65%, #1a0733 100%);
+    radial-gradient(ellipse at 20% 20%, rgba(183,110,121,0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(201,160,78,0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 10%, rgba(124,92,74,0.10) 0%, transparent 40%),
+    linear-gradient(145deg, #3a2620 0%, #5a3830 35%, #7c5c4a 65%, #5a3830 100%);
   background-size: 100% 100%;
   position: relative;
   overflow: hidden;
@@ -79,7 +79,7 @@ header[data-testid="stHeader"] { display: none !important; }
 
 /* ── Painel Direito — Clean Premium ─────────────────────────── */
 [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"]:last-child {
-  background: #faf9fd;
+  background: #fbf6f2;
   display: flex; flex-direction: column;
   justify-content: center; padding: 48px 40px !important;
   position: relative;
@@ -96,7 +96,7 @@ header[data-testid="stHeader"] { display: none !important; }
   background: #fff !important;
   border: 1.5px solid #e5e0f5 !important;
   border-radius: 14px !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: .95rem !important;
   padding: 14px 18px !important;
   color: #1a0a2e !important;
@@ -109,7 +109,7 @@ header[data-testid="stHeader"] { display: none !important; }
   outline: none !important;
 }
 [data-testid="stTextInput"] > label {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: .78rem !important; font-weight: 600 !important;
   color: #6b5d8a !important; letter-spacing: .4px !important;
   text-transform: uppercase !important;
@@ -120,10 +120,10 @@ header[data-testid="stHeader"] { display: none !important; }
   background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 60%, #7c3aed 100%) !important;
   background-size: 200% 100% !important;
   border: none !important; border-radius: 14px !important; height: 52px !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: .97rem !important; font-weight: 700 !important;
   letter-spacing: .4px !important; color: #fff !important;
-  box-shadow: 0 4px 24px rgba(124,58,237,.4), 0 0 0 1px rgba(185,131,255,.2) !important;
+  box-shadow: 0 4px 24px rgba(124,58,237,.4), 0 0 0 1px rgba(183,110,121,.2) !important;
   transition: all .25s cubic-bezier(0.16,1,0.3,1) !important;
   width: 100% !important;
 }
@@ -141,7 +141,7 @@ header[data-testid="stHeader"] { display: none !important; }
   background: #fff !important;
   border: 1.5px solid #e5e0f5 !important;
   border-radius: 14px !important; height: 48px !important;
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
   font-size: .88rem !important; font-weight: 600 !important;
   color: #7c3aed !important;
   transition: all .2s ease !important; width: 100% !important;
@@ -258,15 +258,15 @@ with col_left:
       width: 50px; height: 50px; border-radius: 15px;
       background: linear-gradient(135deg, rgba(185,131,255,0.2) 0%, rgba(124,58,237,0.3) 100%);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(185,131,255,0.35);
+      border: 1px solid rgba(183,110,121,0.35);
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant', serif;
       font-weight: 900; font-size: 1.45rem; color: #fff;
       letter-spacing: -1px; flex-shrink: 0;
       box-shadow: 0 0 20px rgba(185,131,255,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
     }
     .hip-logo-text .brand-name {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant', serif;
       font-weight: 800; font-size: 1.1rem;
       background: linear-gradient(90deg, #fff 0%, rgba(185,131,255,0.9) 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
@@ -281,10 +281,10 @@ with col_left:
     .hip-hero-block { padding: 0 0 16px; position: relative; z-index: 2; }
     .kicker-pill {
       display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(185,131,255,.1);
+      background: rgba(183,110,121,.1);
       border: 1px solid rgba(185,131,255,.25);
       color: rgba(185,131,255,.9);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Manrope', sans-serif;
       font-size: .64rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
       padding: 6px 16px; border-radius: 999px; margin-bottom: 28px;
     }
@@ -296,19 +296,19 @@ with col_left:
       flex-shrink: 0;
     }
     .hip-hero-block h1 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant', serif;
       font-size: clamp(2rem, 2.8vw, 3.2rem);
       font-weight: 900; color: #fff;
       line-height: 1.15; letter-spacing: -.5px; margin: 0 0 20px;
     }
     .hip-hero-block h1 span {
-      background: linear-gradient(90deg, #e2b4ff 0%, #b983ff 40%, #00f5ff 100%);
+      background: linear-gradient(90deg, #c9a04e 0%, #b76e79 40%, #7c5c4a 100%);
       background-size: 200% auto;
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
       animation: shimmerBorder 4s linear infinite;
     }
     .hip-hero-block p {
-      color: rgba(255,255,255,.65); font-family: 'Inter', sans-serif;
+      color: rgba(255,255,255,.65); font-family: 'Manrope', sans-serif;
       font-size: .95rem; line-height: 1.7; max-width: 40ch; margin: 0 0 36px;
     }
 
@@ -317,25 +317,25 @@ with col_left:
     .claim  { display: flex; align-items: flex-start; gap: 14px; }
     .claim-icon {
       width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
-      background: rgba(185,131,255,.1);
-      border: 1px solid rgba(185,131,255,.2);
+      background: rgba(183,110,121,.1);
+      border: 1px solid rgba(183,110,121,.2);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.1rem;
-      box-shadow: 0 0 12px rgba(185,131,255,0.1);
+      box-shadow: 0 0 12px rgba(183,110,121,0.1);
       transition: all .2s ease;
     }
     .claim:hover .claim-icon {
-      background: rgba(185,131,255,.2);
-      border-color: rgba(185,131,255,.4);
-      box-shadow: 0 0 20px rgba(185,131,255,0.25);
+      background: rgba(183,110,121,.2);
+      border-color: rgba(183,110,121,.4);
+      box-shadow: 0 0 20px rgba(183,110,121,0.25);
     }
-    .claim-text { font-family: 'Inter', sans-serif; font-size: .85rem; color: rgba(255,255,255,.65); font-weight: 400; line-height: 1.4; }
+    .claim-text { font-family: 'Manrope', sans-serif; font-size: .85rem; color: rgba(255,255,255,.65); font-weight: 400; line-height: 1.4; }
     .claim-text strong { color: rgba(255,255,255,.92); font-weight: 700; display: block; font-size: .9rem; margin-bottom: 2px; }
 
     /* ── Linha separadora com gradiente ────── */
     .hip-line-sep {
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(185,131,255,0.35), rgba(0,245,255,0.15), transparent);
+      background: linear-gradient(90deg, transparent, rgba(183,110,121,0.35), rgba(0,245,255,0.15), transparent);
       margin: 32px 0;
       position: relative; z-index: 2;
     }
@@ -346,19 +346,19 @@ with col_left:
       position: relative; z-index: 2;
     }
     .hip-mini-stat .v {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant', serif;
       font-size: 1.5rem; font-weight: 800; color: #fff;
       line-height: 1;
     }
     .hip-mini-stat .v span {
-      background: linear-gradient(90deg, #b983ff, #00f5ff);
+      background: linear-gradient(90deg, #b76e79, #c9a04e);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .hip-mini-stat .l { font-size: .68rem; color: rgba(185,131,255,.6); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .hip-mini-stat .l { font-size: .68rem; color: rgba(183,110,121,.6); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
 
     /* ── Footer ────────────────────────── */
     .hip-panel-footer {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Manrope', sans-serif;
       font-size: .66rem; color: rgba(185,131,255,.3);
       letter-spacing: .8px;
       position: relative; z-index: 2;
@@ -376,7 +376,7 @@ with col_left:
 
       <!-- Logo -->
       <div class="hip-logo-row">
-        <div class="hip-logo-icon">H</div>
+        <div class="hip-logo-icon">T</div>
         <div class="hip-logo-text">
           <div class="brand-name">TÁLYA</div>
           <div class="brand-sub">Cosméticos</div>
@@ -436,7 +436,7 @@ with col_right:
     }
     .hip-eyebrow {
       display: flex; align-items: center; gap: 10px;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Manrope', sans-serif;
       font-size: .7rem; font-weight: 700;
       color: #7c3aed; letter-spacing: 2px; text-transform: uppercase;
       margin-bottom: 10px;
@@ -448,12 +448,12 @@ with col_right:
       box-shadow: 0 0 6px rgba(124,58,237,0.6);
     }
     .hip-form-header h2 {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Cormorant', serif;
       font-size: 1.65rem; font-weight: 800;
       color: #1a0a2e; letter-spacing: -.5px; line-height: 1.2; margin: 0 0 8px;
     }
     .hip-form-header p {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Manrope', sans-serif;
       font-size: .85rem; color: #6b7280; line-height: 1.55; margin: 0;
     }
     /* Anel decorativo topo direito */
@@ -504,7 +504,7 @@ with col_right:
       <div style="margin-top:12px;display:flex;justify-content:center;gap:6px;">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7c3aed;box-shadow:0 0 8px rgba(124,58,237,0.8);"></span>
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#b983ff;box-shadow:0 0 8px rgba(185,131,255,0.8);"></span>
-        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00f5ff;box-shadow:0 0 8px rgba(0,245,255,0.6);"></span>
+        <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#b76e79;box-shadow:0 0 8px rgba(183,110,121,0.6);"></span>
       </div>
     </div>
     """)
