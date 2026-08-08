@@ -438,36 +438,14 @@ def _hex_rgba(hex_color: str, alpha: float) -> str:
 
 
 def _inject_sidebar_css() -> None:
-    cor_primary = st.session_state.get("tema_primary", "#7c3aed")
-    cor_accent  = st.session_state.get("tema_accent",  "#b983ff")
-
-    p_20 = _hex_rgba(cor_primary, 0.20)
-    p_22 = _hex_rgba(cor_primary, 0.22)
-    p_32 = _hex_rgba(cor_primary, 0.32)
-    p_50 = _hex_rgba(cor_primary, 0.50)
-    a_10 = _hex_rgba(cor_accent,  0.10)
-    a_12 = _hex_rgba(cor_accent,  0.12)
-    a_15 = _hex_rgba(cor_accent,  0.15)
-    a_16 = _hex_rgba(cor_accent,  0.16)
-    a_25 = _hex_rgba(cor_accent,  0.25)
-    a_32 = _hex_rgba(cor_accent,  0.32)
-    a_45 = _hex_rgba(cor_accent,  0.45)
-    a_65 = _hex_rgba(cor_accent,  0.65)
-
-    sair_bg       = f"linear-gradient(135deg,{p_50},{a_32})"
-    sair_border   = a_65
-    sair_shadow   = _hex_rgba(cor_primary, 0.30)
-    sair_hover_bg = f"linear-gradient(135deg,{_hex_rgba(cor_primary,0.72)},{a_45})"
-    sair_hover_bd = cor_accent
-    sair_glow     = _hex_rgba(cor_primary, 0.45)
-
-    st.markdown(f"""
+    # Paleta fixa Tálya (ignora tema_primary/accent na sidebar)
+    st.markdown("""
 <style>
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button {{
-    background:{sair_bg} !important;
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button {
+    background:linear-gradient(135deg,#b76e79dd,#c9a04eaa) !important;
     color:#fff !important;
-    border:1px solid {sair_border} !important;
+    border:1px solid rgba(183,110,121,.45) !important;
     border-radius:10px !important;
     font-family:'Manrope',sans-serif !important;
     font-weight:600 !important;
@@ -475,80 +453,81 @@ section[data-testid="stSidebar"]
     letter-spacing:.3px !important;
     min-height:44px !important;
     transition:all .18s ease !important;
-    box-shadow:0 2px 10px {sair_shadow} !important;
-}}
+    box-shadow:0 2px 10px rgba(183,110,121,.25) !important;
+}
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {{
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button p {
     color:#fff !important;
     background:transparent !important;
-}}
+}
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover {{
-    background:{sair_hover_bg} !important;
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover {
+    background:linear-gradient(135deg,#b76e79,#c9a04e) !important;
     color:#fff !important;
-    border-color:{sair_hover_bd} !important;
-    box-shadow:0 0 14px {sair_glow} !important;
+    border-color:#b76e79 !important;
+    box-shadow:0 0 16px rgba(183,110,121,.45) !important;
     transform:translateY(-1px) !important;
-}}
+}
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {{
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:hover p {
     color:#fff !important;
     background:transparent !important;
-}}
+}
 section[data-testid="stSidebar"]
-  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {{
+  div[data-testid="stButton"]:has(button[data-testid="sb_logout_btn"]) > button:active {
     transform:translateY(0px) !important;
-    box-shadow:0 0 8px {sair_shadow} !important;
-}}
+}
 </style>
 """, unsafe_allow_html=True)
 
-    st.sidebar.html(f"""
+    st.sidebar.html("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Cormorant:ital,wght@0,400;0,600;0,700;1,500&display=swap');
-    section[data-testid="stSidebar"] > div {{
+    section[data-testid="stSidebar"] > div {
       background:
-        radial-gradient(ellipse at 10% 10%, {p_20} 0%, transparent 55%),
-        radial-gradient(ellipse at 90% 85%, rgba(0,245,255,.07) 0%, transparent 50%),
-        linear-gradient(180deg,#0a0015 0%,#110028 55%,#0a0015 100%) !important;
-    }}
+        radial-gradient(ellipse at 15% 5%,  rgba(183,110,121,.10) 0%, transparent 50%),
+        radial-gradient(ellipse at 85% 90%, rgba(201,160,78,.07)  0%, transparent 50%),
+        linear-gradient(180deg,#fbf6f2 0%,#f5ece4 60%,#f1e4da 100%) !important;
+    }
     [data-testid="stSidebarNav"],
     [data-testid="stSidebarNavSeparator"],
-    [data-testid="stSidebarNavItems"] {{ display:none !important; }}
+    [data-testid="stSidebarNavItems"] { display:none !important; }
     section[data-testid="stSidebar"] [data-testid="stPageLink"] a,
-    section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {{
+    section[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
       display:flex !important; align-items:center !important; gap:8px !important;
       padding:9px 14px !important; margin:1px 6px !important;
       border-radius:10px !important; border:1px solid transparent !important;
       font-family:'Manrope',sans-serif !important; font-size:.86rem !important;
-      font-weight:500 !important; color:rgba(255,255,255,.78) !important;
+      font-weight:500 !important; color:#3a2620 !important;
       text-decoration:none !important; transition:all .18s ease !important;
       background:transparent !important;
-    }}
-    section[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {{
-      color:#fff !important; background:{a_12} !important;
-      border-color:{a_25} !important;
-    }}
-    section[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {{
-      color:#fff !important;
-      background:linear-gradient(135deg,{p_32},{a_12}) !important;
-      border-color:{a_45} !important;
-      font-weight:600 !important; box-shadow:0 0 14px {a_15} !important;
-    }}
-    .hip-sidebar-divider {{
+    }
+    section[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
+      color:#b76e79 !important;
+      background:rgba(183,110,121,.09) !important;
+      border-color:rgba(183,110,121,.22) !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {
+      color:#b76e79 !important;
+      background:linear-gradient(135deg,rgba(183,110,121,.14),rgba(201,160,78,.07)) !important;
+      border-color:rgba(183,110,121,.32) !important;
+      font-weight:600 !important;
+      box-shadow:0 2px 8px rgba(183,110,121,.12) !important;
+    }
+    .hip-sidebar-divider {
       height:1px; margin:14px 16px 10px;
-      background:linear-gradient(90deg,transparent,{a_45},rgba(0,245,255,.15),transparent);
+      background:linear-gradient(90deg,transparent,rgba(183,110,121,.30),rgba(201,160,78,.15),transparent);
       border:none;
-    }}
+    }
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] label {{ color:rgba(255,255,255,.75); }}
-    section[data-testid="stSidebar"] strong {{ color:#fff; }}
-    section[data-testid="stSidebar"] ::-webkit-scrollbar {{ width:4px; }}
-    section[data-testid="stSidebar"] ::-webkit-scrollbar-track {{ background:transparent; }}
-    section[data-testid="stSidebar"] ::-webkit-scrollbar-thumb {{
-      background:{p_50}; border-radius:4px;
-    }}
+    section[data-testid="stSidebar"] label { color:#6b4f43; }
+    section[data-testid="stSidebar"] strong { color:#3a2620; }
+    section[data-testid="stSidebar"] ::-webkit-scrollbar { width:4px; }
+    section[data-testid="stSidebar"] ::-webkit-scrollbar-track { background:transparent; }
+    section[data-testid="stSidebar"] ::-webkit-scrollbar-thumb {
+      background:rgba(183,110,121,.35); border-radius:4px;
+    }
     </style>
     """)
 
@@ -603,7 +582,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     <style>
       *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0;}}
       body{{margin:0;padding:0;background:transparent;overflow:hidden;}}
-      .chi-card{{
+      .chi-card{
         display:flex;
         flex-direction:row;
         align-items:center;
@@ -611,12 +590,12 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         padding:7px 12px;
         margin:1px 6px;
         border-radius:10px;
-        border:1px solid {_hex_rgba(cor_accent, 0.32)};
-        background:linear-gradient(135deg,{_hex_rgba(cor_primary,0.22)},{_hex_rgba(cor_accent,0.10)});
+        border:1px solid rgba(183,110,121,.28);
+        background:linear-gradient(135deg,rgba(183,110,121,.12),rgba(201,160,78,.06));
         min-height:44px;
         pointer-events:none;
-      }}
-      .chi-nome{{
+      }
+      .chi-nome{
         flex:1;
         min-width:0;
         white-space:nowrap;
@@ -625,23 +604,23 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         font-family:Manrope,sans-serif;
         font-size:.86rem;
         font-weight:600;
-        color:#fff;
+        color:#3a2620;
         line-height:1;
-      }}
-      .chi-badge{{
+      }
+      .chi-badge{
         flex-shrink:0;
         font-family:Manrope,sans-serif;
         font-size:.54rem;
         font-weight:700;
         letter-spacing:.6px;
         text-transform:uppercase;
-        background:{_hex_rgba(cor_primary,0.40)};
-        color:{cor_accent};
-        border:1px solid {_hex_rgba(cor_accent,0.42)};
+        background:linear-gradient(135deg,#b76e79cc,#c9a04e99);
+        color:#fff;
+        border:1px solid rgba(183,110,121,.40);
         padding:2px 7px;
         border-radius:999px;
         line-height:1.4;
-      }}
+      }
     </style>
     <div class="chi-card">
       {avatar_html}
@@ -688,22 +667,22 @@ def build_sidebar(
     st.sidebar.html(f"""
     <div style="display:flex;align-items:center;gap:11px;padding:20px 16px 14px;">
       <div style="width:38px;height:38px;border-radius:11px;flex-shrink:0;
-        background:linear-gradient(135deg,{cor_primary},#5b21b6);
+        background:linear-gradient(135deg,#b76e79,#c9a04e);
         display:flex;align-items:center;justify-content:center;
         font-family:'Cormorant',serif;font-weight:800;font-size:1.1rem;color:#fff;
-        box-shadow:0 0 18px rgba(124,58,237,.6),0 0 40px rgba(185,131,255,.15);">H</div>
+        box-shadow:0 0 18px rgba(183,110,121,.45),0 0 40px rgba(201,160,78,.20);">T</div>
       <div>
         <div style="font-family:'Cormorant',serif;font-weight:800;font-size:.95rem;
-          background:linear-gradient(90deg,#fff 20%,{cor_accent} 100%);
+          background:linear-gradient(90deg,#3a2620 20%,#b76e79 100%);
           -webkit-background-clip:text;-webkit-text-fill-color:transparent;
           background-clip:text;letter-spacing:.4px;line-height:1.1;">TÁLYA</div>
         <div style="font-family:'Manrope',sans-serif;font-size:.53rem;
-          color:rgba(185,131,255,.5);letter-spacing:3px;
+          color:#a08876;letter-spacing:3px;
           text-transform:uppercase;margin-top:2px;">Cosm&eacute;ticos</div>
       </div>
     </div>
     <div style="height:1px;margin:0 16px 8px;
-      background:linear-gradient(90deg,transparent,{cor_accent}44,transparent);"></div>
+      background:linear-gradient(90deg,transparent,rgba(183,110,121,.35),rgba(201,160,78,.15),transparent);"></div>
     """)
 
     # Card usuário
@@ -713,11 +692,11 @@ def build_sidebar(
     role_label = perfil.replace("_", " ").upper()
 
     badge_map = {
-        "super_admin": "#7c3aed",
-        "admin":       "#2563eb",
-        "b2b":         "#059669",
-        "b2c":         "#d97706",
-        "demo":        "#6b7280",
+        "super_admin": "#b76e79",
+        "admin":       "#c9a04e",
+        "b2b":         "#7c5c4a",
+        "b2c":         "#a08876",
+        "demo":        "#6b4f43",
     }
     badge_color = badge_map.get(perfil, cor_primary)
     avatar_html = _build_user_avatar_html(display_nm, avatar_b64, badge_color)
@@ -725,15 +704,15 @@ def build_sidebar(
     st.sidebar.html(f"""
     <div style="display:flex;align-items:center;gap:10px;
       padding:10px 12px;margin:0 8px 8px;
-      background:linear-gradient(135deg,{cor_primary}33,{cor_accent}11);
-      border:1px solid {cor_accent}28;border-radius:14px;">
+      background:linear-gradient(135deg,rgba(183,110,121,.12),rgba(201,160,78,.06));
+      border:1px solid rgba(183,110,121,.22);border-radius:14px;">
       {avatar_html}
       <div style="min-width:0;">
         <div style="font-family:'Manrope',sans-serif;font-weight:700;font-size:.84rem;
-          color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+          color:#3a2620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           max-width:130px;line-height:1.3;" title="{display_nm}">{display_nm}</div>
         <div style="display:inline-block;margin-top:4px;
-          background:linear-gradient(135deg,{cor_primary}99,{cor_primary}cc);
+          background:linear-gradient(135deg,#b76e79cc,#c9a04e99);
           color:#fff;font-size:.56rem;font-weight:700;
           letter-spacing:.8px;padding:2px 9px;border-radius:999px;
           text-transform:uppercase;">{role_label}</div>
