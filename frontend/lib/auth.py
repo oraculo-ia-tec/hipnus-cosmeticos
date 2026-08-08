@@ -554,7 +554,7 @@ def _build_user_avatar_html(display_nm: str, avatar_b64: str | None, badge_color
 def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
     foto_b64  = st.session_state.get("chiara_foto_b64", "") or ""
     foto_mime = st.session_state.get("chiara_foto_mime", "image/jpeg") or "image/jpeg"
-    nome      = st.session_state.get("chiara_nome", "Chiara") or "Chiara"
+    nome      = st.session_state.get("chiara_nome", "Tálya") or "Tálya"
 
     if foto_b64:
         src = foto_b64 if foto_b64.startswith("data:") else f"data:{foto_mime};base64,{foto_b64}"
@@ -644,7 +644,7 @@ def _build_chiara_menu_item(cor_primary: str, cor_accent: str) -> None:
         unsafe_allow_html=True,
     )
     try:
-        st.sidebar.page_link("pages/11_IA_Consultora.py", label=nome)
+        st.sidebar.page_link("frontend/pages/10_🤖_IA_Consultora.py", label=nome)
     except Exception:
         pass
 

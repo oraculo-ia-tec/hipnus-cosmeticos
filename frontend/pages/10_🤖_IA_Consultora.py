@@ -37,25 +37,25 @@ st.markdown("""
 }
 .chiara-top-avatar img,
 .chiara-top-avatar .chiara-initial {
-    width: 140px; height: 140px; border-radius: 50%; object-fit: cover;
-    border: 4px solid rgba(185,131,255,0.6);
-    box-shadow: 0 0 48px rgba(185,131,255,0.45), 0 0 16px rgba(236,72,153,0.25);
+    width: 200px; height: 200px; border-radius: 50%; object-fit: cover;
+    border: 4px solid rgba(183,110,121,0.55);
+    box-shadow: 0 0 56px rgba(183,110,121,0.35), 0 0 20px rgba(201,160,78,0.20);
     display: flex; align-items: center; justify-content: center;
     margin-bottom: 14px;
 }
 .chiara-top-avatar .chiara-initial {
-    background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
-    font-size: 3.5rem; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, #b76e79 0%, #c9a04e 100%);
+    font-size: 4rem; font-weight: 800; color: #fff;
     flex-shrink: 0;
 }
 .chiara-top-name {
     font-size: 1.3rem; font-weight: 800;
-    background: linear-gradient(135deg, #b983ff 0%, #ec4899 100%);
+    background: linear-gradient(135deg, #b76e79 0%, #c9a04e 100%);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text; margin: 0 0 2px 0; letter-spacing: -.3px;
 }
 .chiara-top-title {
-    font-size: .78rem; color: rgba(185,131,255,0.65);
+    font-size: .78rem; color: rgba(183,110,121,0.70);
     margin: 0; font-style: italic;
 }
 .chiara-status {
@@ -125,6 +125,14 @@ _chiara_cargo = (
     st.session_state.get("chiara_cargo")
     or "Terapeuta Capilar Digital · Embaixadora TÁLYA"
 )
+
+# Fallback: usa talya_avatar.png quando não há foto configurada
+if not _chiara_b64:
+    import base64
+    _img_path = _FRONTEND / "static" / "talya_avatar.png"
+    if _img_path.exists():
+        _chiara_b64 = f"data:image/png;base64,{base64.b64encode(_img_path.read_bytes()).decode()}"
+        _chiara_mime = "image/png"
 _user_b64    = st.session_state.get("avatar_b64") or ""
 _user_nome   = (
     st.session_state.get("display_name")
