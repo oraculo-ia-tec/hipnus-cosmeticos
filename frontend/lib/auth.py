@@ -287,24 +287,39 @@ def _login_offline(identificador: str, password: str) -> bool:
 
 def _login_supabase(identificador: str, password: str) -> bool:
     """Autentica contra Supabase Auth; suporta username ou e-mail."""
+    import logging
     try:
         from lib.supabase_client import get_supabase
         sb = get_supabase()
 
-        # Resolve username → email
+        # Resolve username → email via RPC SECURITY DEFINER (bypassa RLS)
         email = identificador
         if "@" not in identificador:
-            res = sb.table("users").select("email").eq("username", identificador.lower()).execute()
-            if not res.data:
+            rpc_res = sb.rpc("get_email_by_username", {"p_username": identificador.lower()}).execute()
+            if not rpc_res.data:
                 return False
-            email = res.data[0]["email"]
+            email = rpc_res.data
 
         auth_resp = sb.auth.sign_in_with_password({"email": email, "password": password})
         if not auth_resp.user:
             return False
 
+        # Autentica o cliente com o JWT do usuário para respeitar RLS
+        if auth_resp.session:
+            sb.postgrest.auth(auth_resp.session.access_token)
+
         prof_res = sb.table("users").select("*").eq("auth_user_id", str(auth_resp.user.id)).execute()
-        u = prof_res.data[0] if prof_res.data else {}
+        if prof_res.data:
+            u = prof_res.data[0]
+        else:
+            # Fallback: usa metadados do auth.users
+            meta = auth_resp.user.user_metadata or {}
+            u = {
+                "name":         meta.get("name", email.split("@")[0].capitalize()),
+                "username":     meta.get("username", identificador),
+                "role":         meta.get("role", "b2c"),
+                "display_name": meta.get("name", ""),
+            }
 
         _gravar_sessao(
             nome=u.get("name") or email.split("@")[0].capitalize(),
@@ -316,7 +331,8 @@ def _login_supabase(identificador: str, password: str) -> bool:
             via_api=False,
         )
         return True
-    except Exception:
+    except Exception as exc:
+        logging.warning("_login_supabase falhou: %s", exc)
         return False
 
 
