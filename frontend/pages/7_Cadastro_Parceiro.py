@@ -26,6 +26,7 @@ for _p in [str(_ROOT), str(_FRONTEND)]:
 import streamlit as st
 from lib import ui, components
 from lib.user_db import cadastrar_parceiro, listar_parceiros, deletar_parceiro
+from lib.auth import require_auth, build_sidebar
 
 try:
     from lib.invite_db import validar_invite_db, marcar_invite_usado_db
@@ -36,14 +37,15 @@ except ImportError:
 st.set_page_config(
     page_title="Cadastro · TÁLYA",
     page_icon="➕",
-    layout="centered",
+    layout="wide",
 )
 ui.inject_theme()
+require_auth()
+build_sidebar()
 
 # ─────────────────────────────────────────────────────────────
 st.html("""
 <style>
-[data-testid="stSidebar"] { display: none !important; }
 .cad-header {
     text-align: center;
     padding: 28px 0 18px;
