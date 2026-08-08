@@ -279,4 +279,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Streamlit executa com __name__=="__main__" mas em thread secundária
+    if threading.current_thread() is not threading.main_thread():
+        try:
+            import streamlit as st
+            st.error("⚠️ Este arquivo é um script de inicialização. Execute no terminal: `python start_servers.py`")
+            st.stop()
+        except Exception:
+            pass
+    else:
+        main()

@@ -42,7 +42,7 @@ inject_theme()
 inject_login_style()
 
 if st.session_state.get("autenticado"):
-    st.switch_page("pages/1_Home.py")
+    st.switch_page("frontend/pages/0_🏠_Home.py")
 
 st.html("""
 <style>
@@ -516,7 +516,7 @@ if btn_entrar:
     else:
         ok, msg = fazer_login(login_input.strip(), senha_input)
         if ok:
-            st.switch_page("pages/1_Home.py")
+            st.switch_page("frontend/pages/0_🏠_Home.py")
         else:
             with col_right:
                 st.error(f"❌ {msg}")
@@ -527,4 +527,4 @@ if btn_demo:
         "nome": "Visitante", "display_name": "Modo demonstração",
         "email": "", "token": None, "via_api": False,
     })
-    st.switch_page("pages/1_Home.py")
+    st.switch_page("frontend/pages/0_🏠_Home.py")
