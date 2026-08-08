@@ -9,7 +9,7 @@ from supabase import Client
 
 # ---------- Cadastro (parceiro) ----------
 
-def create_partner_application(supabase: Client, user_id: str, data: dict) -> dict:
+def create_partner_application(supabase: Client, user_id: str, data: dict) -> dict | None:
     """Cria o registro inicial do parceiro (status=pending)."""
     payload = {
         "user_id": user_id,
@@ -18,19 +18,25 @@ def create_partner_application(supabase: Client, user_id: str, data: dict) -> di
         "email": data["email"],
         "phone": data.get("phone"),
         "cpf_cnpj": data["cpf_cnpj"],
-        "partner_type": data["partner_type"],  # 'distribuidor' ou 'salao'
+        "partner_type": data["partner_type"],
         "status": "pending",
     }
-    res = supabase.table("partners").insert(payload).execute()
-    return res.data[0]
+    try:
+        res = supabase.table("partners").insert(payload).execute()
+        return res.data[0] if res.data else None
+    except Exception:
+        return None
 
 
-def submit_onboarding_documents(supabase: Client, partner_id: str, docs: dict) -> dict:
+def submit_onboarding_documents(supabase: Client, partner_id: str, docs: dict) -> dict | None:
     """Envia documentos e dados bancarios para analise."""
     docs["partner_id"] = partner_id
     docs["submitted_at"] = "now()"
-    res = supabase.table("partner_onboarding").upsert(docs, on_conflict="partner_id").execute()
-    return res.data[0]
+    try:
+        res = supabase.table("partner_onboarding").upsert(docs, on_conflict="partner_id").execute()
+        return res.data[0] if res.data else None
+    except Exception:
+        return None
 
 
 def get_my_partner_status(supabase: Client, user_id: str) -> dict | None:
@@ -52,37 +58,41 @@ def get_my_partner_status(supabase: Client, user_id: str) -> dict | None:
 
 def get_pending_partners(supabase: Client) -> list[dict]:
     """Lista parceiros pendentes de aprovacao para a tela do admin."""
-    res = (
-        supabase.table("partners")
-        .select("*, partner_onboarding(*)")
-        .eq("status", "pending")
-        .order("created_at")
-        .execute()
-    )
-    return res.data
+    try:
+        res = (
+            supabase.table("partners")
+            .select("*, partner_onboarding(*)")
+            .eq("status", "pending")
+            .order("created_at")
+            .execute()
+        )
+        return res.data or []
+    except Exception:
+        return []
 
 
-def approve_partner(supabase: Client, partner_id: str, reviewer_id: str) -> dict:
+def approve_partner(supabase: Client, partner_id: str, reviewer_id: str) -> bool:
     """Aprova o parceiro. Trigger cria loja e estoque automaticamente."""
-    supabase.table("partner_onboarding").update({
-        "reviewed_by": reviewer_id,
-        "reviewed_at": "now()",
-    }).eq("partner_id", partner_id).execute()
+    try:
+        supabase.table("partner_onboarding").update({
+            "reviewed_by": reviewer_id, "reviewed_at": "now()",
+        }).eq("partner_id", partner_id).execute()
+        supabase.table("partners").update({"status": "active"}).eq("id", partner_id).execute()
+        return True
+    except Exception:
+        return False
 
-    res = supabase.table("partners").update({"status": "active"}).eq("id", partner_id).execute()
-    return res.data
 
-
-def reject_partner(supabase: Client, partner_id: str, reviewer_id: str, reason: str) -> dict:
+def reject_partner(supabase: Client, partner_id: str, reviewer_id: str, reason: str) -> bool:
     """Rejeita o parceiro com motivo registrado."""
-    supabase.table("partner_onboarding").update({
-        "reviewed_by": reviewer_id,
-        "reviewed_at": "now()",
-        "rejection_reason": reason,
-    }).eq("partner_id", partner_id).execute()
-
-    res = supabase.table("partners").update({"status": "rejected"}).eq("id", partner_id).execute()
-    return res.data
+    try:
+        supabase.table("partner_onboarding").update({
+            "reviewed_by": reviewer_id, "reviewed_at": "now()", "rejection_reason": reason,
+        }).eq("partner_id", partner_id).execute()
+        supabase.table("partners").update({"status": "rejected"}).eq("id", partner_id).execute()
+        return True
+    except Exception:
+        return False
 
 
 def suspend_partner(supabase: Client, partner_id: str, reason: str) -> dict:
