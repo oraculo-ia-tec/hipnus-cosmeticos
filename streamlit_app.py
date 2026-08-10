@@ -23,9 +23,9 @@ except Exception:
 import streamlit as st
 
 _pages_dir = _FRONTEND / "pages"
-# Caminhos relativos ao diretório raiz — obrigatório para st.switch_page() casar com st.Page()
+# Login agora está em frontend/pages/Login.py (entry: frontend/Home.py no Cloud)
 _pg = st.navigation(
-    [st.Page("login.py", title="Login", default=True)] +
+    [st.Page("frontend/pages/Login.py", title="Login", default=True)] +
     [st.Page(f"frontend/pages/{p.name}") for p in sorted(_pages_dir.glob("[0-9]*.py"))],
     position="hidden",
 )

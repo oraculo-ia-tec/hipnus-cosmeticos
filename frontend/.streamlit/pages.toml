@@ -3,7 +3,7 @@
 # Resolve: (1) ordem do menu, (2) ícones, (3) Configuração sumindo no Streamlit Cloud.
 
 [[pages]]
-path = "streamlit_app.py"
+path = "pages/Login.py"
 name = "Login"
 icon = ":material/login:"
 

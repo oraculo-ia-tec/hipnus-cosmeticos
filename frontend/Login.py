@@ -9,5 +9,5 @@ Este arquivo delega imediatamente para o entrypoint real.
 """
 import streamlit as st
 
-# Redireciona para o entrypoint real sem duplicar lógica
-st.switch_page("streamlit_app.py")
+# Redireciona para a página de login dentro de pages/
+st.switch_page("pages/Login.py")

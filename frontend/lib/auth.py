@@ -19,10 +19,10 @@ import streamlit as st
 ROLES_PRIVILEGIADOS = {"super_admin", "admin"}
 ROLES_PROFISSIONAIS = {"super_admin", "admin", "b2b"}
 
-# Caminhos relativos ao streamlit_app.py (raiz do projeto) — exigido pelo st.switch_page no Streamlit 1.36+
+# Caminhos relativos ao frontend/Home.py (entry point do Streamlit Cloud)
 _APP_ROOT   = Path(__file__).resolve().parents[2]
-LOGIN_PAGE  = "login.py"
-HOME_PAGE   = "frontend/pages/0_🏠_Home.py"
+LOGIN_PAGE  = "pages/Login.py"
+HOME_PAGE   = "pages/0_🏠_Home.py"
 _LOGIN_PAGE = LOGIN_PAGE
 _HOME_PAGE  = HOME_PAGE
 
