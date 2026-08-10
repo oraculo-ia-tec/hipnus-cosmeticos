@@ -271,19 +271,19 @@ def _login_offline(identificador: str, password: str) -> bool:
             )
             return True
         return False
-    if "@" in identificador:
-        parceiro = _buscar_parceiro_db(identificador, password)
-        if parceiro:
-            _gravar_sessao(
-                nome=parceiro.get("nome", ""),
-                username=parceiro.get("username") or parceiro.get("email", ""),
-                role=parceiro.get("role", "b2b"),
-                display_name=parceiro.get("display_name") or parceiro.get("empresa") or parceiro.get("nome", ""),
-                email=parceiro.get("email", ""),
-                token=None, via_api=False,
-                avatar_b64=parceiro.get("avatar_b64"),
-            )
-            return True
+    # Tenta DB tanto por e-mail quanto por username
+    parceiro = _buscar_parceiro_db(identificador, password)
+    if parceiro:
+        _gravar_sessao(
+            nome=parceiro.get("nome", ""),
+            username=parceiro.get("username") or parceiro.get("email", ""),
+            role=parceiro.get("role", "b2b"),
+            display_name=parceiro.get("display_name") or parceiro.get("empresa") or parceiro.get("nome", ""),
+            email=parceiro.get("email", ""),
+            token=None, via_api=False,
+            avatar_b64=parceiro.get("avatar_b64"),
+        )
+        return True
     return False
 
 

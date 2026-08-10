@@ -275,9 +275,30 @@ def buscar_por_email(email: str) -> dict | None:
         db.close()
 
 
+# ─── Buscar parceiro por username ─────────────────────────────────────────────────────────────────────────────────────────
+def buscar_por_username(username: str) -> dict | None:
+    db, _ = get_db_session()
+    if not db:
+        return None
+    try:
+        _ensure_tables(db)
+        from app.domains.partners.models.parceiros import Parceiro
+        obj = db.query(Parceiro).filter(
+            Parceiro.username == username.strip().lower()
+        ).first()
+        if not obj:
+            return None
+        return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+    except Exception:
+        return None
+    finally:
+        db.close()
+
+
 # ─── Autenticar parceiro ──────────────────────────────────────────────────────────────────────────────────────────────
-def autenticar_parceiro(email: str, senha: str) -> dict | None:
-    parceiro = buscar_por_email(email)
+def autenticar_parceiro(identificador: str, senha: str) -> dict | None:
+    """Autentica por e-mail ou username."""
+    parceiro = buscar_por_email(identificador) if "@" in identificador else buscar_por_username(identificador)
     if not parceiro:
         return None
     if not _verify_senha(senha, parceiro.get("senha_hash", "")):
