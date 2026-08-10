@@ -22,7 +22,7 @@ from lib.auth import require_auth, build_sidebar
 
 st.set_page_config(page_title="Configurações · TÁLYA", page_icon="⚙️", layout="wide")
 ui.inject_theme()
-usuario = require_auth(perfis_permitidos=["super_admin", "admin"])
+usuario = require_auth(perfis_permitidos=["super_admin", "admin", "b2b"])
 build_sidebar()
 
 # ── Imports do banco ──────────────────────────────────────────────────────────────

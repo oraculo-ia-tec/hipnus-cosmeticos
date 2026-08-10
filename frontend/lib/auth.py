@@ -380,18 +380,18 @@ def logout() -> None:
 # ───────────────────────────────────────────────────────────────────────
 
 _NAV_ITEMS = [
-    ("frontend/pages/10_🤖_IA_Consultora.py",   "__chiara__",            {"super_admin","admin","b2b","b2c","demo"}),
-    ("frontend/pages/0_📊_Dashboard.py",         "📊  Dashboard",         {"super_admin","admin"}),
-    ("frontend/pages/1_🛍️_Catálogo.py",          "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
-    ("frontend/pages/3_🏠_Loja_do_Parceiro.py",  "🏠  Loja Parceiro",     {"super_admin","admin","b2b"}),
-    ("frontend/pages/4_🛒_Carrinho.py",           "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
-    ("frontend/pages/5_💳_Checkout.py",           "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
-    ("frontend/pages/6_Convites.py",              "✉️  Convites",          {"super_admin","admin"}),
-    ("frontend/pages/7_Cadastro_Parceiro.py",     "➕  Cadastro Parceiro", {"super_admin","admin"}),
-    ("frontend/pages/8_Configuracao.py",          "⚙️  Configurações",     {"super_admin","admin"}),
-    ("frontend/pages/9_👥_Usuarios.py",          "👥  Usuários",          {"super_admin"}),
-    ("frontend/pages/11_Onboarding.py",           "🔖  Onboarding",        {"super_admin","admin"}),
-    ("frontend/pages/11_🏠_Minha_Loja_Config.py", "🏪  Minha Loja",        {"super_admin","admin","b2b"}),
+    ("frontend/pages/10_🤖_IA_Consultora.py",    "__chiara__",            {"super_admin","admin","b2b","b2c","demo"}),
+    ("frontend/pages/0_📊_Dashboard.py",          "📊  Dashboard",         {"super_admin","admin"}),
+    ("frontend/pages/1_🛍️_Catálogo.py",           "🛍️  Catálogo",          {"super_admin","admin","b2b","b2c"}),
+    ("frontend/pages/3_🏪_Loja_do_Parceiro.py",   "🏠  Loja Parceiro",     {"super_admin","admin"}),
+    ("frontend/pages/4_🛒_Carrinho.py",            "🛒  Carrinho",          {"super_admin","admin","b2b","b2c"}),
+    ("frontend/pages/5_💳_Checkout.py",            "💳  Checkout",          {"super_admin","admin","b2b","b2c"}),
+    ("frontend/pages/11_🏪_Minha_Loja_Config.py", "🏪  Loja",              {"super_admin","admin","b2b"}),
+    ("frontend/pages/8_Configuracao.py",           "⚙️  Configurações",     {"super_admin","admin","b2b"}),
+    ("frontend/pages/6_Convites.py",               "✉️  Convites",          {"super_admin","admin"}),
+    ("frontend/pages/7_Cadastro_Parceiro.py",      "➕  Cadastro Parceiro", {"super_admin","admin"}),
+    ("frontend/pages/9_👥_Usuarios.py",           "👥  Usuários",          {"super_admin"}),
+    ("frontend/pages/11_Onboarding.py",            "🔖  Onboarding",        {"super_admin","admin"}),
 ]
 
 
