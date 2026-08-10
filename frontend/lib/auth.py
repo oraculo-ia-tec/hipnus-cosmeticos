@@ -80,15 +80,22 @@ USUARIOS_DEMO: dict[str, dict] = _load_demo_users()
 def _normalize_role(role: str | None) -> str:
     role = (role or "demo").strip().lower()
     aliases = {
-        "super user":  "super_admin",
-        "superuser":   "super_admin",
-        "super-admin": "super_admin",
-        "super admin": "super_admin",
-        "superadmin":  "super_admin",
-        "admin":       "admin",
-        "b2b":         "b2b",
-        "b2c":         "b2c",
-        "demo":        "demo",
+        "super user":   "super_admin",
+        "superuser":    "super_admin",
+        "super-admin":  "super_admin",
+        "super admin":  "super_admin",
+        "superadmin":   "super_admin",
+        "super_admin":  "super_admin",
+        "admin":        "admin",
+        "b2b":          "b2b",
+        "profissional": "b2b",
+        "salao":        "b2b",
+        "distribuidor": "b2b",
+        "revendedor":   "b2b",
+        "b2c":          "b2c",
+        "cliente":      "b2c",
+        "consumer":     "b2c",
+        "demo":         "demo",
     }
     return aliases.get(role, role)
 
